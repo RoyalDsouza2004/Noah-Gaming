@@ -140,6 +140,17 @@ const bookingSchema = new mongoose.Schema(
       ref: 'MembershipUsage',
       default: null,
     },
+    membershipEntitlement: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MembershipEntitlement',
+      default: null,
+      index: true,
+    },
+    idempotencyKey: {
+      type: String,
+      default: null,
+      index: true,
+    },
     pricePerPlayer: {
       type: Number,
       default: 0, // In paise

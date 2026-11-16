@@ -300,6 +300,26 @@ export async function verifyOnlinePayment({ orderId, paymentId, signature, userI
     booking.paymentExpiresAt = null; // Clear temporary hold
     await booking.save();
 
+    // Consume reserved daily free-hour entitlement and record usage if applicable
+    if (booking.membershipEntitlement) {
+      try {
+        const { consumeDailyFreeHour, recordMembershipUsage } = await import('./membership.service.js');
+        await consumeDailyFreeHour({
+          entitlementId: booking.membershipEntitlement,
+          bookingId: booking._id,
+        });
+        if (booking.membershipApplied && booking.membershipSubscription) {
+          await recordMembershipUsage({
+            booking,
+            customerId: booking.customer?._id || booking.customer,
+            subscriptionId: booking.membershipSubscription,
+          });
+        }
+      } catch (consumeErr) {
+        console.error('[Consume Entitlement on Payment Error]:', consumeErr.message);
+      }
+    }
+
     // Audit log
     await ActivityLog.create({
       userId,
@@ -432,6 +452,26 @@ export async function processWebhookEvent({ event, payload, signature, rawBody }
         booking.paymentExpiresAt = null;
         await booking.save();
 
+        // Consume reserved daily free-hour entitlement and record usage if applicable
+        if (booking.membershipEntitlement) {
+          try {
+            const { consumeDailyFreeHour, recordMembershipUsage } = await import('./membership.service.js');
+            await consumeDailyFreeHour({
+              entitlementId: booking.membershipEntitlement,
+              bookingId: booking._id,
+            });
+            if (booking.membershipApplied && booking.membershipSubscription) {
+              await recordMembershipUsage({
+                booking,
+                customerId: booking.customer?._id || booking.customer,
+                subscriptionId: booking.membershipSubscription,
+              });
+            }
+          } catch (consumeErr) {
+            console.error('[Webhook Consume Entitlement Error]:', consumeErr.message);
+          }
+        }
+
         if (payment.customer) {
           const custUser = await User.findById(payment.customer);
           if (custUser && custUser.email) {
@@ -454,26 +494,59 @@ export async function processWebhookEvent({ event, payload, signature, rawBody }
         if (plan && customer) {
           const now = new Date();
           const msPerDay = 24 * 60 * 60 * 1000;
-          let expirationDate = new Date(now.getTime() + (plan.validityDuration || 30) * msPerDay);
+
+          // Check if this is a renewal
+          let renewalSub = null;
+          if (payment.paymentPurpose === 'MEMBERSHIP_RENEWAL') {
+            const renewalSubId = customer.membership?.subscriptionId;
+            if (renewalSubId) {
+              renewalSub = await MembershipSubscription.findById(renewalSubId);
+            }
+          }
+
+          let startDate = now;
+          let previousExpiration = null;
+          if (renewalSub && renewalSub.status === 'ACTIVE' && renewalSub.expirationDate > now) {
+            startDate = renewalSub.expirationDate;
+            previousExpiration = renewalSub.expirationDate;
+          }
+
+          let expirationDate = new Date(startDate.getTime() + (plan.validityDuration || 30) * msPerDay);
           if (plan.validityUnit === 'MONTHS') {
-            expirationDate = new Date(now);
+            expirationDate = new Date(startDate);
             expirationDate.setMonth(expirationDate.getMonth() + (plan.validityDuration || 1));
           } else if (plan.validityUnit === 'YEARS') {
-            expirationDate = new Date(now);
+            expirationDate = new Date(startDate);
             expirationDate.setFullYear(expirationDate.getFullYear() + (plan.validityDuration || 1));
           }
 
-          const subscription = await MembershipSubscription.create({
-            subscriptionId: `SUB-${Date.now().toString().slice(-8)}`,
-            customer: customer._id,
-            membershipPlan: plan._id,
-            status: 'ACTIVE',
-            startDate: now,
-            expirationDate,
-            payment: payment._id,
-            paymentReference: payment.paymentId,
-            notes: `Webhook automated activation (${event})`,
-          });
+          let subscription = null;
+          if (renewalSub) {
+            subscription = renewalSub;
+            subscription.expirationDate = expirationDate;
+            subscription.status = 'ACTIVE';
+            subscription.renewalHistory.push({
+              renewedAt: now,
+              previousExpirationDate: previousExpiration || renewalSub.expirationDate,
+              newExpirationDate: expirationDate,
+              payment: payment._id,
+              renewedBy: customer._id,
+              notes: `Webhook automated renewal (${event})`,
+            });
+            await subscription.save();
+          } else {
+            subscription = await MembershipSubscription.create({
+              subscriptionId: `SUB-${Date.now().toString().slice(-8)}`,
+              customer: customer._id,
+              membershipPlan: plan._id,
+              status: 'ACTIVE',
+              startDate: now,
+              expirationDate,
+              payment: payment._id,
+              paymentReference: payment.paymentId,
+              notes: `Webhook automated activation (${event})`,
+            });
+          }
 
           payment.membershipSubscription = subscription._id;
           await payment.save();
@@ -482,9 +555,11 @@ export async function processWebhookEvent({ event, payload, signature, rawBody }
           customer.membership = {
             status: 'ACTIVE',
             planId: plan._id,
+            planName: plan.name,
+            planPrice: plan.price,
             subscriptionId: subscription._id,
             expiresAt: expirationDate,
-            remainingHours: plan.isUnlimited ? 9999 : (plan.dailyUsageMinutes || 120) / 60,
+            remainingHours: plan.isUnlimited ? 9999 : (plan.dailyUsageLimit || 120) / 60,
           };
           await customer.save();
 

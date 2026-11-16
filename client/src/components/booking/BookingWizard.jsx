@@ -30,6 +30,7 @@ import {
   Lock,
   Banknote,
   Smartphone,
+  Crown,
 } from 'lucide-react';
 
 export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, onClose }) => {
@@ -69,6 +70,21 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   const [numberOfPlayers, setNumberOfPlayers] = useState(1);
   const [pricingQuote, setPricingQuote] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+
+  // Membership benefit states (derived from backend quote)
+  const membershipBenefit = pricingQuote?.membershipBenefit || null;
+  const isMembershipFullyCovered = membershipBenefit?.isFullyCovered === true || (pricingQuote && pricingQuote.totalAmountPaise === 0 && membershipBenefit?.applied);
+  const membershipAdvanceLimit = membershipBenefit?.advanceBookingLimit || null;
+
+  // Calculate max booking date string based on active membership advance limit in Asia/Kolkata
+  const maxBookingDateStr = (() => {
+    if (!membershipAdvanceLimit) return null;
+    const now = new Date();
+    // IST offset: +5:30
+    const istNow = new Date(now.getTime() + (5 * 60 + 30) * 60 * 1000);
+    const maxDate = new Date(istNow.getTime() + Number(membershipAdvanceLimit) * 24 * 60 * 60 * 1000);
+    return maxDate.toISOString().split('T')[0];
+  })();
 
   // Final Confirmed Booking & Phase 4 Payment States
   const [confirmedBooking, setConfirmedBooking] = useState(null);
@@ -151,7 +167,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     fetchAvailability();
   }, [selectedDevice, selectedGame, isVenueSelection, bookingDate, duration]);
 
-  // Fetch price quote whenever device, game, duration, or players change
+  // Fetch price quote whenever device, game, duration, players, date, or bookingType change
   useEffect(() => {
     const fetchQuote = async () => {
       if (!selectedDevice) return;
@@ -163,6 +179,9 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
           isVenueSelection,
           durationMinutes: duration * 60,
           playersCount: numberOfPlayers,
+          customerId: user?._id || null,
+          bookingDate: bookingDate || null,
+          bookingType,
         });
         if (res.success) {
           setPricingQuote(res.data);
@@ -174,7 +193,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       }
     };
     fetchQuote();
-  }, [selectedDevice, selectedGame, isVenueSelection, duration, numberOfPlayers, bookingType]);
+  }, [selectedDevice, selectedGame, isVenueSelection, duration, numberOfPlayers, bookingType, bookingDate, user?._id]);
 
   // Minimum & Maximum selectable players for current game and state
   const getMinPlayersAllowed = () => {
@@ -252,9 +271,18 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       const newBooking = res.data.booking;
       setTempBookingForPayment(newBooking);
 
+      // 2. If booking is fully covered by membership benefit (â‚¹0) -> no payment needed!
+      if (isMembershipFullyCovered || newBooking.paymentStatus === 'PAID') {
+        setConfirmedBooking(newBooking);
+        setStep(5);
+        showToast.success('Session confirmed! Covered by your membership benefit 🎮');
+        if (onBookingComplete) onBookingComplete(newBooking);
+        return;
+      }
+
       const requiresAdvance = pricingQuote?.advanceRequired || selectedGame?.isExclusive;
 
-      // 2. If online payment selected or mandatory GTA 6 advance required
+      // 3. If online payment selected or mandatory GTA 6 advance required
       if (paymentChoice === 'ONLINE' || requiresAdvance) {
         const purpose = requiresAdvance ? 'GTA6_ADVANCE' : 'BOOKING_FULL';
         const orderRes = await paymentApi.createOrder({
@@ -699,10 +727,16 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               <input
                 type="date"
                 min={todayStr}
+                max={maxBookingDateStr || undefined}
                 value={bookingDate}
                 onChange={(e) => setBookingDate(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-[#851B2B] font-mono"
               />
+              {membershipAdvanceLimit && (
+                <span className="text-[10px] text-[#D7FF00] font-mono mt-1 block">
+                  ✓ Member Limit: Up to {membershipAdvanceLimit} days ahead
+                </span>
+              )}
             </div>
 
             <div>
@@ -1060,9 +1094,30 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                         {pricingQuote.pricingRule?.billingType === 'PER_PLAYER_HOURLY' ? '/p' : ' (console)'}
                       </span>
                     </div>
+
+                    {membershipBenefit?.applied && (
+                      <>
+                        <div className="flex justify-between text-slate-400 text-[11px] pt-1 border-t border-slate-800">
+                          <span>Standard Amount:</span>
+                          <span className="line-through text-slate-500">₹{pricingQuote.standardAmountRupees}</span>
+                        </div>
+                        <div className="flex justify-between text-emerald-400 text-[11px]">
+                          <span>Membership Benefit ({membershipBenefit.planName}):</span>
+                          <span>-₹{membershipBenefit.discountRupees}</span>
+                        </div>
+                      </>
+                    )}
+
                     <div className="flex justify-between text-white font-bold text-base pt-2 border-t border-slate-800 font-sans">
                       <span>Total Amount:</span>
-                      <span className="text-emerald-400 font-mono">₹{pricingQuote.totalAmountRupees}</span>
+                      <span className={`font-mono ${isMembershipFullyCovered ? 'text-[#D7FF00]' : 'text-emerald-400'}`}>
+                        ₹{pricingQuote.totalAmountRupees}
+                        {isMembershipFullyCovered && (
+                          <span className="ml-2 text-xs font-normal text-emerald-400 font-mono">
+                            (Free Session)
+                          </span>
+                        )}
+                      </span>
                     </div>
 
                     {pricingQuote.advanceRequired && (
@@ -1091,7 +1146,20 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     Payment Channel
                   </span>
 
-                  {pricingQuote?.advanceRequired || selectedGame?.isExclusive ? (
+                  {isMembershipFullyCovered ? (
+                    <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <Crown className="w-4 h-4 text-[#D7FF00]" />
+                        <span>100% Covered by Membership</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300">
+                        Your daily gaming perk covers this session in full. No payment gateway or counter cash needed!
+                      </p>
+                      <div className="text-[10px] text-emerald-400 font-mono font-bold">
+                        Payable Amount: ₹0
+                      </div>
+                    </div>
+                  ) : pricingQuote?.advanceRequired || selectedGame?.isExclusive ? (
                     <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
                       <div className="flex items-center gap-1.5 font-bold">
                         <Lock className="w-3.5 h-3.5 text-amber-400" />
@@ -1105,43 +1173,51 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentChoice('ONLINE')}
-                        className={`p-2.5 rounded-xl border text-left transition-all ${
-                          paymentChoice === 'ONLINE'
-                            ? 'bg-[#851B2B]/20 border-[#851B2B] text-[#FFF4E8]'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold">
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>Pay Online</span>
+                    <>
+                      {membershipBenefit?.applied && (
+                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex justify-between items-center">
+                          <span>Partial Membership Discount Applied:</span>
+                          <span className="font-mono font-bold">-₹{membershipBenefit.discountRupees}</span>
                         </div>
-                        <span className="text-[10px] text-slate-400 block mt-0.5">
-                          Razorpay (UPI / Cards)
-                        </span>
-                      </button>
+                      )}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentChoice('ONLINE')}
+                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                            paymentChoice === 'ONLINE'
+                              ? 'bg-[#851B2B]/20 border-[#851B2B] text-[#FFF4E8]'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 font-bold">
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span>Pay Online</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                            Razorpay (UPI / Cards)
+                          </span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setPaymentChoice('COUNTER')}
-                        className={`p-2.5 rounded-xl border text-left transition-all ${
-                          paymentChoice === 'COUNTER'
-                            ? 'bg-emerald-500/15 border-emerald-400 text-emerald-300'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold">
-                          <Banknote className="w-3.5 h-3.5" />
-                          <span>Pay at Counter</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 block mt-0.5">
-                          Cash / Reception UPI
-                        </span>
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentChoice('COUNTER')}
+                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                            paymentChoice === 'COUNTER'
+                              ? 'bg-emerald-500/15 border-emerald-400 text-emerald-300'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 font-bold">
+                            <Banknote className="w-3.5 h-3.5" />
+                            <span>Pay at Counter</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                            Cash / Reception UPI
+                          </span>
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
 
@@ -1158,10 +1234,16 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 type="button"
                 onClick={handleConfirmBooking}
                 disabled={submitting || !selectedSlot}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-slate-950 font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className={`w-full py-3 rounded-xl font-bold font-heading text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${
+                  isMembershipFullyCovered
+                    ? 'bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] shadow-[#D7FF00]/20'
+                    : 'bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-slate-950 shadow-emerald-500/20'
+                }`}
               >
                 {submitting
                   ? 'Confirming with Database...'
+                  : isMembershipFullyCovered
+                  ? 'Book Now - Covered by Membership'
                   : (pricingQuote?.advanceRequired || selectedGame?.isExclusive)
                   ? `Pay Advance ₹${pricingQuote?.minimumAdvanceRupees} via Razorpay`
                   : paymentChoice === 'ONLINE'

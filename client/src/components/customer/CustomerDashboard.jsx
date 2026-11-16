@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { MembershipPlansModal } from '../membership/MembershipPlansModal.jsx';
 import { MembershipUpgradeModal } from '../membership/MembershipUpgradeModal.jsx';
+import { MembershipRenewalModal } from '../membership/MembershipRenewalModal.jsx';
+import { MembershipUpdateModal } from '../membership/MembershipUpdateModal.jsx';
 import { ActiveSessionCountdown } from './ActiveSessionCountdown.jsx';
 import { NotificationCenter } from '../notifications/NotificationCenter.jsx';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
@@ -43,6 +45,7 @@ import {
   Flame,
   Check,
   LogOut,
+  RotateCcw,
 } from 'lucide-react';
 
 export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, initialTab = 'overview' }) => {
@@ -79,6 +82,10 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
   const [actionError, setActionError] = useState('');
   const [plansModalOpen, setPlansModalOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [renewalModalOpen, setRenewalModalOpen] = useState(false);
+  const [selectedSubscriptionForRenewal, setSelectedSubscriptionForRenewal] = useState(null);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [selectedSubscriptionForUpdate, setSelectedSubscriptionForUpdate] = useState(null);
   const [activeReceiptPaymentId, setActiveReceiptPaymentId] = useState(null);
   const [downloadingPaymentId, setDownloadingPaymentId] = useState(null);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
@@ -333,12 +340,34 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
           </button>
 
           {isMember ? (
-            <button
-              onClick={() => setUpgradeModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20"
-            >
-              <TrendingUp className="w-4 h-4" /> Upgrade Pass
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => {
+                  const activeSub = subscriptions.find((s) => s.status === 'ACTIVE') || subscriptions[0];
+                  setSelectedSubscriptionForUpdate(activeSub);
+                  setUpdateModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold font-heading text-xs uppercase tracking-wider"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#D7FF00]" /> Manage & Update
+              </button>
+              <button
+                onClick={() => {
+                  const activeSub = subscriptions.find((s) => s.status === 'ACTIVE') || subscriptions[0];
+                  setSelectedSubscriptionForRenewal(activeSub);
+                  setRenewalModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#851B2B] hover:bg-[#9e2033] text-[#FFF4E8] font-bold font-heading text-xs uppercase tracking-wider shadow-md shadow-[#851B2B]/20"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Renew
+              </button>
+              <button
+                onClick={() => setUpgradeModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20"
+              >
+                <TrendingUp className="w-3.5 h-3.5" /> Upgrade
+              </button>
+            </div>
           ) : (
             <button
               onClick={() => setPlansModalOpen(true)}
@@ -487,12 +516,32 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
                     <span className="text-emerald-400 font-bold">{customer.membership.dailyRemainingHours} Hours</span>
                   </div>
 
-                  <div className="pt-2 flex justify-end">
+                  <div className="pt-2 flex items-center justify-end gap-2 flex-wrap">
                     <button
-                      onClick={() => setPlansModalOpen(true)}
-                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-heading text-xs uppercase tracking-wider"
+                      onClick={() => {
+                        const activeSub = subscriptions.find((s) => s.status === 'ACTIVE') || subscriptions[0];
+                        setSelectedSubscriptionForUpdate(activeSub);
+                        setUpdateModalOpen(true);
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold font-heading text-xs uppercase tracking-wider flex items-center gap-1.5"
                     >
-                      Renew / Upgrade Plan
+                      <Sparkles className="w-3.5 h-3.5 text-[#D7FF00]" /> Update & Details
+                    </button>
+                    <button
+                      onClick={() => {
+                        const activeSub = subscriptions.find((s) => s.status === 'ACTIVE') || subscriptions[0];
+                        setSelectedSubscriptionForRenewal(activeSub);
+                        setRenewalModalOpen(true);
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#851B2B] hover:bg-[#9e2033] text-[#FFF4E8] font-bold font-heading text-xs uppercase tracking-wider flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Renew
+                    </button>
+                    <button
+                      onClick={() => setUpgradeModalOpen(true)}
+                      className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-heading text-xs uppercase tracking-wider flex items-center gap-1.5"
+                    >
+                      <TrendingUp className="w-3.5 h-3.5" /> Upgrade
                     </button>
                   </div>
                 </div>
@@ -829,6 +878,15 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => {
+                            setSelectedSubscriptionForUpdate(s);
+                            setUpdateModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-semibold text-xs flex items-center gap-1"
+                        >
+                          <Sparkles className="w-3 h-3 text-[#D7FF00]" /> Details
+                        </button>
                         {s.status === 'ACTIVE' && (
                           <button
                             onClick={() => setUpgradeModalOpen(true)}
@@ -839,10 +897,13 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
                         )}
                         {s.membershipPlan?.renewalEnabled && (
                           <button
-                            onClick={() => setPlansModalOpen(true)}
-                            className="px-2.5 py-1 bg-[#851B2B]/25 hover:bg-[#851B2B]/35 text-[#FFF4E8] rounded font-semibold text-xs"
+                            onClick={() => {
+                              setSelectedSubscriptionForRenewal(s);
+                              setRenewalModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 bg-[#851B2B]/25 hover:bg-[#851B2B]/35 text-[#FFF4E8] rounded font-semibold text-xs flex items-center gap-1"
                           >
-                            Renew
+                            <RotateCcw className="w-3 h-3" /> Renew
                           </button>
                         )}
                       </div>
@@ -1232,6 +1293,49 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
           onUpgradeSuccess={() => {
             setUpgradeModalOpen(false);
             fetchDashboardData();
+          }}
+        />
+      )}
+
+      {/* Modal: Membership Renewal */}
+      {renewalModalOpen && (
+        <MembershipRenewalModal
+          subscription={
+            selectedSubscriptionForRenewal ||
+            subscriptions.find((s) => s.status === 'ACTIVE') ||
+            subscriptions[0]
+          }
+          onClose={() => {
+            setRenewalModalOpen(false);
+            setSelectedSubscriptionForRenewal(null);
+          }}
+          onRenewalSuccess={() => {
+            setRenewalModalOpen(false);
+            setSelectedSubscriptionForRenewal(null);
+            fetchDashboardData();
+            if (refreshUser) refreshUser();
+          }}
+        />
+      )}
+
+      {/* Modal: Membership Update & Details */}
+      {updateModalOpen && (
+        <MembershipUpdateModal
+          subscription={
+            selectedSubscriptionForUpdate ||
+            subscriptions.find((s) => s.status === 'ACTIVE') ||
+            subscriptions[0]
+          }
+          onClose={() => {
+            setUpdateModalOpen(false);
+            setSelectedSubscriptionForUpdate(null);
+          }}
+          onOpenRenewal={(sub) => {
+            setSelectedSubscriptionForRenewal(sub);
+            setRenewalModalOpen(true);
+          }}
+          onOpenUpgrade={() => {
+            setUpgradeModalOpen(true);
           }}
         />
       )}

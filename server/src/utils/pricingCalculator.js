@@ -3,13 +3,19 @@ import Device from '../models/Device.js';
 import Game from '../models/Game.js';
 
 /**
- * Calculates session price precision-safely in paise
+ * Calculates session price precision-safely in paise.
+ * When customerId and bookingDate are provided, also calculates membership benefit.
+ *
  * @param {Object} options
  * @param {string} options.deviceId
  * @param {string} [options.gameId]
  * @param {boolean} [options.isVenueSelection=false]
  * @param {number} [options.durationMinutes=60]
  * @param {number} [options.playersCount=1]
+ * @param {string} [options.customerId]      - optional, for membership-aware pricing
+ * @param {string} [options.bookingDate]     - YYYY-MM-DD IST, for membership check
+ * @param {string} [options.startTime]       - HH:mm, for membership check
+ * @param {string} [options.bookingType]     - 'SHARED' | 'PRIVATE'
  */
 export async function calculateSessionPrice({
   deviceId,
@@ -17,6 +23,10 @@ export async function calculateSessionPrice({
   isVenueSelection = false,
   durationMinutes = 60,
   playersCount = 1,
+  customerId = null,
+  bookingDate = null,
+  startTime = null,
+  bookingType = 'SHARED',
 }) {
   const device = await Device.findById(deviceId);
   if (!device) {
@@ -115,6 +125,8 @@ export async function calculateSessionPrice({
       totalAmountPaise = Math.round(pricingRule.amount * hours * players);
   }
 
+  const standardAmountPaise = totalAmountPaise; // Store original before membership discount
+
   // Determine advance payment required (Configurable per game / exclusive title)
   let advanceRequired = false;
   let minimumAdvancePaise = 0;
@@ -125,6 +137,75 @@ export async function calculateSessionPrice({
       minimumAdvancePaise = Math.min(game.minimumAdvancePayment, totalAmountPaise);
     } else {
       minimumAdvancePaise = Math.round(totalAmountPaise * 0.5); // 50% default advance
+    }
+  }
+
+  // ===== MEMBERSHIP-AWARE PRICING =====
+  let membershipApplied = false;
+  let membershipDiscountPaise = 0;
+  let freeHoursApplied = 0;
+  let membershipCoverage = null;
+  let payableAmountPaise = totalAmountPaise;
+
+  if (customerId && bookingDate && !game?.isExclusive) {
+    try {
+      // Dynamic import to avoid circular dependency
+      const { checkMembershipBookingCoverage } = await import('../services/membership.service.js');
+
+      membershipCoverage = await checkMembershipBookingCoverage({
+        customerId,
+        deviceId: device._id,
+        gameId: isVenueSelection ? null : (game ? game._id : null),
+        bookingDate,
+        startTime,
+        durationHours: hours,
+        numberOfPlayers: players,
+        bookingType,
+      });
+
+      if (membershipCoverage && membershipCoverage.covered) {
+        const discountPct = membershipCoverage.plan.discountPercentage || 100;
+
+        if (membershipCoverage.freeHourAvailable) {
+          // Apply free hours: plan dailyUsageLimit defines free minutes
+          const freeLimitMins = membershipCoverage.plan.dailyUsageLimit || 60;
+          freeHoursApplied = Math.min(hours, freeLimitMins / 60);
+
+          // Calculate discount: free hours * rate
+          if (pricingRule.billingType === 'PER_PLAYER_HOURLY') {
+            membershipDiscountPaise = Math.round(pricingRule.amount * freeHoursApplied * players);
+          } else {
+            membershipDiscountPaise = Math.round(pricingRule.amount * freeHoursApplied);
+          }
+
+          // Apply percentage discount on top of free hour discount
+          if (discountPct < 100) {
+            const remainingPaise = Math.max(0, totalAmountPaise - membershipDiscountPaise);
+            membershipDiscountPaise += Math.round(remainingPaise * (discountPct / 100));
+          }
+
+          payableAmountPaise = Math.max(0, totalAmountPaise - membershipDiscountPaise);
+          membershipApplied = true;
+        } else {
+          // No free hours but percentage discount may still apply
+          if (discountPct > 0) {
+            membershipDiscountPaise = Math.round(totalAmountPaise * (discountPct / 100));
+            payableAmountPaise = Math.max(0, totalAmountPaise - membershipDiscountPaise);
+            membershipApplied = discountPct > 0;
+          }
+        }
+
+        // If fully covered, advance payment is not needed
+        if (payableAmountPaise === 0) {
+          advanceRequired = false;
+          minimumAdvancePaise = 0;
+        } else if (advanceRequired) {
+          minimumAdvancePaise = Math.min(minimumAdvancePaise, payableAmountPaise);
+        }
+      }
+    } catch (membershipErr) {
+      // Non-fatal: if membership check fails, fall back to standard pricing
+      console.warn('[Membership Pricing Check Error]:', membershipErr.message);
     }
   }
 
@@ -141,8 +222,30 @@ export async function calculateSessionPrice({
     durationMinutes,
     durationHours: hours,
     playersCount: players,
-    totalAmountPaise,
-    totalAmountRupees: totalAmountPaise / 100,
+    // Standard (before membership)
+    standardAmountPaise,
+    standardAmountRupees: standardAmountPaise / 100,
+    // Payable (after membership discount)
+    totalAmountPaise: payableAmountPaise,
+    totalAmountRupees: payableAmountPaise / 100,
+    payableAmountPaise,
+    payableAmountRupees: payableAmountPaise / 100,
+    // Membership breakdown
+    membershipBenefit: {
+      applied: membershipApplied,
+      planName: membershipCoverage?.plan?.name || null,
+      advanceBookingLimit: membershipCoverage?.plan?.advanceBookingLimit || null,
+      freeHoursApplied,
+      freeMinutesApplied: Math.round(freeHoursApplied * 60),
+      paidMinutes: Math.max(0, durationMinutes - Math.round(freeHoursApplied * 60)),
+      discountPaise: membershipDiscountPaise,
+      discountRupees: membershipDiscountPaise / 100,
+      isFullyCovered: payableAmountPaise === 0 && membershipApplied,
+      hasMembership: Boolean(membershipCoverage?.plan),
+      freeHourAvailable: membershipCoverage?.freeHourAvailable ?? null,
+      entitlementState: membershipCoverage?.entitlementState ?? null,
+      reason: membershipCoverage?.reason || null,
+    },
     advanceRequired,
     minimumAdvancePaise,
     minimumAdvanceRupees: minimumAdvancePaise / 100,

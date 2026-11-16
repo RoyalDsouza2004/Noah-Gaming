@@ -19,6 +19,21 @@ export const getAvailability = async (req, res) => {
     }
 
     const queryDate = date || formatISTDate(new Date());
+
+    // If user is authenticated, validate advance booking limit
+    if (req.user?._id) {
+      try {
+        const { validateCustomerAdvanceBooking } = await import('../services/membership.service.js');
+        await validateCustomerAdvanceBooking({ customerId: req.user._id, bookingDate: queryDate });
+      } catch (limitErr) {
+        return res.status(limitErr.status || 400).json({
+          success: false,
+          code: limitErr.code || 'ADVANCE_BOOKING_LIMIT_EXCEEDED',
+          message: limitErr.message,
+        });
+      }
+    }
+
     const availabilityData = await getDeviceDailyAvailability(
       deviceId,
       queryDate,
@@ -54,6 +69,8 @@ export const createCustomerBooking = async (req, res) => {
       notes,
     } = req.body;
 
+    const idempotencyKey = req.headers['idempotency-key'] || req.body.idempotencyKey || null;
+
     if (!deviceId || !bookingDate || !startTime) {
       return res.status(400).json({
         success: false,
@@ -72,6 +89,7 @@ export const createCustomerBooking = async (req, res) => {
       duration: parseFloat(duration) || 1,
       numberOfPlayers: parseInt(numberOfPlayers) || 1,
       notes,
+      idempotencyKey,
     });
 
     const populatedBooking = await Booking.findById(booking._id)

@@ -234,6 +234,10 @@ export const calculatePrice = async (req, res) => {
       isVenueSelection = false,
       durationMinutes = 60,
       playersCount = 1,
+      customerId = null,
+      bookingDate = null,
+      startTime = null,
+      bookingType = 'SHARED',
     } = req.body;
 
     if (!deviceId) {
@@ -243,12 +247,18 @@ export const calculatePrice = async (req, res) => {
       });
     }
 
+    const effectiveCustomerId = customerId || req.user?._id || null;
+
     const breakdown = await calculateSessionPrice({
       deviceId,
       gameId: isVenueSelection ? null : gameId,
       isVenueSelection: Boolean(isVenueSelection),
       durationMinutes: parseInt(durationMinutes),
       playersCount: parseInt(playersCount),
+      customerId: effectiveCustomerId,
+      bookingDate,
+      startTime,
+      bookingType,
     });
 
     res.status(200).json({

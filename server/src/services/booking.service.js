@@ -9,6 +9,10 @@ import {
   checkMembershipBookingCoverage,
   recordMembershipUsage,
   releaseMembershipUsage,
+  validateCustomerAdvanceBooking,
+  reserveDailyFreeHour,
+  consumeDailyFreeHour,
+  releaseDailyFreeHour,
 } from './membership.service.js';
 import { createNotification } from './notification.service.js';
 import {
@@ -299,7 +303,25 @@ export async function createBookingAtomic({
   duration = 1, // in hours
   numberOfPlayers = 1,
   notes = '',
+  idempotencyKey = null,
 }) {
+  // 0. Idempotency Check: if identical idempotencyKey was already submitted by this customer, return that booking
+  if (idempotencyKey && customerId) {
+    const existingBooking = await Booking.findOne({
+      customer: customerId,
+      idempotencyKey,
+    });
+    if (existingBooking) {
+      return existingBooking;
+    }
+  }
+
+  // 0b. Advance Booking Restriction Check:
+  // Verifies customer's active membership plan limit (e.g. 3 or 7 days) in Asia/Kolkata
+  if (customerId) {
+    await validateCustomerAdvanceBooking({ customerId, bookingDate });
+  }
+
   // 1. Fetch and validate device
   const device = await Device.findById(deviceId);
   if (!device) {
@@ -517,6 +539,10 @@ export async function createBookingAtomic({
       isVenueSelection: Boolean(isVenueSelection),
       durationMinutes,
       playersCount: players,
+      customerId,
+      bookingDate,
+      startTime,
+      bookingType: effectiveBookingType,
     });
 
     let totalAmountPaise = pricingCalculation.totalAmountPaise;
@@ -524,12 +550,13 @@ export async function createBookingAtomic({
     let advanceAmountPaise = pricingCalculation.minimumAdvancePaise || 0;
     let isAdvancePaid = false;
     let initialPaymentStatus = 'UNPAID';
-    let membershipApplied = false;
+    let membershipApplied = Boolean(pricingCalculation.membershipBenefit?.applied);
     let membershipSubscriptionId = null;
-    let membershipDiscountPaise = 0;
+    let membershipDiscountPaise = pricingCalculation.membershipBenefit?.discountPaise || 0;
+    let reservedEntitlement = null;
 
-    // 6b. Evaluate Membership Coverage (Phase 5)
-    if (customerId) {
+    // 6b. Evaluate Membership Coverage & Reserve Entitlement Atomically
+    if (customerId && membershipApplied) {
       const coverage = await checkMembershipBookingCoverage({
         customerId,
         deviceId: device._id,
@@ -542,18 +569,24 @@ export async function createBookingAtomic({
       });
 
       if (coverage && coverage.covered) {
-        membershipApplied = true;
         membershipSubscriptionId = coverage.subscription.id;
-        const discountPct = coverage.plan.discountPercentage || 100;
-        membershipDiscountPaise = Math.round(totalAmountPaise * (discountPct / 100));
-        totalAmountPaise = Math.max(0, totalAmountPaise - membershipDiscountPaise);
 
-        if (totalAmountPaise === 0) {
-          advanceRequired = false;
-          advanceAmountPaise = 0;
-          isAdvancePaid = true;
-          initialPaymentStatus = 'PAID';
+        // Atomically reserve daily free hour benefit if applicable
+        if (pricingCalculation.membershipBenefit.freeHoursApplied > 0 && coverage.freeHourAvailable) {
+          reservedEntitlement = await reserveDailyFreeHour({
+            customerId,
+            subscriptionId: coverage.subscription.id,
+            bookingDate,
+            idempotencyKey,
+          });
         }
+      }
+
+      if (totalAmountPaise === 0) {
+        advanceRequired = false;
+        advanceAmountPaise = 0;
+        isAdvancePaid = true;
+        initialPaymentStatus = 'PAID';
       }
     }
 
@@ -612,6 +645,8 @@ export async function createBookingAtomic({
       membershipApplied,
       membershipSubscription: membershipSubscriptionId,
       membershipDiscount: membershipDiscountPaise,
+      membershipEntitlement: reservedEntitlement?._id || null,
+      idempotencyKey: idempotencyKey || null,
       pricingSnapshot: {
         pricingId: pricingCalculation.pricingRule.id,
         planName: pricingCalculation.pricingRule.name,
@@ -628,7 +663,27 @@ export async function createBookingAtomic({
       notes: notes ? notes.trim() : '',
     });
 
-    await booking.save();
+    try {
+      await booking.save();
+    } catch (saveErr) {
+      if (reservedEntitlement) {
+        await releaseDailyFreeHour({
+          entitlementId: reservedEntitlement._id,
+          reason: `Booking save failed: ${saveErr.message}`,
+        }).catch(() => {});
+      }
+      throw saveErr;
+    }
+
+    // If fully covered (₹0) and free hour was reserved, finalize and consume entitlement immediately
+    if (initialPaymentStatus === 'PAID' && reservedEntitlement) {
+      await consumeDailyFreeHour({
+        entitlementId: reservedEntitlement._id,
+        bookingId: booking._id,
+      }).catch((consumeErr) => {
+        console.error('[Consume Entitlement Error]:', consumeErr.message);
+      });
+    }
 
     // If session covered under membership, record usage tracking
     if (membershipApplied && membershipSubscriptionId) {
@@ -727,6 +782,16 @@ export async function cancelBookingService(bookingId, userId, userRole, reason =
   await booking.save();
 
   // If session was counted under membership quota, release it
+  if (booking.membershipEntitlement) {
+    await releaseDailyFreeHour({
+      entitlementId: booking.membershipEntitlement,
+      bookingId: booking._id,
+      reason: reason ? reason.trim() : 'Booking cancelled by user',
+    }).catch((releaseErr) => {
+      console.error('[Release Free Hour Entitlement Error]:', releaseErr.message);
+    });
+  }
+
   if (booking.membershipApplied) {
     await releaseMembershipUsage({ bookingId: booking._id });
   }

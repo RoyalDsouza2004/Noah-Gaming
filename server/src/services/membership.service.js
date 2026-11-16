@@ -3,6 +3,7 @@ import MembershipPlan from '../models/MembershipPlan.js';
 import MembershipSubscription from '../models/MembershipSubscription.js';
 import MembershipUsage from '../models/MembershipUsage.js';
 import MembershipUpgrade from '../models/MembershipUpgrade.js';
+import MembershipEntitlement from '../models/MembershipEntitlement.js';
 import User from '../models/User.js';
 import Payment from '../models/Payment.js';
 import Booking from '../models/Booking.js';
@@ -19,6 +20,274 @@ import {
   sendMembershipActivationEmail,
   sendMembershipExpiryReminderEmail,
 } from './email.service.js';
+
+/** IST timezone constant */
+const TIMEZONE = 'Asia/Kolkata';
+const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000; // +5:30
+
+/**
+ * Returns the current date string in IST (YYYY-MM-DD)
+ */
+function getTodayIST() {
+  const utcNow = new Date();
+  const istNow = new Date(utcNow.getTime() + IST_OFFSET_MS);
+  return istNow.toISOString().split('T')[0];
+}
+
+/**
+ * Returns the number of IST calendar days between today and a target date string.
+ * Positive = target is in the future.
+ */
+function getDaysDifferenceFromTodayIST(targetDateStr) {
+  const todayIST = getTodayIST();
+  const todayParts = todayIST.split('-').map(Number);
+  const targetParts = targetDateStr.split('-').map(Number);
+  const todayMs = Date.UTC(todayParts[0], todayParts[1] - 1, todayParts[2]);
+  const targetMs = Date.UTC(targetParts[0], targetParts[1] - 1, targetParts[2]);
+  return Math.round((targetMs - todayMs) / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Validates whether a customer is allowed to book on the given date
+ * based on their active membership plan's advance booking limit.
+ *
+ * Returns { allowed: true, advanceBookingLimit } or throws an error.
+ */
+export async function validateCustomerAdvanceBooking({ customerId, bookingDate }) {
+  if (!customerId || !bookingDate) return { allowed: true, advanceBookingLimit: null };
+
+  // Find the customer's active subscription
+  const customer = await User.findById(customerId).lean();
+  if (!customer || !customer.membership || customer.membership.status !== 'ACTIVE') {
+    // Non-members: no advance booking restriction from membership
+    return { allowed: true, advanceBookingLimit: null };
+  }
+
+  const subscription = await MembershipSubscription.findById(customer.membership.subscriptionId)
+    .populate('membershipPlan')
+    .lean();
+
+  if (!subscription || subscription.status !== 'ACTIVE') {
+    return { allowed: true, advanceBookingLimit: null };
+  }
+
+  const plan = subscription.membershipPlan;
+  if (!plan || !plan.advanceBookingLimit) {
+    return { allowed: true, advanceBookingLimit: null };
+  }
+
+  const advanceBookingLimit = Number(plan.advanceBookingLimit);
+  const diffDays = getDaysDifferenceFromTodayIST(bookingDate);
+
+  if (diffDays > advanceBookingLimit) {
+    const err = new Error(
+      `Your ${plan.name} membership allows booking up to ${advanceBookingLimit} day(s) in advance. ` +
+      `The requested date (${bookingDate}) is ${diffDays} day(s) ahead.`
+    );
+    err.status = 400;
+    err.code = 'ADVANCE_BOOKING_LIMIT_EXCEEDED';
+    throw err;
+  }
+
+  return { allowed: true, advanceBookingLimit };
+}
+
+/**
+ * Atomically reserve the daily free-hour entitlement for a customer.
+ *
+ * Uses a unique index on `entitlementKey` to prevent concurrent double-use.
+ * Returns the entitlement document if reserved, or throws an appropriate error.
+ *
+ * @param {Object} params
+ * @param {string} params.customerId
+ * @param {string} params.subscriptionId
+ * @param {string} params.bookingDate  - IST date string YYYY-MM-DD
+ * @param {string} [params.bookingId]  - booking _id being created
+ * @param {string} [params.idempotencyKey]
+ */
+export async function reserveDailyFreeHour({
+  customerId,
+  subscriptionId,
+  bookingDate,
+  bookingId = null,
+  idempotencyKey = null,
+}) {
+  const entitlementKey = `${customerId}_${subscriptionId}_${bookingDate}_DAILY_FREE_HOUR`;
+  const reservationExpiresAt = new Date(Date.now() + 20 * 60 * 1000); // 20 min reservation window
+
+  // Idempotency: if same idempotency key already reserved, return existing reservation
+  if (idempotencyKey) {
+    const existing = await MembershipEntitlement.findOne({
+      entitlementKey,
+      idempotencyKey,
+      state: { $in: ['RESERVED', 'CONSUMED'] },
+    });
+    if (existing) {
+      return existing;
+    }
+  }
+
+  // Check if already CONSUMED today
+  const consumed = await MembershipEntitlement.findOne({
+    entitlementKey,
+    state: 'CONSUMED',
+  });
+  if (consumed) {
+    const err = new Error('Your daily free-hour benefit has already been used today.');
+    err.status = 409;
+    err.code = 'ENTITLEMENT_CONSUMED';
+    throw err;
+  }
+
+  // Check if there's a valid (non-expired) RESERVED entry by someone else
+  const activeReservation = await MembershipEntitlement.findOne({
+    entitlementKey,
+    state: 'RESERVED',
+    reservationExpiresAt: { $gt: new Date() },
+  });
+  if (activeReservation) {
+    // If this is the same booking, return it (idempotent)
+    if (bookingId && activeReservation.booking?.toString() === bookingId.toString()) {
+      return activeReservation;
+    }
+    const err = new Error(
+      'Your daily free-hour benefit is currently reserved by another booking in progress. ' +
+      'Please wait a moment and try again.'
+    );
+    err.status = 409;
+    err.code = 'ENTITLEMENT_RESERVED';
+    throw err;
+  }
+
+  // Atomic upsert: either create a new RESERVED entitlement or recover an expired one
+  try {
+    // First try to recover an expired/released reservation via findOneAndUpdate
+    let entitlement = await MembershipEntitlement.findOneAndUpdate(
+      {
+        entitlementKey,
+        state: { $in: ['RELEASED'] },
+      },
+      {
+        $set: {
+          state: 'RESERVED',
+          booking: bookingId,
+          idempotencyKey,
+          reservationExpiresAt,
+          finalizedAt: null,
+          releaseReason: '',
+        },
+      },
+      { new: true }
+    );
+
+    if (!entitlement) {
+      // Also try to claim an expired RESERVED (past expiry)
+      entitlement = await MembershipEntitlement.findOneAndUpdate(
+        {
+          entitlementKey,
+          state: 'RESERVED',
+          reservationExpiresAt: { $lte: new Date() },
+        },
+        {
+          $set: {
+            state: 'RESERVED',
+            booking: bookingId,
+            idempotencyKey,
+            reservationExpiresAt,
+            finalizedAt: null,
+            releaseReason: '',
+          },
+        },
+        { new: true }
+      );
+    }
+
+    if (!entitlement) {
+      // Create new reservation
+      entitlement = await MembershipEntitlement.create({
+        entitlementKey,
+        customer: customerId,
+        subscription: subscriptionId,
+        membershipDate: bookingDate,
+        entitlementType: 'DAILY_FREE_HOUR',
+        state: 'RESERVED',
+        booking: bookingId,
+        idempotencyKey,
+        reservationExpiresAt,
+      });
+    }
+
+    return entitlement;
+  } catch (err) {
+    if (err.code === 11000) {
+      // Duplicate key — another concurrent request won the race
+      const conflictErr = new Error(
+        'Your daily free-hour benefit has already been claimed by a simultaneous booking request. ' +
+        'Only one free session can be reserved at a time.'
+      );
+      conflictErr.status = 409;
+      conflictErr.code = 'ENTITLEMENT_CONFLICT';
+      throw conflictErr;
+    }
+    throw err;
+  }
+}
+
+/**
+ * Transition a RESERVED entitlement to CONSUMED (booking confirmed).
+ */
+export async function consumeDailyFreeHour({ entitlementId, bookingId }) {
+  const updated = await MembershipEntitlement.findOneAndUpdate(
+    {
+      _id: entitlementId,
+      state: 'RESERVED',
+    },
+    {
+      $set: {
+        state: 'CONSUMED',
+        booking: bookingId,
+        finalizedAt: new Date(),
+        reservationExpiresAt: null,
+      },
+    },
+    { new: true }
+  );
+
+  if (!updated) {
+    // If already CONSUMED (idempotent), just return
+    const existing = await MembershipEntitlement.findById(entitlementId);
+    if (existing && existing.state === 'CONSUMED') return existing;
+
+    const err = new Error('Entitlement reservation not found or already finalized');
+    err.status = 409;
+    throw err;
+  }
+  return updated;
+}
+
+/**
+ * Release a RESERVED entitlement (payment failed, booking cancelled, etc.)
+ */
+export async function releaseDailyFreeHour({ entitlementId, bookingId, reason = '' }) {
+  if (!entitlementId) return null;
+
+  const updated = await MembershipEntitlement.findOneAndUpdate(
+    {
+      _id: entitlementId,
+      state: 'RESERVED',
+    },
+    {
+      $set: {
+        state: 'RELEASED',
+        finalizedAt: new Date(),
+        releaseReason: reason || 'Booking failed or cancelled',
+        reservationExpiresAt: null,
+      },
+    },
+    { new: true }
+  );
+  return updated;
+}
 
 /**
  * Calculates Expiration Date from start date, duration, and unit in IST
@@ -322,6 +591,8 @@ export async function verifyMembershipPayment({
   customer.membership = {
     status: 'ACTIVE',
     planId: plan._id,
+    planName: plan.name,
+    planPrice: plan.price,
     subscriptionId: subscription._id,
     expiresAt: expirationDate,
     dailyUsageMinutesUsed: 0,
@@ -614,6 +885,34 @@ export async function checkMembershipBookingCoverage({
     }
   }
 
+  // 8. Check if free-hour entitlement is available today (atomic check via MembershipEntitlement)
+  const entitlementKey = `${customer._id}_${subscription._id}_${bookingDate}_DAILY_FREE_HOUR`;
+  const existingEntitlement = await MembershipEntitlement.findOne({
+    entitlementKey,
+    state: { $in: ['RESERVED', 'CONSUMED'] },
+  });
+
+  let freeHourAvailable = true;
+  let entitlementState = null;
+
+  if (existingEntitlement) {
+    if (existingEntitlement.state === 'CONSUMED') {
+      freeHourAvailable = false;
+      entitlementState = 'CONSUMED';
+    } else if (existingEntitlement.state === 'RESERVED') {
+      // Check if reservation is still valid (not expired)
+      if (existingEntitlement.reservationExpiresAt && existingEntitlement.reservationExpiresAt > new Date()) {
+        freeHourAvailable = false;
+        entitlementState = 'RESERVED';
+      }
+      // If expired, treat as available (recovery path)
+    }
+  }
+
+  // Calculate how many free minutes are available
+  const dailyUsageLimitMins = plan.dailyUsageLimit || 60; // default 1 hour
+  const freeMinutesAvailable = freeHourAvailable ? Math.min(dailyUsageLimitMins - minutesAlreadyUsed, dailyUsageLimitMins) : 0;
+
   // All eligibility checks passed!
   return {
     covered: true,
@@ -622,6 +921,8 @@ export async function checkMembershipBookingCoverage({
       name: plan.name,
       isUnlimited: plan.isUnlimited,
       discountPercentage: plan.discountPercentage || 100,
+      dailyUsageLimit: plan.dailyUsageLimit || 60,
+      advanceBookingLimit: plan.advanceBookingLimit || null,
     },
     subscription: {
       id: subscription._id,
@@ -630,6 +931,10 @@ export async function checkMembershipBookingCoverage({
     },
     minutesAlreadyUsedToday: minutesAlreadyUsed,
     remainingMinutesToday: plan.dailyUsageLimit ? Math.max(0, plan.dailyUsageLimit - minutesAlreadyUsed) : 9999,
+    freeHourAvailable,
+    freeMinutesAvailable,
+    entitlementState,
+    entitlementKey,
   };
 }
 
