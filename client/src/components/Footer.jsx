@@ -25,8 +25,8 @@ export const Footer = () => {
           {/* Brand info */}
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]">
-                <Gamepad2 className="w-5 h-5 text-[#FFF4E8] font-bold" />
+              <div className="w-9 h-9 rounded-full bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-0.5 shrink-0 overflow-hidden">
+                <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
               </div>
               <div className="flex items-baseline">
                 <span className="text-lg font-black text-[#FFF4E8] font-heading tracking-wider">

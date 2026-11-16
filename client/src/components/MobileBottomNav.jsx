@@ -5,6 +5,7 @@ import {
   CalendarDays,
   UserRound,
   LayoutDashboard,
+  Sparkles,
 } from 'lucide-react';
 
 export const MobileBottomNav = ({
@@ -49,6 +50,19 @@ export const MobileBottomNav = ({
         hash === '#auth-console'
       ) {
         return 'admin_overview';
+      }
+      // 1b. Receptionist POS Desk Shortcut for Admin
+      if (
+        activeNav === 'receptionist' ||
+        activeNav === 'reception_live' ||
+        activeNav === 'reception_walkin' ||
+        activeNav === 'reception_bookings' ||
+        hash === '#receptionist' ||
+        hash === '#receptionist-live' ||
+        hash === '#receptionist-walkin' ||
+        hash === '#receptionist-bookings'
+      ) {
+        return 'reception_dashboard';
       }
       // 2. Hardware: devices, games, exclusive, categories, pricing, maintenance
       if (
@@ -159,28 +173,34 @@ export const MobileBottomNav = ({
 
   const activeItemId = getActiveItemId();
 
-  // Exactly 4 items per role
+  // Mobile navigation items per role
   let navItems = [];
 
   if (role === 'admin') {
     navItems = [
       {
         id: 'admin_overview',
-        label: 'Overview',
+        label: 'Admin',
         icon: LayoutDashboard,
         route: 'admin_overview',
       },
       {
-        id: 'admin_devices',
-        label: 'Hardware',
-        icon: Gamepad2,
-        route: 'admin_devices',
+        id: 'reception_dashboard',
+        label: 'POS Desk',
+        icon: Sparkles,
+        route: 'receptionist',
       },
       {
         id: 'admin_bookings',
         label: 'Bookings',
         icon: CalendarDays,
         route: 'admin_bookings',
+      },
+      {
+        id: 'admin_devices',
+        label: 'Hardware',
+        icon: Gamepad2,
+        route: 'admin_devices',
       },
       {
         id: 'profile',
@@ -247,7 +267,7 @@ export const MobileBottomNav = ({
   }
 
   const handleItemClick = (e, item) => {
-    e.preventDefault();
+    // Prevent event bubbling without preventing default button click delivery
     e.stopPropagation();
 
     // If item requires authentication and user is not logged in
@@ -271,8 +291,9 @@ export const MobileBottomNav = ({
       style={{
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
+        WebkitTapHighlightColor: 'transparent',
       }}
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-[60] md:hidden pointer-events-auto rounded-full bg-[#171014]/80 border border-[#851B2B]/35 shadow-[0_8px_32px_rgba(0,0,0,0.55),0_1px_2px_rgba(255,255,255,0.06)_inset] px-2 py-1.5 transition-all duration-200"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-[60] md:hidden pointer-events-auto rounded-full bg-[#171014]/90 border border-[#851B2B]/40 shadow-[0_8px_32px_rgba(0,0,0,0.65),0_1px_2px_rgba(255,255,255,0.06)_inset] px-1.5 py-1.5 transition-all duration-200"
     >
       <nav className="w-full flex items-center justify-around">
         {navItems.map((item) => {
@@ -286,27 +307,31 @@ export const MobileBottomNav = ({
               onClick={(e) => handleItemClick(e, item)}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}
-              className="flex-1 flex flex-col items-center justify-center py-1 px-1 relative transition-all group focus:outline-none min-h-[48px]"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                outline: 'none',
+              }}
+              className="flex-1 flex flex-col items-center justify-center py-1 px-0.5 relative transition-transform active:scale-90 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none select-none min-h-[46px]"
             >
               <div
-                className={`flex items-center justify-center transition-all duration-200 ${
+                className={`flex items-center justify-center transition-all duration-150 ${
                   isActive
-                    ? 'w-10 h-10 rounded-full bg-[#851B2B]/45 border border-[#851B2B]/60 shadow-[0_0_12px_rgba(133,27,43,0.35)] scale-105'
-                    : 'w-10 h-10 rounded-full hover:bg-white/5'
+                    ? 'w-10 h-10 rounded-full bg-[#851B2B]/55 border border-[#851B2B]/70 shadow-[0_0_14px_rgba(133,27,43,0.45)] scale-105'
+                    : 'w-10 h-10 rounded-full'
                 }`}
               >
                 <Icon
-                  className={`transition-colors duration-200 ${
-                    isActive ? 'w-5 h-5 text-[#D7FF00]' : 'w-5 h-5 text-white/70 group-hover:text-white'
+                  className={`transition-colors duration-150 ${
+                    isActive ? 'w-5 h-5 text-[#D7FF00]' : 'w-5 h-5 text-white/75'
                   }`}
                 />
               </div>
 
               <span
-                className={`text-[10px] tracking-tight mt-0.5 transition-all select-none ${
-                  isActive ? 'font-bold font-heading scale-105' : 'font-medium opacity-90'
+                className={`text-[9.5px] sm:text-[10px] tracking-tight mt-0.5 transition-all select-none ${
+                  isActive ? 'font-bold font-heading scale-105 text-[#D7FF00]' : 'font-medium text-white/80'
                 }`}
-                style={{ color: '#FFFFFF' }}
               >
                 {item.label}
               </span>

@@ -80,6 +80,12 @@ export const Sidebar = ({
         icon: Activity,
       },
       {
+        id: 'receptionist',
+        label: 'Front Desk POS',
+        sublabel: 'Reception & Station Timers',
+        icon: Sparkles,
+      },
+      {
         id: 'admin_devices',
         label: 'Hardware & Consoles',
         sublabel: 'PS5s & Pool Table',
@@ -247,8 +253,8 @@ export const Sidebar = ({
           className="flex items-center gap-2.5 group focus:outline-none text-left"
           title="NOAH GAMING Home"
         >
-          <div className="w-9 h-9 rounded-xl bg-[#171014] p-1 flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 flex-shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
-            <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-contain" />
+          <div className="w-9 h-9 rounded-full bg-[#171014] p-0.5 flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 flex-shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-baseline leading-none">

@@ -43,6 +43,7 @@ import {
   Shield,
   Download,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { showToast } from '../../utils/toast.js';
@@ -500,6 +501,24 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
+          {/* Switch to Reception POS Desk */}
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = '#receptionist';
+            }}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              outline: 'none',
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#D7FF00]/15 hover:bg-[#D7FF00]/25 text-xs font-bold text-[#D7FF00] border border-[#D7FF00]/40 transition-all shadow-sm active:scale-95"
+            title="Switch to Reception Front Desk POS & Live Station Management"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#D7FF00]" />
+            Front Desk POS
+          </button>
+
           <button
             onClick={() => setExportModalOpen(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-[#851B2B] to-[#a32235] hover:from-[#9c2033] hover:to-[#b8273c] text-xs font-bold text-[#FFF4E8] border border-[#F5B942]/30 shadow-md shadow-[#851B2B]/20 transition-all"
@@ -564,6 +583,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
           { id: 'categories', label: `Categories (${categories.length})`, icon: FolderTree },
           { id: 'pricing', label: `Centralized Pricing (${pricingPlans.length})`, icon: Coins },
           { id: 'maintenance', label: `Maintenance (${maintenanceList.length})`, icon: Wrench },
+          { id: 'receptionist', label: 'Front Desk POS (Reception Desk)', icon: Sparkles },
           { id: 'health', label: 'System Health & Engine', icon: Shield },
         ];
         const currentTabObj = adminTabs.find((t) => t.id === activeTab) || adminTabs[0];
@@ -621,6 +641,11 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                             key={tab.id}
                             type="button"
                             onClick={() => {
+                              if (tab.id === 'receptionist') {
+                                setSectionDropdownOpen(false);
+                                window.location.hash = '#receptionist';
+                                return;
+                              }
                               setActiveTab(tab.id);
                               setSectionDropdownOpen(false);
                               setSearchQuery('');

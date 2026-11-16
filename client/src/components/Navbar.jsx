@@ -57,11 +57,12 @@ export const Navbar = ({
           {/* Mobile Logo: visible only on mobile (md:hidden) */}
           <a
             href="#home"
+            style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
             className="flex md:hidden items-center gap-2 group shrink-0 focus:outline-none"
             title="NOAH GAMING Home"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-1 shrink-0 overflow-hidden">
-              <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-contain" />
+            <div className="w-9 h-9 rounded-full bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-0.5 shrink-0 overflow-hidden">
+              <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
             </div>
             <div className="flex items-baseline leading-none shrink-0">
               <span className="text-sm xs:text-base font-black tracking-wider text-[#FFF4E8] font-heading">
@@ -136,11 +137,17 @@ export const Navbar = ({
             <button
               type="button"
               onClick={onOpenReceptionistDashboard}
-              className="hidden sm:flex h-9 px-2.5 sm:px-3 rounded-xl bg-[#851B2B]/25 hover:bg-[#851B2B]/40 border border-[#851B2B] text-xs font-bold text-[#FFF4E8] transition-colors items-center gap-1.5 whitespace-nowrap shadow-sm shadow-[#851B2B]/20 shrink-0"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                outline: 'none',
+              }}
+              className="flex h-9 px-2 sm:px-3 rounded-xl bg-[#851B2B]/35 hover:bg-[#851B2B]/50 border border-[#851B2B] text-xs font-bold text-[#FFF4E8] transition-all items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-sm shadow-[#851B2B]/20 shrink-0 active:scale-95 outline-none focus:outline-none"
               title="Open Front Desk Reception POS & Live Sessions"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#F5B942] shrink-0" />
-              <span>Front Desk POS</span>
+              <span className="hidden xs:inline">Front Desk POS</span>
+              <span className="xs:hidden">POS</span>
             </button>
           )}
 

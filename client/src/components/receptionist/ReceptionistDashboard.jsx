@@ -40,12 +40,18 @@ import {
   ChevronRight,
   Flame,
   Award,
+  LayoutDashboard,
 } from 'lucide-react';
 import { Pagination } from '../common/Pagination.jsx';
 
-export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
+export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChange }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  const handleSelectTab = (tab) => {
+    setActiveTab(tab);
+    if (onTabChange) onTabChange(tab);
+  };
 
   // Pagination states
   const [activeSessionsPage, setActiveSessionsPage] = useState(1);
@@ -55,7 +61,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
   const dashboardTopRef = useRef(null);
 
   useEffect(() => {
-    if (initialTab) {
+    if (initialTab && initialTab !== activeTab) {
       setActiveTab(initialTab);
     }
   }, [initialTab]);
@@ -385,26 +391,64 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
 
             {/* Quick Action: New Walk-in */}
             <button
-              onClick={() => setActiveTab('walkin')}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-[#171014] bg-[#D7FF00] hover:bg-[#c8ee00] transition-all shadow-md shadow-[#D7FF00]/20 flex items-center gap-1.5"
+              type="button"
+              onClick={() => handleSelectTab('walkin')}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                outline: 'none',
+              }}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-[#171014] bg-[#D7FF00] hover:bg-[#c8ee00] transition-all shadow-md shadow-[#D7FF00]/20 flex items-center gap-1.5 active:scale-95 select-none outline-none focus:outline-none"
             >
               <Plus className="w-4 h-4 text-[#171014]" /> Walk-In POS
             </button>
 
+            {/* Admin Switch Back to Suite */}
+            {user?.role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.hash = '#admin';
+                }}
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                  outline: 'none',
+                }}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-[#F5B942] bg-[#F5B942]/10 hover:bg-[#F5B942]/20 border border-[#F5B942]/30 transition-all flex items-center gap-1.5 active:scale-95 select-none outline-none focus:outline-none"
+                title="Return to Lounge Administrator Panel"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-[#F5B942]" />
+                <span className="hidden xs:inline">Admin Suite</span>
+              </button>
+            )}
+
             {/* Refresh Data Button */}
             <button
+              type="button"
               onClick={refreshAllData}
               disabled={loadingStats}
               title="Refresh Live Metrics"
-              className="p-2 rounded-xl bg-[#171014] hover:bg-[#341220] border border-[#49202C] text-[#C7A5A8] hover:text-[#FFF4E8] transition-colors disabled:opacity-50"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                outline: 'none',
+              }}
+              className="p-2 rounded-xl bg-[#171014] hover:bg-[#341220] border border-[#49202C] text-[#C7A5A8] hover:text-[#FFF4E8] transition-colors disabled:opacity-50 active:scale-95 outline-none focus:outline-none"
             >
               <RefreshCw className={`w-4 h-4 ${loadingStats ? 'animate-spin text-[#D7FF00]' : ''}`} />
             </button>
 
             {onClose && (
               <button
+                type="button"
                 onClick={onClose}
-                className="p-2 rounded-xl bg-[#171014] hover:bg-[#851B2B]/30 border border-[#49202C] text-[#C7A5A8] hover:text-[#F06A76] transition-colors"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                  outline: 'none',
+                }}
+                className="p-2 rounded-xl bg-[#171014] hover:bg-[#851B2B]/30 border border-[#49202C] text-[#C7A5A8] hover:text-[#F06A76] transition-colors active:scale-95 outline-none focus:outline-none"
                 title="Close Receptionist Console"
               >
                 <X className="w-4 h-4" />
@@ -529,8 +573,14 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
         {/* 3. Tab Navigation (Clean Horizontal Scrollable Strip) */}
         <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 rounded-2xl bg-[#260D17] border border-[#49202C] overflow-x-auto scrollbar-none text-xs font-semibold">
           <button
-            onClick={() => setActiveTab('live')}
-            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            type="button"
+            onClick={() => handleSelectTab('live')}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              outline: 'none',
+            }}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap select-none outline-none focus:outline-none active:scale-95 ${
               activeTab === 'live'
                 ? 'bg-[#851B2B] text-[#FFF4E8] shadow-md shadow-[#851B2B]/30 font-bold border border-[#851B2B]'
                 : 'text-[#C7A5A8] hover:text-[#FFF4E8] hover:bg-[#341220]'
@@ -549,8 +599,14 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
           </button>
 
           <button
-            onClick={() => setActiveTab('walkin')}
-            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            type="button"
+            onClick={() => handleSelectTab('walkin')}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              outline: 'none',
+            }}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap select-none outline-none focus:outline-none active:scale-95 ${
               activeTab === 'walkin'
                 ? 'bg-[#851B2B] text-[#FFF4E8] shadow-md shadow-[#851B2B]/30 font-bold border border-[#851B2B]'
                 : 'text-[#C7A5A8] hover:text-[#FFF4E8] hover:bg-[#341220]'
@@ -560,8 +616,14 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
           </button>
 
           <button
-            onClick={() => setActiveTab('bookings')}
-            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            type="button"
+            onClick={() => handleSelectTab('bookings')}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              outline: 'none',
+            }}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap select-none outline-none focus:outline-none active:scale-95 ${
               activeTab === 'bookings'
                 ? 'bg-[#851B2B] text-[#FFF4E8] shadow-md shadow-[#851B2B]/30 font-bold border border-[#851B2B]'
                 : 'text-[#C7A5A8] hover:text-[#FFF4E8] hover:bg-[#341220]'
@@ -578,8 +640,14 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
           </button>
 
           <button
-            onClick={() => setActiveTab('customers')}
-            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            type="button"
+            onClick={() => handleSelectTab('customers')}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              outline: 'none',
+            }}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap select-none outline-none focus:outline-none active:scale-95 ${
               activeTab === 'customers'
                 ? 'bg-[#851B2B] text-[#FFF4E8] shadow-md shadow-[#851B2B]/30 font-bold border border-[#851B2B]'
                 : 'text-[#C7A5A8] hover:text-[#FFF4E8] hover:bg-[#341220]'
@@ -589,8 +657,14 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
           </button>
 
           <button
-            onClick={() => setActiveTab('payments')}
-            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            type="button"
+            onClick={() => handleSelectTab('payments')}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              outline: 'none',
+            }}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap select-none outline-none focus:outline-none active:scale-95 ${
               activeTab === 'payments'
                 ? 'bg-[#851B2B] text-[#FFF4E8] shadow-md shadow-[#851B2B]/30 font-bold border border-[#851B2B]'
                 : 'text-[#C7A5A8] hover:text-[#FFF4E8] hover:bg-[#341220]'

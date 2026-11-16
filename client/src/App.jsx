@@ -115,7 +115,7 @@ function AppContent() {
         setMembershipPlansOpen(false);
         setBookingWizardOpen(false);
         setNotificationsOpen(false);
-        setActiveNav('receptionist');
+        setActiveNav(tab === 'live' ? 'receptionist' : `reception_${tab}`);
       } else if (hash === '#bookings') {
         if (!effectiveUser) {
           if (!token) openLoginModal();
@@ -302,7 +302,7 @@ function AppContent() {
     setNotificationsOpen(false);
     setReceptionistInitialTab(tab);
     setReceptionistDashboardOpen(true);
-    setActiveNav('receptionist');
+    setActiveNav(tab === 'live' ? 'receptionist' : `reception_${tab}`);
     window.location.hash = tab && tab !== 'live' ? `#receptionist-${tab}` : '#receptionist';
   };
 
@@ -656,6 +656,14 @@ function AppContent() {
         <div id="receptionist-dashboard-container" className="fixed inset-0 md:left-64 z-40 bg-[#171014] overflow-y-auto overscroll-contain block pb-36 sm:pb-40 md:pb-12">
           <ReceptionistDashboard
             initialTab={receptionistInitialTab}
+            onTabChange={(newTab) => {
+              setReceptionistInitialTab(newTab);
+              setActiveNav(newTab === 'live' ? 'receptionist' : `reception_${newTab}`);
+              const targetHash = newTab === 'live' ? '#receptionist' : `#receptionist-${newTab}`;
+              if (window.location.hash !== targetHash) {
+                window.history.replaceState(null, '', targetHash);
+              }
+            }}
             onClose={() => {
               setReceptionistDashboardOpen(false);
               window.location.hash = '#home';

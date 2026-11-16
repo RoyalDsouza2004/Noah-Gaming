@@ -14,11 +14,11 @@ export const MobileInstallBanner = () => {
     >
       <div className="flex items-center gap-3">
         {/* App Logo */}
-        <div className="w-11 h-11 rounded-xl bg-[#171014] border border-[#851B2B] p-1 flex items-center justify-center shrink-0 shadow-md">
+        <div className="w-11 h-11 rounded-full bg-[#171014] border border-[#851B2B] p-0.5 flex items-center justify-center shrink-0 shadow-md overflow-hidden">
           <img
             src="/icons/Noah_gaming_logo.svg"
             alt="NOAH GAMING Logo"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover rounded-full"
           />
         </div>
 

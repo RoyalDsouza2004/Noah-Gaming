@@ -86,8 +86,11 @@ export const HomePage = ({
 
         <div className="max-w-5xl mx-auto text-center space-y-6 relative z-10 px-4">
           {/* Brand Tagline Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#851B2B]/20 border border-[#851B2B]/50 text-[#D7FF00] text-xs font-bold uppercase tracking-widest shadow-md shadow-[#851B2B]/20">
-            <Sparkles className="w-3.5 h-3.5 text-[#F5B942]" /> NOAH GAMING • PLAY • CHILL • CONNECT
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#851B2B]/20 border border-[#851B2B]/50 text-[#D7FF00] text-xs font-bold uppercase tracking-widest shadow-md shadow-[#851B2B]/20">
+            <div className="w-5 h-5 rounded-full overflow-hidden border border-[#D7FF00]/40 p-0.5 bg-[#171014] shrink-0 flex items-center justify-center">
+              <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
+            </div>
+            <span>NOAH GAMING • PLAY • CHILL • CONNECT</span>
           </div>
 
           {/* Main Title */}

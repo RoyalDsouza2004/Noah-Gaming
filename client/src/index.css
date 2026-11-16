@@ -17,16 +17,33 @@
 }
 
 @layer base {
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+  }
   html {
     max-width: 100%;
     overflow-x: hidden;
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-[#171014] text-[#FFF4E8] antialiased;
     font-family: 'Inter', sans-serif;
     max-width: 100%;
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, a, input, select, textarea, [role="button"] {
+    -webkit-tap-highlight-color: transparent !important;
+    outline: none !important;
+  }
+  button:focus, button:focus-visible, button:active,
+  a:focus, a:focus-visible, a:active,
+  [role="button"]:focus, [role="button"]:focus-visible, [role="button"]:active {
+    outline: none !important;
+    outline-style: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
   h1, h2, h3, .font-heading {
     font-family: 'Orbitron', 'Rajdhani', sans-serif;
