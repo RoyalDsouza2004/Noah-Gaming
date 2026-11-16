@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { PwaProvider } from './context/PwaContext.jsx';
+import { PushNotificationProvider } from './context/PushNotificationContext.jsx';
 import { Navbar } from './components/Navbar.jsx';
 import { Sidebar } from './components/Sidebar.jsx';
 import { MobileBottomNav } from './components/MobileBottomNav.jsx';
@@ -703,7 +704,9 @@ export default function App() {
   return (
     <AuthProvider>
       <PwaProvider>
-        <AppContent />
+        <PushNotificationProvider>
+          <AppContent />
+        </PushNotificationProvider>
       </PwaProvider>
     </AuthProvider>
   );

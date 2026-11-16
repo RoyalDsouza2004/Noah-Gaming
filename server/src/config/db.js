@@ -2,7 +2,13 @@ import mongoose from 'mongoose';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import dns from 'dns';
 import { fileURLToPath } from 'url';
+
+// Use robust DNS servers on Windows to reliably resolve mongodb+srv SRV records
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (_) {}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

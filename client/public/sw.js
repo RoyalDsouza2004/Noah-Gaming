@@ -1,4 +1,4 @@
-const CACHE_NAME = 'noah-gaming-v2';
+const CACHE_NAME = 'noah-gaming-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// 2. Activate Event: Clean up outdated caches
+// 2. Activate Event: Clean up outdated caches and claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -69,5 +69,90 @@ self.addEventListener('fetch', (event) => {
         }
       });
     })
+  );
+});
+
+// 4. Push Event: Standards-based Web Push payload receipt & Native OS notification display
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    if (event.data) {
+      data = event.data.json();
+    }
+  } catch (err) {
+    try {
+      data = { body: event.data.text() };
+    } catch (_) {
+      data = {};
+    }
+  }
+
+  const title = data.title || 'NOAH GAMING';
+  const targetUrl = data.data?.url || data.url || '/';
+
+  const notificationOptions = {
+    body: data.body || 'You have a new alert from NOAH GAMING.',
+    icon: data.icon || '/icons/Noah_gaming_logo.svg',
+    badge: data.badge || '/icons/icon-192.svg',
+    tag: data.tag || `noah-push-${Date.now()}`,
+    renotify: true,
+    requireInteraction: false,
+    timestamp: data.timestamp || Date.now(),
+    vibrate: data.vibrate || [200, 100, 200],
+    data: {
+      url: targetUrl,
+      notificationId: data.data?.notificationId || null,
+      category: data.data?.category || null,
+      timestamp: data.timestamp || Date.now(),
+    },
+    actions: [
+      { action: 'open', title: 'Open App' },
+      { action: 'dismiss', title: 'Dismiss' },
+    ],
+  };
+
+  event.waitUntil(self.registration.showNotification(title, notificationOptions));
+});
+
+// 5. Notification Click Event: Focus existing window or open target route
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'dismiss') {
+    return;
+  }
+
+  const rawUrl = event.notification.data?.url || '/';
+  const targetUrl = new URL(rawUrl, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients
+      .matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      })
+      .then((clientList) => {
+        // Look for an existing open window under the same origin
+        for (const client of clientList) {
+          const clientOrigin = new URL(client.url).origin;
+          if (clientOrigin === self.location.origin && 'focus' in client) {
+            // Post notification click message to the client application
+            if ('postMessage' in client) {
+              client.postMessage({
+                type: 'PUSH_NOTIFICATION_CLICK',
+                data: event.notification.data,
+              });
+            }
+            if (client.url !== targetUrl && 'navigate' in client) {
+              client.navigate(targetUrl);
+            }
+            return client.focus();
+          }
+        }
+        // If no window is currently open, open a new window to the target URL
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
+        }
+      })
   );
 });

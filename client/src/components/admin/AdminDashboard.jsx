@@ -8,6 +8,7 @@ import { AdminAnalyticsView } from './analytics/AdminAnalyticsView.jsx';
 import { AdminAutomationTab } from './AdminAutomationTab.jsx';
 import { UserManagementTab } from './UserManagementTab.jsx';
 import { AdminEmailTab } from './AdminEmailTab.jsx';
+import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
 import { ReportExportModal } from './analytics/ReportExportModal.jsx';
 import {
   Tv,
@@ -38,6 +39,7 @@ import {
   Check,
   Crown,
   Bot,
+  BellRing,
   Mail,
   X,
   Shield,
@@ -573,6 +575,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
           { id: 'analytics', label: 'Analytics & Reports (BI)', icon: TrendingUp },
           { id: 'automation', label: 'Automation & Timers', icon: Bot },
           { id: 'email', label: 'Email Integration (Resend)', icon: Mail },
+          { id: 'push', label: 'Push Notifications (Web Push)', icon: BellRing },
           { id: 'payments', label: 'Payments & Revenue', icon: DollarSign },
           { id: 'memberships', label: 'Memberships & Passes', icon: Crown },
           { id: 'bookings', label: 'Bookings & Walk-ins', icon: Calendar },
@@ -1480,6 +1483,13 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
       {/* ---------------- TAB: AUTOMATION & SCHEDULER TIMERS (Phase 8) ---------------- */}
       {activeTab === 'automation' && (
         <AdminAutomationTab />
+      )}
+
+      {/* ---------------- TAB: WEB PUSH NOTIFICATIONS ---------------- */}
+      {activeTab === 'push' && (
+        <div className="space-y-6 animate-fadeIn pb-12">
+          <PushNotificationSettings />
+        </div>
       )}
 
       {/* ---------------- MODAL: DEVICE ---------------- */}

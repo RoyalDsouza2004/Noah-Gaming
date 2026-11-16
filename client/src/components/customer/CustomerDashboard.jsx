@@ -9,6 +9,7 @@ import { MembershipUpgradeModal } from '../membership/MembershipUpgradeModal.jsx
 import { ActiveSessionCountdown } from './ActiveSessionCountdown.jsx';
 import { NotificationCenter } from '../notifications/NotificationCenter.jsx';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
+import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
 import { showToast } from '../../utils/toast.js';
 import {
   User,
@@ -1123,6 +1124,9 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
               </form>
             </div>
           </div>
+
+          {/* Web Push Notification Settings */}
+          <PushNotificationSettings />
 
           {/* Dedicated Account Session & Logout Section */}
           <div className="p-5 sm:p-6 rounded-2xl bg-[#260D17]/85 border border-[#851B2B]/50 shadow-xl space-y-4">

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { notificationsApi } from '../../api/notifications.js';
 import { showToast } from '../../utils/toast.js';
 import { Pagination } from '../common/Pagination.jsx';
+import { PushNotificationSettings } from './PushNotificationSettings.jsx';
 import {
   Bell,
+  BellRing,
   Check,
   CheckCheck,
   Clock,
@@ -38,6 +40,7 @@ export const NotificationCenter = ({
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [showPushSettings, setShowPushSettings] = useState(false);
 
   const fetchNotifications = async (page = 1, append = false) => {
     if (!user) {
@@ -209,6 +212,20 @@ export const NotificationCenter = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowPushSettings((prev) => !prev)}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shadow-sm ${
+              showPushSettings
+                ? 'bg-[#851B2B] text-white border-[#A51F35]'
+                : 'bg-[#260D17] hover:bg-[#851B2B]/30 border-[#49202C] text-[#C7A5A8] hover:text-[#FFF4E8]'
+            }`}
+            title="Configure browser push notifications"
+          >
+            <BellRing className="w-3.5 h-3.5 text-[#D7FF00]" />
+            <span className="hidden sm:inline">Push Alerts</span>
+          </button>
+
           {pagination.unread > 0 && (
             <button
               type="button"
@@ -242,6 +259,13 @@ export const NotificationCenter = ({
           )}
         </div>
       </div>
+
+      {/* Push Notification Quick Settings Panel */}
+      {showPushSettings && (
+        <div className="p-3 sm:p-4 bg-[#140b11] border-b border-[#49202C] animate-fadeIn">
+          <PushNotificationSettings compact={true} />
+        </div>
+      )}
 
       {/* 2. Filter Bar */}
       <div className="p-3 bg-[#171014] border-b border-[#49202C] flex flex-wrap items-center justify-between gap-2 text-xs">

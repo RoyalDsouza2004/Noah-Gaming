@@ -2,6 +2,26 @@ import Notification from '../models/Notification.js';
 import NotificationDelivery from '../models/NotificationDelivery.js';
 import User from '../models/User.js';
 import { sendWhatsAppMessage } from './whatsapp.service.js';
+import { sendPushToUser, sendPushToRoles } from './pushNotification.service.js';
+
+/**
+ * Maps notification category to relevant in-app client route
+ */
+function resolveNotificationUrl(category, relatedBooking, relatedSession, recipientRole) {
+  if (recipientRole === 'admin') return '/#admin';
+  if (recipientRole === 'receptionist') return '/#receptionist';
+
+  if (category?.startsWith('BOOKING_') || category === 'UPCOMING_BOOKING') {
+    return '/#bookings';
+  }
+  if (category?.startsWith('MEMBERSHIP_')) {
+    return '/#membership';
+  }
+  if (category?.startsWith('SESSION_') || category?.startsWith('PAYMENT_')) {
+    return '/#profile';
+  }
+  return '/#profile';
+}
 
 /**
  * Creates and delivers a notification idempotently across channels.
@@ -63,6 +83,31 @@ export async function createNotification({
         parameters: [],
       });
     }
+  }
+
+  // Handle standards-based Web Push delivery across subscribed user devices
+  try {
+    const targetUrl = resolveNotificationUrl(resolvedCategory, relatedBooking, relatedSession, recipientRole);
+    const pushPayload = {
+      title: title.startsWith('NOAH GAMING') ? title : `NOAH GAMING: ${title}`,
+      message,
+      category: resolvedCategory,
+      url: targetUrl,
+      tag: `noah-${notification._id}`,
+      data: {
+        bookingId: relatedBooking ? String(relatedBooking) : undefined,
+        sessionId: relatedSession ? String(relatedSession) : undefined,
+      },
+    };
+
+    if (recipientRole === 'all_staff' || recipientRole === 'receptionist' || recipientRole === 'admin') {
+      const roles = recipientRole === 'all_staff' ? ['receptionist', 'admin'] : [recipientRole];
+      await sendPushToRoles({ roles, notification, payload: pushPayload });
+    } else if (recipient) {
+      await sendPushToUser({ userId: recipient, notification, payload: pushPayload });
+    }
+  } catch (pushErr) {
+    console.warn('[Notification Service] Web Push delivery error:', pushErr.message);
   }
 
   return { duplicate: false, notification };

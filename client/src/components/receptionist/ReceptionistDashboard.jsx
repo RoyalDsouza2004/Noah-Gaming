@@ -12,6 +12,7 @@ import { QuickRegisterModal } from './QuickRegisterModal.jsx';
 import { CollectPaymentModal } from './CollectPaymentModal.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { UserManagementTab } from '../admin/UserManagementTab.jsx';
+import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
 import {
   Sparkles,
   Gamepad2,
@@ -40,6 +41,7 @@ import {
   ChevronRight,
   Flame,
   Award,
+  BellRing,
   LayoutDashboard,
 } from 'lucide-react';
 import { Pagination } from '../common/Pagination.jsx';
@@ -680,6 +682,23 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                 {pendingPayments.length} Due
               </span>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSelectTab('notifications')}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              outline: 'none',
+            }}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap select-none outline-none focus:outline-none active:scale-95 ${
+              activeTab === 'notifications'
+                ? 'bg-[#851B2B] text-[#FFF4E8] shadow-md shadow-[#851B2B]/30 font-bold border border-[#851B2B]'
+                : 'text-[#C7A5A8] hover:text-[#FFF4E8] hover:bg-[#341220]'
+            }`}
+          >
+            <BellRing className="w-4 h-4" /> Push Alerts & Notifications
           </button>
         </div>
 
@@ -1614,6 +1633,13 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
               />
             </>
           )}
+          </div>
+        )}
+
+        {/* TAB 6: PUSH ALERTS & NOTIFICATIONS */}
+        {activeTab === 'notifications' && (
+          <div className="space-y-6 pb-12 animate-fadeIn">
+            <PushNotificationSettings />
           </div>
         )}
       </div>
