@@ -1,4 +1,5 @@
 import React from 'react';
+import { usePwa } from '../context/PwaContext.jsx';
 import {
   Gamepad2,
   Coins,
@@ -12,6 +13,7 @@ import {
   Shield,
   LogOut,
   Tv,
+  Download,
 } from 'lucide-react';
 
 export const Sidebar = ({
@@ -25,6 +27,7 @@ export const Sidebar = ({
   openLoginModal,
   logout,
 }) => {
+  const { isInstalled, triggerInstall } = usePwa();
   const role = user?.role || 'guest';
   const isAdmin = role === 'admin';
   const isReceptionist = role === 'receptionist';
@@ -244,8 +247,8 @@ export const Sidebar = ({
           className="flex items-center gap-2.5 group focus:outline-none text-left"
           title="NOAH GAMING Home"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 flex-shrink-0 group-hover:scale-105 transition-transform">
-            <Gamepad2 className="w-5 h-5 text-[#FFF4E8]" />
+          <div className="w-9 h-9 rounded-xl bg-[#171014] p-1 flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 flex-shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-baseline leading-none">
@@ -333,6 +336,26 @@ export const Sidebar = ({
           );
         })}
       </div>
+
+      {/* 2.5 Install PWA Application Shortcut */}
+      {!isInstalled && (
+        <div className="px-3 pb-2 shrink-0">
+          <button
+            type="button"
+            onClick={triggerInstall}
+            className="w-full h-9 px-3 rounded-xl border border-[#49202C] bg-[#260D17] hover:bg-[#381322] text-xs font-semibold text-[#C7A5A8] hover:text-[#FFF4E8] transition-all flex items-center justify-between shadow-sm group active:scale-[0.98]"
+            title="Install NOAH GAMING App to Desktop or Tablet"
+          >
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-[#D7FF00] group-hover:scale-110 transition-transform" />
+              <span>Install App</span>
+            </div>
+            <span className="text-[10px] font-bold text-[#D7FF00] bg-[#D7FF00]/10 border border-[#D7FF00]/20 px-1.5 py-0.5 rounded">
+              APP
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* 3. User Identity Profile Footer Card */}
       <div className="p-3 border-t border-[#49202C] bg-[#171014]/95 shrink-0">

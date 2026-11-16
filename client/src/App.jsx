@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { PwaProvider } from './context/PwaContext.jsx';
 import { Navbar } from './components/Navbar.jsx';
 import { Sidebar } from './components/Sidebar.jsx';
 import { MobileBottomNav } from './components/MobileBottomNav.jsx';
 import { HomePage } from './pages/HomePage.jsx';
 import { Footer } from './components/Footer.jsx';
 import { AuthModal } from './components/AuthModal.jsx';
+import { MobileInstallBanner } from './components/pwa/MobileInstallBanner.jsx';
+import { IosInstallModal } from './components/pwa/IosInstallModal.jsx';
 import { BookingWizard } from './components/booking/BookingWizard.jsx';
 import { MyBookings } from './components/booking/MyBookings.jsx';
 import { CustomerDashboard } from './components/customer/CustomerDashboard.jsx';
@@ -518,6 +521,9 @@ function AppContent() {
           activeNav={activeNav}
         />
 
+        {/* Mobile Install App Banner */}
+        <MobileInstallBanner />
+
         {/* Main Content Area: Public Customer Gaming Lounge Website */}
         <main className="flex-grow w-full max-w-full mt-16 pb-36 sm:pb-40 md:pb-8">
           <HomePage
@@ -532,6 +538,7 @@ function AppContent() {
       </div>
 
       <AuthModal />
+      <IosInstallModal />
 
 
       {/* ========================================================= */}
@@ -687,7 +694,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <PwaProvider>
+        <AppContent />
+      </PwaProvider>
     </AuthProvider>
   );
 }

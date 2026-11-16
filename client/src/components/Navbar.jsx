@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { usePwa } from '../context/PwaContext.jsx';
 import {
   Gamepad2,
   Sparkles,
@@ -21,25 +22,7 @@ export const Navbar = ({
   activeNav = 'home',
 }) => {
   const { user, isAuthenticated, logout, openLoginModal, openRegisterModal, isAdmin, isReceptionist } = useAuth();
-  const [installPrompt, setInstallPrompt] = useState(null);
-
-  useEffect(() => {
-    const handleBeforeInstall = (e) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setInstallPrompt(null);
-    }
-  };
+  const { isInstalled, triggerInstall } = usePwa();
 
   const getPageTitle = (nav) => {
     switch (nav) {
@@ -77,8 +60,8 @@ export const Navbar = ({
             className="flex md:hidden items-center gap-2 group shrink-0 focus:outline-none"
             title="NOAH GAMING Home"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 shrink-0">
-              <Gamepad2 className="w-4 h-4 text-[#FFF4E8]" />
+            <div className="w-8 h-8 rounded-xl bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-1 shrink-0 overflow-hidden">
+              <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-contain" />
             </div>
             <div className="flex items-baseline leading-none shrink-0">
               <span className="text-sm xs:text-base font-black tracking-wider text-[#FFF4E8] font-heading">
@@ -122,16 +105,17 @@ export const Navbar = ({
             )}
           </button>
 
-          {/* 2. Install App (hidden on mobile header to avoid crowding, visible sm+) */}
-          {installPrompt && (
+          {/* 2. Install App CTA (Visible on Mobile and Desktop when not installed) */}
+          {!isInstalled && (
             <button
               type="button"
-              onClick={handleInstallClick}
-              className="hidden sm:flex h-9 px-2.5 rounded-xl border border-[#49202C] bg-[#260D17] hover:bg-[#381322] text-xs font-semibold text-[#C7A5A8] hover:text-[#FFF4E8] transition-colors items-center gap-1.5 whitespace-nowrap shadow-sm shrink-0"
-              title="Install NOAH GAMING App to Desktop or Mobile"
+              onClick={triggerInstall}
+              className="flex h-9 px-2 sm:px-2.5 rounded-xl border border-[#49202C] bg-[#260D17] hover:bg-[#381322] text-xs font-semibold text-[#C7A5A8] hover:text-[#FFF4E8] transition-all items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-sm shrink-0 active:scale-95"
+              title="Install NOAH GAMING App to your device"
+              aria-label="Install App"
             >
-              <Download className="w-3.5 h-3.5 text-[#D7FF00]" />
-              <span className="hidden lg:inline">Install App</span>
+              <Download className="w-3.5 h-3.5 text-[#D7FF00] shrink-0" />
+              <span className="text-[11px] sm:text-xs font-semibold">Install</span>
             </button>
           )}
 
