@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 
 export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, initialTab = 'overview' }) => {
-  const { user, refreshUser, logout } = useAuth();
+  const { user, refreshUser, updateUser, logout } = useAuth();
 
   // Tab navigation
   const [activeTab, setActiveTab] = useState(initialTab); // 'overview', 'history', 'membership', 'profile', 'payments', 'notifications'
@@ -128,11 +128,15 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
 
       if (dashRes.success) {
         setDashboardData(dashRes.data);
+        const pic = dashRes.data.customer?.profilePicture || '';
         setProfileForm({
           name: dashRes.data.customer?.name || '',
           phone: dashRes.data.customer?.phone || '',
-          profilePicture: dashRes.data.customer?.profilePicture || '',
+          profilePicture: pic,
         });
+        if (pic && !user?.profilePicture && updateUser) {
+          updateUser({ profilePicture: pic });
+        }
       }
 
       if (histRes.success) {
@@ -275,8 +279,20 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
       {/* Top Banner & Customer Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] flex items-center justify-center font-bold text-2xl text-slate-950 shadow-lg shadow-[#851B2B]/20 shrink-0">
-            {customer?.name?.charAt(0).toUpperCase() || 'P'}
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] flex items-center justify-center font-bold text-2xl text-slate-950 shadow-lg shadow-[#851B2B]/20 shrink-0 overflow-hidden border border-[#851B2B]/50 relative">
+            <span className="font-heading font-black text-2xl text-slate-950">
+              {customer?.name?.charAt(0).toUpperCase() || user?.name?.charAt(0).toUpperCase() || 'P'}
+            </span>
+            {(profileForm.profilePicture || customer?.profilePicture || user?.profilePicture) && (
+              <img
+                src={profileForm.profilePicture || customer?.profilePicture || user?.profilePicture}
+                alt={customer?.name || user?.name || 'Player Profile'}
+                className="w-full h-full object-cover absolute inset-0 rounded-2xl"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            )}
           </div>
 
           <div>
@@ -990,9 +1006,18 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
         <div className="space-y-6 pb-16 sm:pb-10">
           {/* Cloudinary Profile Photo Manager */}
           <ProfilePictureUpload
+            initialPicture={customer?.profilePicture || profileForm.profilePicture || user?.profilePicture}
             onUploadSuccess={(url) => {
               setProfileForm((prev) => ({ ...prev, profilePicture: url }));
-              refreshUser();
+              setDashboardData((prev) =>
+                prev ? { ...prev, customer: { ...prev.customer, profilePicture: url } } : prev
+              );
+              if (updateUser) {
+                updateUser({ profilePicture: url });
+              }
+              if (refreshUser) {
+                refreshUser();
+              }
             }}
           />
 

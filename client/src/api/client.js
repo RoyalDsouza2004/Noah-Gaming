@@ -16,7 +16,12 @@ function resolveApiBaseUrl() {
   ).trim();
 
   if (!envUrl) {
-    if (import.meta.env.PROD) {
+    if (
+      import.meta.env.PROD &&
+      typeof window !== 'undefined' &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1'
+    ) {
       console.warn(
         '[NOAH GAMING] VITE_API_URL is not set in production. Please set VITE_API_URL=https://noah-gaming.onrender.com in your deployment dashboard.'
       );
@@ -52,8 +57,14 @@ export function getAuthToken() {
  * Centralizes request execution, auth token injection, error handling, and URL normalization.
  */
 export async function apiRequest(endpoint, { method = 'GET', body = null, headers = {} } = {}) {
-  // Guard against missing production API URL (prevents hitting Vercel's domain for /api routes)
-  if (import.meta.env.PROD && (!API_BASE_URL || API_BASE_URL === '/api')) {
+  // Guard against missing production API URL on remote hosting (prevents hitting Vercel's domain for /api routes)
+  if (
+    import.meta.env.PROD &&
+    typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1' &&
+    (!API_BASE_URL || API_BASE_URL === '/api')
+  ) {
     throw new Error(
       'Production API URL is not configured. Please define VITE_API_URL (e.g. https://noah-gaming.onrender.com) in your Vercel project environment variables and redeploy.'
     );

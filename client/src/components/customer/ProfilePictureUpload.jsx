@@ -4,7 +4,7 @@ import { cloudinaryApi } from '../../api/cloudinary.js';
 import { userProfileApi } from '../../api/userProfile.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 
-export default function ProfilePictureUpload({ onUploadSuccess }) {
+export default function ProfilePictureUpload({ initialPicture, onUploadSuccess }) {
   const { user, updateUser } = useAuth();
   const fileInputRef = useRef(null);
 
@@ -14,7 +14,7 @@ export default function ProfilePictureUpload({ onUploadSuccess }) {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-  const currentPicture = user?.profilePicture;
+  const currentPicture = user?.profilePicture || initialPicture;
   const userName = user?.name || 'Gamer';
   const userInitials = userName
     .split(' ')
@@ -119,20 +119,19 @@ export default function ProfilePictureUpload({ onUploadSuccess }) {
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
         {/* Avatar Display */}
         <div className="relative group flex-shrink-0">
-          <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-[#D7FF00]/40 shadow-lg shadow-[#D7FF00]/10 bg-slate-950 flex items-center justify-center">
-            {currentPicture ? (
+          <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-[#D7FF00]/40 shadow-lg shadow-[#D7FF00]/10 bg-slate-950 flex items-center justify-center relative">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/50 to-slate-900 text-[#D7FF00] font-heading font-black text-2xl tracking-wider">
+              {userInitials || <User className="w-10 h-10 text-slate-500" />}
+            </div>
+            {currentPicture && (
               <img
                 src={currentPicture}
                 alt={userName}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-full absolute inset-0"
                 onError={(e) => {
-                  e.target.style.display = 'none';
+                  e.currentTarget.style.display = 'none';
                 }}
               />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/50 to-slate-900 text-[#D7FF00] font-heading font-black text-2xl tracking-wider">
-                {userInitials || <User className="w-10 h-10 text-slate-500" />}
-              </div>
             )}
           </div>
 

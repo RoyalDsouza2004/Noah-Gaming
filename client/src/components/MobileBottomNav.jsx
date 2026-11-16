@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useMobileNavScroll } from '../hooks/useMobileNavScroll.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export const MobileBottomNav = ({
   user,
@@ -15,6 +16,8 @@ export const MobileBottomNav = ({
   onNavigate,
   openLoginModal,
 }) => {
+  const auth = useAuth?.() || {};
+  const currentUser = user || auth.user;
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const { isVisible } = useMobileNavScroll({ activeNav });
 
@@ -30,7 +33,7 @@ export const MobileBottomNav = ({
     }
   }, []);
 
-  const role = user?.role || 'customer';
+  const role = currentUser?.role || 'customer';
 
   // Determine which navigation item is active based on activeNav and window.location.hash
   const getActiveItemId = () => {
@@ -311,6 +314,8 @@ export const MobileBottomNav = ({
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeItemId === item.id;
+          const isProfileItem = item.id === 'profile';
+          const profilePic = currentUser?.profilePicture;
 
           return (
             <button
@@ -333,11 +338,35 @@ export const MobileBottomNav = ({
                     : 'w-10 h-10 rounded-full'
                 }`}
               >
-                <Icon
-                  className={`transition-colors duration-150 ${
-                    isActive ? 'w-5 h-5 text-[#D7FF00]' : 'w-5 h-5 text-white/75'
-                  }`}
-                />
+                {isProfileItem && currentUser ? (
+                  <div
+                    className={`w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-bold shrink-0 border transition-all relative ${
+                      isActive
+                        ? 'border-[#D7FF00] shadow-[0_0_10px_rgba(215,255,0,0.6)]'
+                        : 'border-[#FFF4E8]/50'
+                    } bg-gradient-to-br from-[#851B2B] to-[#A51F35] text-[#FFF4E8]`}
+                  >
+                    <span className="font-heading font-black text-[10.5px] text-[#FFF4E8]">
+                      {currentUser.name?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                    {profilePic && (
+                      <img
+                        src={profilePic}
+                        alt={currentUser.name || 'Profile'}
+                        className="w-full h-full object-cover rounded-full absolute inset-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <Icon
+                    className={`transition-colors duration-150 ${
+                      isActive ? 'w-5 h-5 text-[#D7FF00]' : 'w-5 h-5 text-white/75'
+                    }`}
+                  />
+                )}
               </div>
 
               <span
