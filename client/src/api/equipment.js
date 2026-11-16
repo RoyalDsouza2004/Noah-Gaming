@@ -36,6 +36,18 @@ export const equipmentApi = {
     apiRequest(`/games/${id}`, {
       method: 'DELETE',
     }),
+  searchExternalGames: (q, provider = '') =>
+    apiRequest(`/games/search-external?q=${encodeURIComponent(q)}${provider ? `&provider=${encodeURIComponent(provider)}` : ''}`),
+  getProvidersStatus: () => apiRequest('/games/providers-status'),
+  importGame: (data) =>
+    apiRequest('/games/import', {
+      method: 'POST',
+      body: data,
+    }),
+  refreshGameMetadata: (id) =>
+    apiRequest(`/games/${id}/refresh`, {
+      method: 'POST',
+    }),
 
   // Categories
   getCategories: (query = '') => apiRequest(`/categories${query ? `?${query}` : ''}`),

@@ -32,11 +32,11 @@ import {
   Smartphone,
 } from 'lucide-react';
 
-export const BookingWizard = ({ initialDevice, onBookingComplete, onClose }) => {
+export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, onClose }) => {
   const { user, isAuthenticated, openLoginModal } = useAuth();
 
   // Wizard Step: 1 = Device, 2 = Game, 3 = Date/Time/Slot, 4 = Players & Pricing, 5 = Confirmation
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialGame ? 3 : 1);
 
   // Data
   const [devices, setDevices] = useState([]);
@@ -48,7 +48,7 @@ export const BookingWizard = ({ initialDevice, onBookingComplete, onClose }) => 
   // Selections
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedDevice, setSelectedDevice] = useState(initialDevice || null);
-  const [selectedGame, setSelectedGame] = useState(null);
+  const [selectedGame, setSelectedGame] = useState(initialGame || null);
 
   // Date & Duration selection (default Tomorrow in YYYY-MM-DD IST)
   const tomorrowStr = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -94,11 +94,21 @@ export const BookingWizard = ({ initialDevice, onBookingComplete, onClose }) => 
           if (initialDevice) {
             const found = devRes.data.devices.find((d) => d._id === (initialDevice._id || initialDevice));
             setSelectedDevice(found || devRes.data.devices[0]);
+          } else if (initialGame && initialGame.compatibleDevices?.length > 0) {
+            const compatibleId = initialGame.compatibleDevices[0]._id || initialGame.compatibleDevices[0];
+            const found = devRes.data.devices.find((d) => d._id === compatibleId);
+            setSelectedDevice(found || devRes.data.devices[0]);
           } else if (devRes.data.devices.length > 0) {
             setSelectedDevice(devRes.data.devices[0]);
           }
         }
-        if (gmRes.success) setGames(gmRes.data.games);
+        if (gmRes.success) {
+          setGames(gmRes.data.games);
+          if (initialGame) {
+            const matchedGame = gmRes.data.games.find((g) => g._id === (initialGame._id || initialGame));
+            if (matchedGame) setSelectedGame(matchedGame);
+          }
+        }
         if (catRes.success) setCategories(catRes.data.categories);
       } catch (err) {
         setError(err.message || 'Failed to load gaming equipment');

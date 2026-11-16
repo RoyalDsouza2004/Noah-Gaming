@@ -26,6 +26,7 @@ function AppContent() {
   const [activeNav, setActiveNav] = useState('home');
   const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
   const [selectedDeviceForBooking, setSelectedDeviceForBooking] = useState(null);
+  const [selectedGameForBooking, setSelectedGameForBooking] = useState(null);
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
   const [customerDashboardOpen, setCustomerDashboardOpen] = useState(false);
   const [customerDashboardInitialTab, setCustomerDashboardInitialTab] = useState('overview');
@@ -439,8 +440,9 @@ function AppContent() {
     }
   };
 
-  const handleOpenBooking = (device = null) => {
+  const handleOpenBooking = (device = null, game = null) => {
     setSelectedDeviceForBooking(device);
+    setSelectedGameForBooking(game);
     setNotificationsOpen(false);
     setBookingWizardOpen(true);
     window.location.hash = '#book';
@@ -555,6 +557,7 @@ function AppContent() {
           <div className="w-full max-w-4xl m-auto">
             <BookingWizard
               initialDevice={selectedDeviceForBooking}
+              initialGame={selectedGameForBooking}
               onBookingComplete={() => {
                 setBookingWizardOpen(false);
                 handleNavigate('bookings');

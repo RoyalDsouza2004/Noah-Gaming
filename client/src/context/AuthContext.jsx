@@ -157,10 +157,20 @@ export const AuthProvider = ({ children }) => {
       const response = await authApi.getMe();
       if (response.success && response.data?.user) {
         setUser(response.data.user);
+        localStorage.setItem('noah_user', JSON.stringify(response.data.user));
       }
     } catch (err) {
       console.warn('Failed to refresh user:', err.message);
     }
+  };
+
+  const updateUser = (updatedFields) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const merged = { ...prev, ...updatedFields };
+      localStorage.setItem('noah_user', JSON.stringify(merged));
+      return merged;
+    });
   };
 
   const openLoginModal = () => {
@@ -182,6 +192,7 @@ export const AuthProvider = ({ children }) => {
     resendLogin2FA,
     register,
     setAuthData,
+    updateUser,
     logout,
     refreshUser,
     authModalOpen,

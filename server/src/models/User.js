@@ -38,6 +38,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    profilePicturePublicId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     accountType: {
       type: String,
       enum: ['GUEST', 'REGISTERED'],

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { equipmentApi } from '../api/equipment.js';
 import { membershipApi } from '../api/membership.js';
+import { GameCard } from '../components/games/GameCard.jsx';
+import { GameDetailsModal } from '../components/games/GameDetailsModal.jsx';
 import {
   Gamepad2,
   Tv,
@@ -40,6 +42,7 @@ export const HomePage = ({
   const [pricingRules, setPricingRules] = useState([]);
   const [plans, setPlans] = useState([]);
   const [selectedGameCategory, setSelectedGameCategory] = useState('ALL');
+  const [selectedGameForDetails, setSelectedGameForDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch dynamic equipment, games, pricing, and membership plans from backend
@@ -389,36 +392,14 @@ export const HomePage = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {filteredGames.map((game) => (
-            <div
+            <GameCard
               key={game._id}
-              className="p-4 rounded-xl bg-[#260D17] border border-[#49202C] hover:border-[#851B2B]/60 transition-all space-y-3 flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#851B2B]/25 text-[#FFF4E8]">
-                    {game.category?.name || 'Action'}
-                  </span>
-                  {game.isExclusive && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5B942]/20 text-[#F5B942] border border-[#F5B942]/40">
-                      VIP Exclusive
-                    </span>
-                  )}
-                </div>
-                <h4 className="font-bold text-[#FFF4E8] text-sm font-heading">{game.name}</h4>
-                <p className="text-xs text-[#C7A5A8] line-clamp-2 leading-relaxed">{game.description}</p>
-              </div>
-
-              <div className="pt-2 border-t border-[#49202C] flex items-center justify-between text-[11px] text-[#C7A5A8]">
-                <span>Playable on PS5</span>
-                <span className="text-[#D7FF00] font-mono font-semibold">
-                  {game.minPlayers === game.maxPlayers
-                    ? `${game.maxPlayers} Player${game.maxPlayers > 1 ? 's' : ''}`
-                    : `${game.minPlayers || 1}-${game.maxPlayers || 4} Players`}
-                </span>
-              </div>
-            </div>
+              game={game}
+              onViewDetails={(g) => setSelectedGameForDetails(g)}
+              onBook={(g) => onOpenBooking && onOpenBooking(null, g)}
+            />
           ))}
         </div>
       </section>
@@ -665,6 +646,17 @@ export const HomePage = ({
           </div>
         </div>
       </section>
+
+      {/* Dedicated Game Details Modal */}
+      <GameDetailsModal
+        game={selectedGameForDetails}
+        isOpen={Boolean(selectedGameForDetails)}
+        onClose={() => setSelectedGameForDetails(null)}
+        onBookGame={(game) => {
+          setSelectedGameForDetails(null);
+          if (onOpenBooking) onOpenBooking(null, game);
+        }}
+      />
     </div>
   );
 };

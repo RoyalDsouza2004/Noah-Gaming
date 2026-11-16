@@ -8,6 +8,8 @@ import {
 import {
   getProfile,
   updateProfile,
+  updateProfilePicture,
+  removeProfilePicture,
   changePassword,
   getGamingHistory,
   getPaymentHistory,
@@ -24,6 +26,8 @@ const router = Router();
 // ---------------- PROTECTED CUSTOMER PROFILE & DASHBOARD ----------------
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfile);
+router.put('/profile/picture', authenticate, updateProfilePicture);
+router.delete('/profile/picture', authenticate, removeProfilePicture);
 router.put('/change-password', authenticate, changePassword);
 router.get('/gaming-history', authenticate, getGamingHistory);
 router.get('/payment-history', authenticate, getPaymentHistory);

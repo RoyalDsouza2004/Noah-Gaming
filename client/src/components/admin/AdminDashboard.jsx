@@ -10,6 +10,8 @@ import { UserManagementTab } from './UserManagementTab.jsx';
 import { AdminEmailTab } from './AdminEmailTab.jsx';
 import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
 import { ReportExportModal } from './analytics/ReportExportModal.jsx';
+import { AdminGameImportModal } from './AdminGameImportModal.jsx';
+import { cloudinaryApi } from '../../api/cloudinary.js';
 import {
   Tv,
   Gamepad2,
@@ -44,6 +46,7 @@ import {
   X,
   Shield,
   Download,
+  Upload,
   Loader2,
   Sparkles,
 } from 'lucide-react';
@@ -103,15 +106,22 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
   });
 
   const [gameModalOpen, setGameModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [bgUploading, setBgUploading] = useState(false);
   const [editingGame, setEditingGame] = useState(null);
   const [gameForm, setGameForm] = useState({
     name: '',
     description: '',
     thumbnail: '',
+    coverImage: { url: '', publicId: '' },
+    backgroundImage: { url: '', publicId: '' },
     category: '',
     compatibleDevices: [],
     minPlayers: 1,
     maxPlayers: 4,
+    localPlayersSupported: 4,
+    genre: '',
     bookingMode: 'BOTH',
     isExclusive: false,
     advancePaymentRequired: false,
@@ -273,10 +283,16 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
         return;
       }
 
+      const localP = Math.min(Math.max(1, parseInt(gameForm.localPlayersSupported, 10) || maxP), 4);
+
       const payload = {
         ...gameForm,
         minPlayers: minP,
         maxPlayers: maxP,
+        localPlayersSupported: localP,
+        genre: typeof gameForm.genre === 'string'
+          ? gameForm.genre.split(',').map((s) => s.trim()).filter(Boolean)
+          : gameForm.genre,
       };
 
       if (editingGame) {
@@ -291,6 +307,61 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
       fetchAllData();
     } catch (err) {
       showError(err.message);
+    }
+  };
+
+  const handleUploadCover = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setCoverUploading(true);
+      const res = await cloudinaryApi.uploadDirect(file, 'noah-gaming/games/covers');
+      setGameForm((prev) => ({
+        ...prev,
+        thumbnail: res.secure_url,
+        imageUrl: res.secure_url,
+        coverImage: { url: res.secure_url, publicId: res.public_id },
+      }));
+      showNotification('Game cover artwork uploaded to Cloudinary.');
+    } catch (err) {
+      showError(err.message || 'Failed to upload cover image.');
+    } finally {
+      setCoverUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleUploadBackground = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setBgUploading(true);
+      const res = await cloudinaryApi.uploadDirect(file, 'noah-gaming/games/backgrounds');
+      setGameForm((prev) => ({
+        ...prev,
+        backgroundImage: { url: res.secure_url, publicId: res.public_id },
+      }));
+      showNotification('Hero background artwork uploaded to Cloudinary.');
+    } catch (err) {
+      showError(err.message || 'Failed to upload background image.');
+    } finally {
+      setBgUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRefreshGameMetadata = async (game) => {
+    try {
+      showNotification(`Refreshing metadata for '${game.name}'...`);
+      const res = await equipmentApi.refreshGameMetadata(game._id);
+      if (res.success) {
+        showNotification(`Metadata for '${game.name}' refreshed successfully.`);
+        fetchAllData();
+      } else {
+        throw new Error(res.message || 'Failed to refresh metadata');
+      }
+    } catch (err) {
+      showError(err.message || 'Failed to refresh game metadata.');
     }
   };
 
@@ -873,31 +944,45 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
               </select>
             </div>
 
-            <button
-              onClick={() => {
-                setEditingGame(null);
-                setGameForm({
-                  name: '',
-                  description: '',
-                  thumbnail: '',
-                  category: categories[0]?._id || '',
-                  compatibleDevices: devices.filter((d) => d.deviceType === 'PS5').map((d) => d._id),
-                  minPlayers: 1,
-                  maxPlayers: 4,
-                  bookingMode: 'BOTH',
-                  isExclusive: false,
-                  advancePaymentRequired: false,
-                  minimumAdvancePayment: 0,
-                  minimumDuration: 60,
-                  maximumDuration: 240,
-                  status: 'ACTIVE',
-                });
-                setGameModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold text-xs uppercase tracking-wider font-heading"
-            >
-              <Plus className="w-4 h-4" /> Add New Game
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setImportModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[#FFF4E8] font-bold text-xs uppercase tracking-wider font-heading border border-slate-700 shadow-sm"
+              >
+                <Download className="w-3.5 h-3.5 text-[#D7FF00]" /> Import Game
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingGame(null);
+                  setGameForm({
+                    name: '',
+                    description: '',
+                    thumbnail: '',
+                    coverImage: { url: '', publicId: '' },
+                    backgroundImage: { url: '', publicId: '' },
+                    category: categories[0]?._id || '',
+                    compatibleDevices: devices.filter((d) => d.deviceType === 'PS5').map((d) => d._id),
+                    minPlayers: 1,
+                    maxPlayers: 4,
+                    localPlayersSupported: 4,
+                    genre: '',
+                    bookingMode: 'BOTH',
+                    isExclusive: false,
+                    advancePaymentRequired: false,
+                    minimumAdvancePayment: 0,
+                    minimumDuration: 60,
+                    maximumDuration: 240,
+                    status: 'ACTIVE',
+                  });
+                  setGameModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold text-xs uppercase tracking-wider font-heading"
+              >
+                <Plus className="w-4 h-4" /> Add New Game
+              </button>
+            </div>
           </div>
 
           {/* Games Grid */}
@@ -990,6 +1075,16 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                   </button>
 
                   <div className="flex items-center gap-1.5">
+                    {game.externalSync?.externalId && (
+                      <button
+                        type="button"
+                        onClick={() => handleRefreshGameMetadata(game)}
+                        title={`Sync latest metadata from ${game.externalSync.provider?.toUpperCase() || 'Provider'}`}
+                        className="p-1.5 rounded bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setEditingGame(game);
@@ -997,10 +1092,14 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                           name: game.name,
                           description: game.description || '',
                           thumbnail: game.thumbnail || '',
+                          coverImage: game.coverImage || { url: game.imageUrl || game.thumbnail || '', publicId: '' },
+                          backgroundImage: game.backgroundImage || { url: '', publicId: '' },
                           category: game.category?._id || game.category || '',
                           compatibleDevices: game.compatibleDevices?.map((d) => d._id || d) || [],
                           minPlayers: game.minPlayers || 1,
                           maxPlayers: game.maxPlayers || 4,
+                          localPlayersSupported: game.localPlayersSupported || game.maxPlayers || 4,
+                          genre: Array.isArray(game.genre) ? game.genre.join(', ') : (game.genre || ''),
                           bookingMode: game.bookingMode || 'BOTH',
                           isExclusive: game.isExclusive,
                           advancePaymentRequired: game.advancePaymentRequired,
@@ -1629,6 +1728,113 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 />
               </div>
 
+              {/* Cloudinary Game Artwork Uploaders */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+                {/* Cover Image Upload */}
+                <div className="space-y-2">
+                  <label className="block uppercase tracking-wider text-slate-300 text-[10px] font-bold">
+                    Game Cover Artwork
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 h-16 rounded-lg bg-slate-950 border border-slate-700 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                      {gameForm.coverImage?.url || gameForm.thumbnail ? (
+                        <img
+                          src={gameForm.coverImage?.url || gameForm.thumbnail}
+                          alt="Cover"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Gamepad2 className="w-5 h-5 text-slate-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[10px] uppercase tracking-wider cursor-pointer border border-slate-700">
+                        <Upload className="w-3 h-3 text-[#D7FF00]" />
+                        {coverUploading ? 'Uploading...' : 'Upload Cover'}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleUploadCover}
+                          disabled={coverUploading}
+                          className="hidden"
+                        />
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="Or paste cover URL..."
+                        value={gameForm.coverImage?.url || gameForm.thumbnail || ''}
+                        onChange={(e) =>
+                          setGameForm({
+                            ...gameForm,
+                            thumbnail: e.target.value,
+                            coverImage: { url: e.target.value, publicId: '' },
+                          })
+                        }
+                        className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-[10px] text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Background Hero Banner Upload */}
+                <div className="space-y-2">
+                  <label className="block uppercase tracking-wider text-slate-300 text-[10px] font-bold">
+                    Hero Background Banner
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-16 rounded-lg bg-slate-950 border border-slate-700 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                      {gameForm.backgroundImage?.url ? (
+                        <img
+                          src={gameForm.backgroundImage.url}
+                          alt="Banner"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Tv className="w-5 h-5 text-slate-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[10px] uppercase tracking-wider cursor-pointer border border-slate-700">
+                        <Upload className="w-3 h-3 text-purple-400" />
+                        {bgUploading ? 'Uploading...' : 'Upload Hero'}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleUploadBackground}
+                          disabled={bgUploading}
+                          className="hidden"
+                        />
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="Or paste hero URL..."
+                        value={gameForm.backgroundImage?.url || ''}
+                        onChange={(e) =>
+                          setGameForm({
+                            ...gameForm,
+                            backgroundImage: { url: e.target.value, publicId: '' },
+                          })
+                        }
+                        className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-[10px] text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block uppercase tracking-wider text-slate-400 mb-1">
+                  Genres / Tags (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Sports, Football, Competitive"
+                  value={gameForm.genre || ''}
+                  onChange={(e) => setGameForm({ ...gameForm, genre: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white"
+                />
+              </div>
+
               {/* Game-Specific Player Capacity Configuration */}
               <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
@@ -1973,6 +2179,13 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
       <ReportExportModal
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
+      />
+
+      {/* Admin Game Metadata Import Modal */}
+      <AdminGameImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportSuccess={() => fetchAllData()}
       />
     </div>
   );

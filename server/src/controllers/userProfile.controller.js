@@ -7,6 +7,7 @@ import Notification from '../models/Notification.js';
 import bcrypt from 'bcryptjs';
 import { formatISTDate } from '../utils/timeSlots.js';
 import * as notificationService from '../services/notification.service.js';
+import { deleteCloudinaryAsset } from '../services/cloudinary.service.js';
 
 /**
  * GET /api/users/profile
@@ -93,12 +94,81 @@ export const updateProfile = async (req, res) => {
       user.phone = phone.trim();
     }
     if (profilePicture !== undefined) user.profilePicture = profilePicture;
+    if (req.body.profilePicturePublicId !== undefined) user.profilePicturePublicId = req.body.profilePicturePublicId;
 
     await user.save();
 
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
+      data: {
+        user: user.toSafeObject(),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * PUT /api/users/profile/picture
+ * Updates profile picture URL and Cloudinary public ID, cleaning up previous photo
+ */
+export const updateProfilePicture = async (req, res) => {
+  try {
+    const { profilePicture, profilePicturePublicId } = req.body;
+    if (!profilePicture) {
+      return res.status(400).json({ success: false, message: 'profilePicture URL is required.' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Clean up previous Cloudinary asset safely if it changed
+    if (user.profilePicturePublicId && user.profilePicturePublicId !== profilePicturePublicId) {
+      await deleteCloudinaryAsset(user.profilePicturePublicId);
+    }
+
+    user.profilePicture = profilePicture;
+    user.profilePicturePublicId = profilePicturePublicId || '';
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile photo updated successfully!',
+      data: {
+        user: user.toSafeObject(),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * DELETE /api/users/profile/picture
+ * Removes current profile photo, restores default avatar, and cleans up Cloudinary asset
+ */
+export const removeProfilePicture = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (user.profilePicturePublicId) {
+      await deleteCloudinaryAsset(user.profilePicturePublicId);
+    }
+
+    user.profilePicture = '';
+    user.profilePicturePublicId = '';
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile picture removed. Default avatar restored.',
       data: {
         user: user.toSafeObject(),
       },

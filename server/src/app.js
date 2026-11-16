@@ -25,6 +25,7 @@ import adminAutomationRoutes from './routes/adminAutomation.routes.js';
 import userManagementRoutes from './routes/userManagement.routes.js';
 import adminEmailRoutes from './routes/adminEmail.routes.js';
 import pushNotificationRoutes from './routes/pushNotification.routes.js';
+import cloudinaryRoutes from './routes/cloudinary.routes.js';
 import { getAdminNotifications } from './controllers/adminAutomation.controller.js';
 import { authenticate } from './middlewares/auth.js';
 import { requireAdmin } from './middlewares/rbac.js';
@@ -129,6 +130,7 @@ app.use('/api/admin/notifications', authenticate, requireAdmin, getAdminNotifica
 app.use('/api/admin/users', userManagementRoutes);
 app.use('/api/users-management', userManagementRoutes);
 app.use('/api/admin/email', adminEmailRoutes);
+app.use('/api/cloudinary', cloudinaryRoutes);
 
 // Root route
 app.get('/', (req, res) => {

@@ -373,8 +373,12 @@ export const Sidebar = ({
               className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-90 transition-opacity focus:outline-none"
               title="Open Profile"
             >
-              <div className="w-8 h-8 rounded-full bg-[#851B2B] text-[#FFF4E8] flex items-center justify-center font-bold text-xs shrink-0 border border-[#A51F35]">
-                {user.name?.charAt(0).toUpperCase() || 'U'}
+              <div className="w-8 h-8 rounded-full bg-[#851B2B] text-[#FFF4E8] flex items-center justify-center font-bold text-xs shrink-0 border border-[#A51F35] overflow-hidden">
+                {user.profilePicture ? (
+                  <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  user.name?.charAt(0).toUpperCase() || 'U'
+                )}
               </div>
               <div className="min-w-0">
                 <span className="text-xs font-bold text-[#FFF4E8] truncate block">

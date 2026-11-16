@@ -12,6 +12,15 @@ export const userProfileApi = {
       method: 'PUT',
       body: data,
     }),
+  updateProfilePicture: (data) =>
+    apiRequest('/users/profile/picture', {
+      method: 'PUT',
+      body: data,
+    }),
+  removeProfilePicture: () =>
+    apiRequest('/users/profile/picture', {
+      method: 'DELETE',
+    }),
   getGamingHistory: (query = '') =>
     apiRequest(`/users/gaming-history${query ? `?${query}` : ''}`),
   getPaymentHistory: (query = '') =>

@@ -10,6 +10,7 @@ import { ActiveSessionCountdown } from './ActiveSessionCountdown.jsx';
 import { NotificationCenter } from '../notifications/NotificationCenter.jsx';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
+import ProfilePictureUpload from './ProfilePictureUpload.jsx';
 import { showToast } from '../../utils/toast.js';
 import {
   User,
@@ -987,6 +988,14 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
       {/* ---------------- 5. TAB: PROFILE & SECURITY ---------------- */}
       {activeTab === 'profile' && (
         <div className="space-y-6 pb-16 sm:pb-10">
+          {/* Cloudinary Profile Photo Manager */}
+          <ProfilePictureUpload
+            onUploadSuccess={(url) => {
+              setProfileForm((prev) => ({ ...prev, profilePicture: url }));
+              refreshUser();
+            }}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Details Form */}
             <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
