@@ -40,17 +40,18 @@ export const RazorpayModal = ({
     setStatusMessage('Initiating secure checkout session...');
 
     try {
+      const effectiveKey = (import.meta.env.VITE_RAZORPAY_KEY_ID || order?.keyId || '').trim();
       const isRealTestKey =
-        order?.keyId &&
-        order.keyId.startsWith('rzp_test_') &&
-        order.keyId !== 'rzp_test_NOAH_SIMULATION';
+        effectiveKey &&
+        (effectiveKey.startsWith('rzp_test_') || effectiveKey.startsWith('rzp_live_')) &&
+        effectiveKey !== 'rzp_test_NOAH_SIMULATION';
 
       // 1. If official Razorpay checkout script is loaded and configured with real test key, launch official popup
       if (scriptLoaded && isRealTestKey && !order?.isMock) {
         setStatusMessage('Opening Razorpay Test Mode Checkout...');
 
         const opened = await launchRazorpayCheckout({
-          order,
+          order: { ...order, keyId: effectiveKey },
           prefill: {
             name: bookingDetails?.customerName || 'NOAH Gamer',
             email: bookingDetails?.customerEmail || 'customer@gaminglounge.com',

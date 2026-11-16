@@ -3,6 +3,7 @@ import { membershipApi } from '../../api/membership.js';
 import { equipmentApi } from '../../api/equipment.js';
 import { userProfileApi } from '../../api/userProfile.js';
 import { reportsApi } from '../../api/reports.js';
+import { authApi } from '../../api/auth.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
   Crown,
@@ -349,12 +350,8 @@ export const AdminMembershipsTab = () => {
     if (!offlineForm.customerPhone) return;
     setOfflineCustomerSearching(true);
     try {
-      const token = localStorage.getItem('noah_auth_token') || localStorage.getItem('nexus_auth_token');
-      const res = await fetch(`/api/users/phone/${offlineForm.customerPhone.trim()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok && data.data?.user) {
+      const data = await authApi.searchCustomerByPhone(offlineForm.customerPhone.trim());
+      if (data?.data?.user) {
         setOfflineForm({
           ...offlineForm,
           customerId: data.data.user._id,

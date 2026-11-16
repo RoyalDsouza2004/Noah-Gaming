@@ -84,7 +84,9 @@ export const SystemStatus = () => {
                 <CheckCircle2 className="w-3.5 h-3.5" /> ONLINE
               </span>
             </div>
-            <p className="text-lg font-bold text-white font-heading">Port 5000 / REST</p>
+            <p className="text-lg font-bold text-white font-heading">
+              {healthData?.port ? `Port ${healthData.port} / REST` : 'Express REST API'}
+            </p>
             <p className="text-xs text-[#C7A5A8] mt-1">
               Uptime: <span className="text-slate-200 font-mono">{healthData?.uptimeSeconds}s</span> | Env: {healthData?.environment}
             </p>

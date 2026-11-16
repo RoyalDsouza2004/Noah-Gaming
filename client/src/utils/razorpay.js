@@ -62,7 +62,9 @@ export async function launchRazorpayCheckout({
     return false;
   }
 
-  if (!order || !order.orderId || !order.keyId) {
+  const keyId = (import.meta.env.VITE_RAZORPAY_KEY_ID || order?.keyId || '').trim();
+
+  if (!order || !order.orderId || !keyId) {
     showToast.error('Invalid payment order configuration received from server.');
     return false;
   }
@@ -77,7 +79,7 @@ export async function launchRazorpayCheckout({
     isCheckoutActive = true;
 
     const options = {
-      key: order.keyId,
+      key: keyId,
       amount: order.amount,
       currency: order.currency || 'INR',
       name: 'NOAH GAMING',

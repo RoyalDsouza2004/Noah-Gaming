@@ -40,17 +40,34 @@ app.use(
 );
 
 // Multi-Origin Cross-Origin Resource Sharing (CORS)
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+const getAllowedOrigins = () => {
+  const raw = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  return raw
+    .split(',')
+    .map((s) => s.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+};
+
+const isOriginAllowed = (origin, allowedPatterns) => {
+  if (!origin) return true;
+  const normalizedOrigin = origin.replace(/\/+$/, '');
+  return allowedPatterns.some((pattern) => {
+    if (pattern === '*' || pattern === normalizedOrigin) return true;
+    if (pattern.includes('*')) {
+      const regexStr = '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$';
+      return new RegExp(regexStr).test(normalizedOrigin);
+    }
+    return false;
+  });
+};
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, or same-origin)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      const allowed = getAllowedOrigins();
+      if (isOriginAllowed(origin, allowed)) {
         return callback(null, true);
       }
       return callback(new Error(`CORS policy: Origin '${origin}' is not authorized.`));
@@ -58,6 +75,7 @@ app.use(
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-razorpay-signature'],
+    optionsSuccessStatus: 204,
   })
 );
 
@@ -130,6 +148,12 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
+  if (err.message && err.message.includes('CORS policy')) {
+    return res.status(403).json({
+      success: false,
+      message: err.message,
+    });
+  }
   console.error('[Global Error]', err);
   const statusCode = err.statusCode || err.status || 500;
   res.status(statusCode).json({

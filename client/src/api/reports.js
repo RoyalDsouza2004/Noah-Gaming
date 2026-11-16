@@ -1,25 +1,12 @@
-import { API_BASE_URL, getAuthToken } from './client.js';
+import { apiRequest, API_BASE_URL, getAuthToken } from './client.js';
 
 export const reportsApi = {
   /**
    * Fetches report data in JSON format
    */
   getReportJSON: async (reportType, params = {}) => {
-    const token = getAuthToken();
-    const queryParams = { ...params, format: 'json' };
-    if (token) queryParams.token = token;
-    const query = new URLSearchParams(queryParams).toString();
-    const res = await fetch(`${API_BASE_URL}/admin/reports/${reportType}?${query}`, {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Failed to fetch ${reportType} report.`);
-    }
-    return res.json();
+    const query = new URLSearchParams({ ...params, format: 'json' }).toString();
+    return apiRequest(`/admin/reports/${reportType}?${query}`);
   },
 
   /**
@@ -39,8 +26,17 @@ export const reportsApi = {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || 'Report download failed.');
+      const contentType = res.headers.get('content-type') || '';
+      let errMsg = 'Report download failed.';
+      if (contentType.includes('application/json')) {
+        const err = await res.json().catch(() => ({}));
+        errMsg = err.message || errMsg;
+      } else {
+        const text = await res.text().catch(() => '');
+        const isHtml = /<html|<!doctype/i.test(text);
+        errMsg = isHtml ? `Server returned HTTP ${res.status} error` : text || errMsg;
+      }
+      throw new Error(errMsg);
     }
 
     // Determine MIME type

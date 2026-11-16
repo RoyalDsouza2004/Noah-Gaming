@@ -110,7 +110,7 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
       }
 
       const options = {
-        key: order.keyId || 'rzp_test_NoahGamingSimKey',
+        key: (import.meta.env.VITE_RAZORPAY_KEY_ID || order.keyId || 'rzp_test_NoahGamingSimKey').trim(),
         amount: order.amount,
         currency: order.currency || 'INR',
         name: 'NOAH GAMING',

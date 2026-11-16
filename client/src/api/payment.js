@@ -69,8 +69,17 @@ export const paymentApi = {
       },
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || 'Failed to download receipt PDF.');
+      const contentType = res.headers.get('content-type') || '';
+      let errMsg = 'Failed to download receipt PDF.';
+      if (contentType.includes('application/json')) {
+        const err = await res.json().catch(() => ({}));
+        errMsg = err.message || errMsg;
+      } else {
+        const text = await res.text().catch(() => '');
+        const isHtml = /<html|<!doctype/i.test(text);
+        errMsg = isHtml ? `Server returned HTTP ${res.status}` : text || errMsg;
+      }
+      throw new Error(errMsg);
     }
     const blob = await res.blob();
     let fileName = `NOAH_GAMING_Receipt_${paymentId}.pdf`;
