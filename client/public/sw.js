@@ -1,8 +1,9 @@
-const CACHE_NAME = 'noah-gaming-v1';
+const CACHE_NAME = 'noah-gaming-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/icons/Noah_gaming_logo.svg',
   '/icons/icon-192.svg',
   '/icons/icon-512.svg',
   '/icons/icon-maskable.svg',
