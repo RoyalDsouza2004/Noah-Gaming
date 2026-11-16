@@ -9,6 +9,7 @@ export const ConfirmModal = ({
   cancelText = 'Cancel',
   isDanger = true,
   isLoading = false,
+  icon: CustomIcon,
   onConfirm,
   onClose,
 }) => {
@@ -44,7 +45,13 @@ export const ConfirmModal = ({
                 : 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
             }`}
           >
-            {isDanger ? <Trash2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+            {CustomIcon ? (
+              <CustomIcon className="w-5 h-5" />
+            ) : isDanger ? (
+              <Trash2 className="w-5 h-5" />
+            ) : (
+              <AlertTriangle className="w-5 h-5" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold font-heading text-white">{title}</h3>

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Sparkles,
 } from 'lucide-react';
+import { useMobileNavScroll } from '../hooks/useMobileNavScroll.js';
 
 export const MobileBottomNav = ({
   user,
@@ -15,6 +16,7 @@ export const MobileBottomNav = ({
   openLoginModal,
 }) => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const { isVisible } = useMobileNavScroll({ activeNav });
 
   // Handle virtual keyboard on mobile to avoid blocking form inputs
   useEffect(() => {
@@ -288,12 +290,21 @@ export const MobileBottomNav = ({
     <div
       role="navigation"
       aria-label="Mobile Bottom Navigation"
+      aria-hidden={!isVisible}
       style={{
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         WebkitTapHighlightColor: 'transparent',
+        transform: isVisible
+          ? 'translate3d(-50%, 0, 0)'
+          : 'translate3d(-50%, calc(100% + 2.5rem), 0)',
+        opacity: isVisible ? 1 : 0,
+        pointerEvents: isVisible ? 'auto' : 'none',
+        transition:
+          'transform 230ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out',
+        willChange: 'transform, opacity',
       }}
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-[60] md:hidden pointer-events-auto rounded-full bg-[#171014]/90 border border-[#851B2B]/40 shadow-[0_8px_32px_rgba(0,0,0,0.65),0_1px_2px_rgba(255,255,255,0.06)_inset] px-1.5 py-1.5 transition-all duration-200"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 w-[calc(100%-1.5rem)] max-w-md z-[60] md:hidden rounded-full bg-[#171014]/90 border border-[#851B2B]/40 shadow-[0_8px_32px_rgba(0,0,0,0.65),0_1px_2px_rgba(255,255,255,0.06)_inset] px-1.5 py-1.5 select-none"
     >
       <nav className="w-full flex items-center justify-around">
         {navItems.map((item) => {

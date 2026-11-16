@@ -8,6 +8,7 @@ import { MembershipPlansModal } from '../membership/MembershipPlansModal.jsx';
 import { MembershipUpgradeModal } from '../membership/MembershipUpgradeModal.jsx';
 import { ActiveSessionCountdown } from './ActiveSessionCountdown.jsx';
 import { NotificationCenter } from '../notifications/NotificationCenter.jsx';
+import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { showToast } from '../../utils/toast.js';
 import {
   User,
@@ -39,10 +40,11 @@ import {
   Sparkles,
   Flame,
   Check,
+  LogOut,
 } from 'lucide-react';
 
 export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, initialTab = 'overview' }) => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
 
   // Tab navigation
   const [activeTab, setActiveTab] = useState(initialTab); // 'overview', 'history', 'membership', 'profile', 'payments', 'notifications'
@@ -77,6 +79,15 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [activeReceiptPaymentId, setActiveReceiptPaymentId] = useState(null);
   const [downloadingPaymentId, setDownloadingPaymentId] = useState(null);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+  const handleConfirmLogout = () => {
+    setLogoutConfirmOpen(false);
+    logout();
+    if (onClose) onClose();
+    window.location.hash = '#home';
+    showToast.success('Logged out successfully. See you soon, Gamer!');
+  };
 
   const handleDownloadReceiptPdf = async (paymentId) => {
     if (!paymentId) return;
@@ -974,141 +985,182 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
 
       {/* ---------------- 5. TAB: PROFILE & SECURITY ---------------- */}
       {activeTab === 'profile' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Personal Details Form */}
-          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <h3 className="text-base font-bold font-heading text-white flex items-center gap-2">
-              <User className="w-5 h-5 text-[#D7FF00]" />
-              Edit Personal Information
-            </h3>
+        <div className="space-y-6 pb-16 sm:pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Personal Details Form */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+              <h3 className="text-base font-bold font-heading text-white flex items-center gap-2">
+                <User className="w-5 h-5 text-[#D7FF00]" />
+                Edit Personal Information
+              </h3>
 
-            <form onSubmit={handleUpdateProfile} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Unique Customer ID</label>
-                <input
-                  type="text"
-                  readOnly
-                  disabled
-                  value={customer?.customerId || ''}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-400 font-mono"
-                />
-              </div>
+              <form onSubmit={handleUpdateProfile} className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Unique Customer ID</label>
+                  <input
+                    type="text"
+                    readOnly
+                    disabled
+                    value={customer?.customerId || ''}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-400 font-mono"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Email Address (Locked)</label>
-                <input
-                  type="email"
-                  readOnly
-                  disabled
-                  value={customer?.email || ''}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-400 font-mono"
-                />
-              </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Email Address (Locked)</label>
+                  <input
+                    type="email"
+                    readOnly
+                    disabled
+                    value={customer?.email || ''}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-400 font-mono"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={profileForm.name}
-                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
-                />
-              </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Mobile Number</label>
-                <input
-                  type="tel"
-                  required
-                  value={profileForm.phone}
-                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
-                />
-              </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Mobile Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Avatar / Profile Picture URL</label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={profileForm.profilePicture}
-                  onChange={(e) => setProfileForm({ ...profileForm, profilePicture: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
-                />
-              </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Avatar / Profile Picture URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={profileForm.profilePicture}
+                    onChange={(e) => setProfileForm({ ...profileForm, profilePicture: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                  />
+                </div>
 
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={profileSaving}
-                  className="px-5 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider"
-                >
-                  {profileSaving ? 'Saving Changes...' : 'Save Profile Details'}
-                </button>
-              </div>
-            </form>
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="px-5 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider"
+                  >
+                    {profileSaving ? 'Saving Changes...' : 'Save Profile Details'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Change Password Form */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+              <h3 className="text-base font-bold font-heading text-white flex items-center gap-2">
+                <Lock className="w-5 h-5 text-purple-400" />
+                Security & Password
+              </h3>
+
+              <form onSubmit={handleChangePassword} className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Current Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={passwordForm.currentPassword}
+                    onChange={(e) =>
+                      setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">New Password</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={passwordForm.newPassword}
+                    onChange={(e) =>
+                      setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Confirm New Password</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={passwordSaving}
+                    className="px-5 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-purple-500/20"
+                  >
+                    {passwordSaving ? 'Updating Password...' : 'Change Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
 
-          {/* Change Password Form */}
-          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <h3 className="text-base font-bold font-heading text-white flex items-center gap-2">
-              <Lock className="w-5 h-5 text-purple-400" />
-              Security & Password
-            </h3>
-
-            <form onSubmit={handleChangePassword} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Current Password</label>
-                <input
-                  type="password"
-                  required
-                  value={passwordForm.currentPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
-                />
+          {/* Dedicated Account Session & Logout Section */}
+          <div className="p-5 sm:p-6 rounded-2xl bg-[#260D17]/85 border border-[#851B2B]/50 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#851B2B]/30 border border-[#851B2B]/60 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-[#F5B942]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold font-heading text-[#FFF4E8]">
+                      Account Session & Access
+                    </h3>
+                    <p className="text-[11px] text-[#C7A5A8]">
+                      Logged in as <span className="text-[#D7FF00] font-semibold">{user?.name || customer?.name}</span> ({user?.email || customer?.email || user?.phone || customer?.phone})
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-[#C7A5A8] pt-1 leading-relaxed">
+                  Sign out of your active session on this device. You will need to sign back in with your credentials to access your profile, bookings, and club passes.
+                </p>
               </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">New Password</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={passwordForm.newPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, newPassword: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Confirm New Password</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={passwordSaving}
-                  className="px-5 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-purple-500/20"
-                >
-                  {passwordSaving ? 'Updating Password...' : 'Change Password'}
-                </button>
-              </div>
-            </form>
+              <button
+                type="button"
+                onClick={() => setLogoutConfirmOpen(true)}
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                  outline: 'none',
+                }}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#851B2B]/25 hover:bg-[#851B2B]/45 text-[#F06A76] hover:text-[#FFF4E8] border border-[#851B2B]/70 font-heading font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#851B2B]/20 active:scale-95 shrink-0 self-start sm:self-auto select-none cursor-pointer"
+                title="Log out of your NOAH GAMING account"
+              >
+                <LogOut className="w-4 h-4 text-[#F06A76]" />
+                <span>Log Out of Account</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1153,6 +1205,19 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
           onClose={() => setActiveReceiptPaymentId(null)}
         />
       )}
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={logoutConfirmOpen}
+        title="Confirm Account Logout"
+        message={`Are you sure you want to sign out, ${user?.name || customer?.name || 'Gamer'}? You will be returned to the public lounge landing page.`}
+        confirmText="Log Out"
+        cancelText="Stay Signed In"
+        isDanger={true}
+        icon={LogOut}
+        onConfirm={handleConfirmLogout}
+        onClose={() => setLogoutConfirmOpen(false)}
+      />
     </div>
   );
 };
