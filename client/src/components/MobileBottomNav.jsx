@@ -288,6 +288,7 @@ export const MobileBottomNav = ({
 
   return (
     <div
+      id="mobile-bottom-nav"
       role="navigation"
       aria-label="Mobile Bottom Navigation"
       aria-hidden={!isVisible}
