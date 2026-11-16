@@ -42,6 +42,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   const [devices, setDevices] = useState([]);
   const [games, setGames] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [pricingPlans, setPricingPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -83,10 +84,11 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     const initData = async () => {
       setLoading(true);
       try {
-        const [devRes, gmRes, catRes] = await Promise.all([
+        const [devRes, gmRes, catRes, prRes] = await Promise.all([
           equipmentApi.getDevices('status=ACTIVE'),
           equipmentApi.getGames('status=ACTIVE'),
           equipmentApi.getCategories('status=ACTIVE'),
+          equipmentApi.getPricing('status=ACTIVE').catch(() => null),
         ]);
 
         if (devRes.success) {
@@ -110,6 +112,9 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
           }
         }
         if (catRes.success) setCategories(catRes.data.categories);
+        if (prRes?.success && prRes.data?.pricingPlans) {
+          setPricingPlans(prRes.data.pricingPlans);
+        }
       } catch (err) {
         setError(err.message || 'Failed to load gaming equipment');
       } finally {
@@ -403,7 +408,13 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       <Users className="w-3.5 h-3.5 text-[#D7FF00]" /> Max {device.capacity} Players
                     </span>
                     <span className="text-emerald-400 font-bold">
-                      {device.deviceType === 'POOL' ? '₹160/hr' : '₹60/hr/p'}
+                      {(() => {
+                        const devPricing = pricingPlans.find(
+                          (p) => p.deviceType === device.deviceType || p.device === device._id
+                        );
+                        const rate = devPricing ? devPricing.amount / 100 : (device.deviceType === 'POOL' ? 150 : 70);
+                        return `₹${rate}/hr${device.deviceType === 'POOL' ? ' (table)' : '/p'}`;
+                      })()}
                     </span>
                   </div>
                 </div>

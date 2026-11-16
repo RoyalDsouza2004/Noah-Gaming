@@ -141,7 +141,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
     name: '',
     deviceType: 'PS5',
     billingType: 'PER_PLAYER_HOURLY',
-    amountInRupees: 60,
+    amountInRupees: 70,
     minimumDuration: 60,
     maximumDuration: 240,
     status: 'ACTIVE',
@@ -1314,7 +1314,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                   name: '',
                   deviceType: 'PS5',
                   billingType: 'PER_PLAYER_HOURLY',
-                  amountInRupees: 60,
+                  amountInRupees: 70,
                   minimumDuration: 60,
                   maximumDuration: 240,
                   status: 'ACTIVE',
@@ -2072,7 +2072,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                   onChange={(e) => setPricingForm({ ...pricingForm, billingType: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white"
                 >
-                  <option value="PER_PLAYER_HOURLY">Per Player Per Hour (e.g. ₹60 x players x hrs)</option>
+                  <option value="PER_PLAYER_HOURLY">Per Player Per Hour (e.g. ₹70 x players x hrs)</option>
                   <option value="PER_DEVICE_HOURLY">Per Device Per Hour (e.g. ₹150 x hrs regardless of players)</option>
                   <option value="FIXED_SESSION">Fixed Session Rate</option>
                 </select>

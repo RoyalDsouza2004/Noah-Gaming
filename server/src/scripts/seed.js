@@ -180,7 +180,7 @@ async function seedDatabase() {
         name: 'PS5 Standard Hourly Rate',
         deviceType: 'PS5',
         billingType: 'PER_PLAYER_HOURLY',
-        amount: 6000, // ₹60 per player per hour
+        amount: 7000, // ₹70 per player per hour
         currency: 'INR',
         minimumDuration: 60,
         maximumDuration: 240,
@@ -190,7 +190,7 @@ async function seedDatabase() {
         name: '8-Ball Pool Table Rate',
         deviceType: 'POOL',
         billingType: 'PER_PLAYER_HOURLY',
-        amount: 16000, // ₹160 per player per hour
+        amount: 15000, // ₹150 per player per hour
         currency: 'INR',
         minimumDuration: 60,
         maximumDuration: 240,

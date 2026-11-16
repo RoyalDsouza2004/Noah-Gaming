@@ -78,6 +78,16 @@ export const HomePage = ({
     ? games
     : games.filter((g) => (g.category?.name || 'Action') === selectedGameCategory);
 
+  // Authoritative dynamic rates from backend pricing rules (with correct fallback rates: PS5 ₹70, Pool ₹150, GTA 6 ₹150)
+  const ps5Pricing = pricingRules.find((p) => p.deviceType === 'PS5' && !p.game);
+  const ps5RateRupees = ps5Pricing ? ps5Pricing.amount / 100 : 70;
+
+  const poolPricing = pricingRules.find((p) => p.deviceType === 'POOL');
+  const poolRateRupees = poolPricing ? poolPricing.amount / 100 : 150;
+
+  const gta6Pricing = pricingRules.find((p) => p.game || (p.name && /GTA/i.test(p.name)));
+  const gta6RateRupees = gta6Pricing ? gta6Pricing.amount / 100 : 150;
+
   return (
     <div className="space-y-20">
       {/* ========================================================= */}
@@ -234,7 +244,7 @@ export const HomePage = ({
             const devicePricing = pricingRules.find(
               (p) => p.deviceType === device.deviceType || p.device === device._id
             );
-            const rateRupees = devicePricing ? devicePricing.amount / 100 : device.deviceType === 'POOL' ? 160 : 60;
+            const rateRupees = devicePricing ? devicePricing.amount / 100 : device.deviceType === 'POOL' ? 150 : 70;
 
             return (
               <div
@@ -326,11 +336,11 @@ export const HomePage = ({
               Grand Theft Auto VI (GTA 6)
             </h3>
             <p className="text-xs sm:text-sm text-[#C7A5A8] max-w-2xl leading-relaxed">
-              Step into Vice City in next-gen 4K. Reserving GTA 6 locks the entire physical PlayStation 5 console exclusively for your private party at <strong>₹150/hour</strong> with mandatory advance booking.
+              Step into Vice City in next-gen 4K. Reserving GTA 6 locks the entire physical PlayStation 5 console exclusively for your private party at <strong>₹{gta6RateRupees}/hour</strong> with mandatory advance booking.
             </p>
             <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-[#C7A5A8] pt-1">
               <span className="px-2.5 py-1 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8]">
-                Rate: <strong className="text-[#D7FF00]">₹150 / hr</strong>
+                Rate: <strong className="text-[#D7FF00]">₹{gta6RateRupees} / hr</strong>
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8]">
                 Platform: <strong className="text-[#D7FF00]">PS5 Station 1 or 2</strong>
@@ -428,7 +438,7 @@ export const HomePage = ({
                 PlayStation 5 Standard
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹60</span>
+                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹{ps5RateRupees}</span>
                 <span className="text-xs text-[#C7A5A8]">/ player / hour</span>
               </div>
               <p className="text-xs text-[#C7A5A8] leading-relaxed">
@@ -455,7 +465,7 @@ export const HomePage = ({
                 Tournament 8-Ball Pool
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹160</span>
+                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹{poolRateRupees}</span>
                 <span className="text-xs text-[#C7A5A8]">/ player / hour</span>
               </div>
               <p className="text-xs text-[#C7A5A8] leading-relaxed">
@@ -482,7 +492,7 @@ export const HomePage = ({
                 Exclusive Title: GTA 6 Suite
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹150</span>
+                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹{gta6RateRupees}</span>
                 <span className="text-xs text-[#C7A5A8]">/ hour (entire console)</span>
               </div>
               <p className="text-xs text-[#C7A5A8] leading-relaxed">
@@ -490,7 +500,7 @@ export const HomePage = ({
               </p>
               <ul className="space-y-2 text-xs text-[#C7A5A8] pt-2">
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Full private console lock</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Mandatory ₹75 advance deposit</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Mandatory ₹{Math.round(gta6RateRupees / 2)} advance deposit</li>
                 <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Covered by VIP GTA 6 Club Pass</li>
               </ul>
             </div>

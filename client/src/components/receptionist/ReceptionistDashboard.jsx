@@ -82,6 +82,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
   const [pendingPayments, setPendingPayments] = useState([]);
   const [devicesList, setDevicesList] = useState([]);
   const [gamesList, setGamesList] = useState([]);
+  const [pricingPlans, setPricingPlans] = useState([]);
 
   // Time ticker for live countdowns and clock
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -135,7 +136,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
   const refreshAllData = async () => {
     setLoadingStats(true);
     try {
-      const [statsRes, sessionsRes, bookingsRes, pendingRes, devicesRes, gamesRes] =
+      const [statsRes, sessionsRes, bookingsRes, pendingRes, devicesRes, gamesRes, pricingRes] =
         await Promise.all([
           receptionistApi.getDashboardStats().catch(() => null),
           receptionistApi.getActiveSessions().catch(() => null),
@@ -143,6 +144,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
           receptionistApi.getPendingPayments().catch(() => null),
           equipmentApi.getDevices().catch(() => null),
           equipmentApi.getGames().catch(() => null),
+          equipmentApi.getPricing().catch(() => null),
         ]);
 
       if (statsRes?.success) setStats(statsRes.data);
@@ -151,6 +153,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
       if (pendingRes?.success) setPendingPayments(pendingRes.data);
       if (devicesRes?.success) setDevicesList(devicesRes.data?.devices || devicesRes.data || []);
       if (gamesRes?.success) setGamesList(gamesRes.data?.games || gamesRes.data || []);
+      if (pricingRes?.success && pricingRes.data?.pricingPlans) setPricingPlans(pricingRes.data.pricingPlans);
     } catch (err) {
       console.error('Error fetching receptionist data:', err);
     } finally {
@@ -241,18 +244,23 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
     }
   };
 
-  // Walk-In Price Calculator
+  // Walk-In Price Calculator (authoritative pricing rules from backend)
   const calculateWalkInPrice = () => {
     if (!walkInSelectedDevice) return 0;
     const isExclusiveGame = walkInSelectedGame?.isExclusive || walkInSelectedGame?.name === 'GTA 6';
     const isPrivate = walkInBookingType === 'PRIVATE' || isExclusiveGame;
     const isPool = walkInSelectedDevice.deviceType === 'POOL';
 
-    let rate = 60;
+    let rate = 70;
     if (isExclusiveGame) {
-      rate = 150;
+      const exclusivePricing = pricingPlans.find((p) => p.game || (p.name && /GTA/i.test(p.name)));
+      rate = exclusivePricing ? exclusivePricing.amount / 100 : 150;
     } else if (isPool) {
-      rate = 160;
+      const poolPricing = pricingPlans.find((p) => p.deviceType === 'POOL');
+      rate = poolPricing ? poolPricing.amount / 100 : 150;
+    } else {
+      const ps5Pricing = pricingPlans.find((p) => p.deviceType === 'PS5' && !p.game);
+      rate = ps5Pricing ? ps5Pricing.amount / 100 : 70;
     }
 
     const players = isPrivate || isExclusiveGame ? 1 : walkInPlayersCount;
@@ -1110,7 +1118,11 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                             {dev.deviceCode}
                           </span>
                           <span className="text-[10px] font-semibold text-[#D7FF00]">
-                            {dev.deviceType === 'PS5' ? '₹60/p/hr' : '₹160/p/hr'}
+                            {(() => {
+                              const devPricing = pricingPlans.find((p) => p.deviceType === dev.deviceType && !p.game);
+                              const rate = devPricing ? devPricing.amount / 100 : (dev.deviceType === 'POOL' ? 150 : 70);
+                              return `₹${rate}/p/hr`;
+                            })()}
                           </span>
                         </div>
                         <h4 className="text-sm font-bold text-white mt-1.5">{dev.name}</h4>

@@ -13,10 +13,13 @@ export const ExtendSessionModal = ({ session, onClose, onSuccess }) => {
 
   if (!session) return null;
 
-  // Rate estimation (₹60/hr PS5 shared, ₹150/hr GTA 6 exclusive, ₹160/hr pool)
+  // Rate estimation (₹70/hr PS5 shared, ₹150/hr GTA 6 exclusive, ₹150/hr pool)
   const isExclusive = session.bookingType === 'PRIVATE' || session.game?.isExclusive;
   const isPool = session.device?.deviceType === 'POOL';
-  const hourlyRateRupees = isExclusive ? 150 : isPool ? 160 : 60;
+  const hourlyRateRupees =
+    session.pricingSnapshot?.ratePerUnitRupees ||
+    session.bookingId?.pricingSnapshot?.ratePerUnitRupees ||
+    (isExclusive ? 150 : isPool ? 150 : 70);
   const playersCount = isExclusive ? 1 : session.numberOfPlayers || 1;
   const estimatedAdditionalRupees = hourlyRateRupees * extendedHours * playersCount;
 

@@ -62,11 +62,12 @@ export async function calculateSessionPrice({
   }
 
   if (!pricingRule) {
-    // Default system fallback in paise: ₹60 per player per hour
+    // Default system fallback in paise: ₹70 per player per hour for PS5, ₹150 for POOL
+    const isPool = device.deviceType === 'POOL';
     pricingRule = {
       name: 'Default Fallback Pricing',
       billingType: 'PER_PLAYER_HOURLY',
-      amount: 6000, // 6000 paise = ₹60
+      amount: isPool ? 15000 : 7000, // 15000 paise = ₹150, 7000 paise = ₹70
       currency: 'INR',
     };
   }

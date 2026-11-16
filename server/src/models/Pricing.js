@@ -34,7 +34,7 @@ const pricingSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'Amount in paise is required'],
       min: [0, 'Amount cannot be negative'],
-      // Stored in paise: ₹60 = 6000 paise, ₹160 = 16000 paise, ₹150 = 15000 paise
+      // Stored in paise: ₹70 = 7000 paise, ₹150 = 15000 paise
     },
     currency: {
       type: String,
