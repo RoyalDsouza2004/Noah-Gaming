@@ -65,3 +65,29 @@
 .gaming-card:hover {
   border-color: rgba(165, 31, 53, 0.5);
 }
+
+/* Horizontal Table Scrollbar for Mobile & Desktop */
+.table-scrollbar {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #851B2B #171014;
+}
+
+.table-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.table-scrollbar::-webkit-scrollbar-track {
+  background: #171014;
+  border-radius: 9999px;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: #851B2B;
+  border-radius: 9999px;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #D7FF00;
+}

@@ -1302,8 +1302,22 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto touch-pan-y overscroll-x-contain rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl">
-                  <table className="w-full text-left text-xs min-w-[800px]">
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl overflow-hidden">
+                  {/* Mobile Swipe Hint */}
+                  <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-slate-950 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-[#D7FF00] font-bold">↔</span> Swipe horizontally to view full booking details
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[#D7FF00] text-[9px] font-bold">Scrollable</span>
+                  </div>
+                  <div
+                    className="overflow-x-auto touch-auto overscroll-x-contain w-full table-scrollbar"
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-x pan-y',
+                    }}
+                  >
+                    <table className="w-full text-left text-xs min-w-[800px]">
                   <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
                     <tr>
                       <th className="p-3.5">Booking ID</th>
@@ -1412,9 +1426,10 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              <Pagination
-                currentPage={todayBookingsPage}
+            <Pagination
+              currentPage={todayBookingsPage}
                 totalPages={Math.ceil(filteredTodayBookings.length / 8)}
                 totalItems={filteredTodayBookings.length}
                 pageSize={8}
@@ -1449,8 +1464,22 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto touch-pan-y overscroll-x-contain rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl">
-                  <table className="w-full text-left text-xs min-w-[800px]">
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl overflow-hidden">
+                  {/* Mobile Swipe Hint */}
+                  <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-slate-950 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-[#D7FF00] font-bold">↔</span> Swipe horizontally to view full booking details
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[#D7FF00] text-[9px] font-bold">Scrollable</span>
+                  </div>
+                  <div
+                    className="overflow-x-auto touch-auto overscroll-x-contain w-full table-scrollbar"
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-x pan-y',
+                    }}
+                  >
+                    <table className="w-full text-left text-xs min-w-[800px]">
                   <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
                     <tr>
                       <th className="p-3.5">Booking ID</th>
@@ -1500,9 +1529,10 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live' }) => {
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              <Pagination
-                currentPage={pendingPaymentsPage}
+            <Pagination
+              currentPage={pendingPaymentsPage}
                 totalPages={Math.ceil(pendingPayments.length / 8)}
                 totalItems={pendingPayments.length}
                 pageSize={8}

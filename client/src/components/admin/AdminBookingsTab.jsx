@@ -437,8 +437,21 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
       </div>
 
       {/* Bookings Table */}
-      <div className="rounded-xl border border-slate-800 bg-[#171014] overflow-hidden shadow-xl">
-        <div className="overflow-x-auto touch-pan-y overscroll-x-contain">
+      <div className="rounded-xl border border-slate-800 bg-[#171014] shadow-xl overflow-hidden">
+        {/* Mobile Swipe Hint */}
+        <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-slate-900/90 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
+          <span className="flex items-center gap-1.5">
+            <span className="text-[#D7FF00] font-bold">↔</span> Swipe horizontally to view full booking details
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[#D7FF00] text-[9px] font-bold">Scrollable</span>
+        </div>
+        <div
+          className="overflow-x-auto overscroll-x-contain touch-auto w-full table-scrollbar"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x pan-y',
+          }}
+        >
           <table className="w-full text-left text-xs min-w-[850px]">
             <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
               <tr>
