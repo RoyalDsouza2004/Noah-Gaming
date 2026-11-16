@@ -1,0 +1,319 @@
+import React, { useState, useEffect } from 'react';
+import {
+  House,
+  Gamepad2,
+  CalendarDays,
+  UserRound,
+  LayoutDashboard,
+} from 'lucide-react';
+
+export const MobileBottomNav = ({
+  user,
+  activeNav = 'home',
+  onNavigate,
+  openLoginModal,
+}) => {
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Handle virtual keyboard on mobile to avoid blocking form inputs
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      const handleResize = () => {
+        const isKeyboard = window.visualViewport.height < window.innerHeight * 0.75;
+        setIsKeyboardVisible(isKeyboard);
+      };
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport?.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  const role = user?.role || 'customer';
+
+  // Determine which navigation item is active based on activeNav and window.location.hash
+  const getActiveItemId = () => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+
+    if (role === 'admin') {
+      // 1. Overview: dashboard, analytics, automation, health
+      if (
+        activeNav.startsWith('admin_overview') ||
+        activeNav === 'admin_analytics' ||
+        activeNav === 'admin_automation' ||
+        activeNav === 'admin_health' ||
+        hash === '#admin' ||
+        hash === '#admin-overview' ||
+        hash === '#admin-analytics' ||
+        hash === '#admin-automation' ||
+        hash === '#admin-health' ||
+        hash === '#system-health' ||
+        hash === '#auth-console'
+      ) {
+        return 'admin_overview';
+      }
+      // 2. Hardware: devices, games, exclusive, categories, pricing, maintenance
+      if (
+        activeNav === 'admin_devices' ||
+        activeNav === 'admin_games' ||
+        activeNav === 'admin_exclusive' ||
+        activeNav === 'admin_categories' ||
+        activeNav === 'admin_pricing' ||
+        activeNav === 'admin_maintenance' ||
+        hash === '#admin-devices' ||
+        hash === '#admin-games' ||
+        hash === '#admin-exclusive' ||
+        hash === '#admin-categories' ||
+        hash === '#admin-pricing' ||
+        hash === '#admin-maintenance'
+      ) {
+        return 'admin_devices';
+      }
+      // 3. Bookings: bookings, calendar, payments, memberships
+      if (
+        activeNav === 'admin_bookings' ||
+        activeNav === 'admin_calendar' ||
+        activeNav === 'admin_payments' ||
+        activeNav === 'admin_memberships' ||
+        hash === '#admin-bookings' ||
+        hash === '#admin-calendar' ||
+        hash === '#admin-payments' ||
+        hash === '#admin-memberships'
+      ) {
+        return 'admin_bookings';
+      }
+      // 4. Profile: admin profile, account settings
+      if (
+        activeNav === 'profile' ||
+        activeNav === 'admin_profile' ||
+        hash === '#profile' ||
+        hash === '#admin-profile'
+      ) {
+        return 'profile';
+      }
+      return 'admin_overview';
+    }
+
+    if (role === 'receptionist') {
+      // 1. Dashboard: live consoles & sessions, hardware status
+      if (
+        activeNav === 'receptionist' ||
+        activeNav === 'reception_live' ||
+        activeNav === 'reception_status' ||
+        hash === '#receptionist' ||
+        hash === '#receptionist-live'
+      ) {
+        return 'reception_dashboard';
+      }
+      // 2. Walk-In POS
+      if (activeNav === 'reception_walkin' || hash === '#receptionist-walkin') {
+        return 'reception_walkin';
+      }
+      // 3. Today's Bookings & Check-ins
+      if (activeNav === 'reception_bookings' || hash === '#receptionist-bookings') {
+        return 'reception_bookings';
+      }
+      // 4. Staff Profile & Account
+      if (
+        activeNav === 'profile' ||
+        activeNav === 'reception_profile' ||
+        hash === '#profile'
+      ) {
+        return 'profile';
+      }
+      return 'reception_dashboard';
+    }
+
+    // Default Customer / Public Visitor Navigation
+    // 1. Equipment: equipment, pricing
+    if (
+      activeNav === 'equipment' ||
+      activeNav === 'pricing' ||
+      hash === '#overview' ||
+      hash === '#equipment' ||
+      hash === '#pricing'
+    ) {
+      return 'equipment';
+    }
+    // 2. Bookings: bookings, booking wizard
+    if (
+      activeNav === 'bookings' ||
+      activeNav === 'book' ||
+      hash === '#bookings' ||
+      hash === '#book'
+    ) {
+      return 'bookings';
+    }
+    // 3. Profile: profile, memberships, notifications
+    if (
+      activeNav === 'profile' ||
+      activeNav === 'passes' ||
+      activeNav === 'notifications' ||
+      hash === '#profile' ||
+      hash === '#passes' ||
+      hash === '#notifications'
+    ) {
+      return 'profile';
+    }
+    // 4. Home: default
+    return 'home';
+  };
+
+  const activeItemId = getActiveItemId();
+
+  // Exactly 4 items per role
+  let navItems = [];
+
+  if (role === 'admin') {
+    navItems = [
+      {
+        id: 'admin_overview',
+        label: 'Overview',
+        icon: LayoutDashboard,
+        route: 'admin_overview',
+      },
+      {
+        id: 'admin_devices',
+        label: 'Hardware',
+        icon: Gamepad2,
+        route: 'admin_devices',
+      },
+      {
+        id: 'admin_bookings',
+        label: 'Bookings',
+        icon: CalendarDays,
+        route: 'admin_bookings',
+      },
+      {
+        id: 'profile',
+        label: 'Profile',
+        icon: UserRound,
+        route: 'profile',
+      },
+    ];
+  } else if (role === 'receptionist') {
+    navItems = [
+      {
+        id: 'reception_dashboard',
+        label: 'Dashboard',
+        icon: LayoutDashboard,
+        route: 'receptionist',
+      },
+      {
+        id: 'reception_walkin',
+        label: 'Walk-In',
+        icon: Gamepad2,
+        route: 'reception_walkin',
+      },
+      {
+        id: 'reception_bookings',
+        label: "Today's",
+        icon: CalendarDays,
+        route: 'reception_bookings',
+      },
+      {
+        id: 'profile',
+        label: 'Profile',
+        icon: UserRound,
+        route: 'profile',
+      },
+    ];
+  } else {
+    // Customer / Public Visitor Navigation
+    navItems = [
+      {
+        id: 'home',
+        label: 'Home',
+        icon: House,
+        route: 'home',
+      },
+      {
+        id: 'equipment',
+        label: 'Equipment',
+        icon: Gamepad2,
+        route: 'equipment',
+      },
+      {
+        id: 'bookings',
+        label: 'Bookings',
+        icon: CalendarDays,
+        route: 'bookings',
+      },
+      {
+        id: 'profile',
+        label: 'Profile',
+        icon: UserRound,
+        route: 'profile',
+      },
+    ];
+  }
+
+  const handleItemClick = (e, item) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // If item requires authentication and user is not logged in
+    if (!user && (item.id === 'bookings' || item.id === 'profile')) {
+      if (openLoginModal) openLoginModal();
+      return;
+    }
+
+    if (onNavigate) {
+      onNavigate(item.route);
+    }
+  };
+
+  // If virtual keyboard is open, do not obstruct form inputs
+  if (isKeyboardVisible) return null;
+
+  return (
+    <div
+      role="navigation"
+      aria-label="Mobile Bottom Navigation"
+      style={{
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+      }}
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-[60] md:hidden pointer-events-auto rounded-full bg-[#171014]/80 border border-[#851B2B]/35 shadow-[0_8px_32px_rgba(0,0,0,0.55),0_1px_2px_rgba(255,255,255,0.06)_inset] px-2 py-1.5 transition-all duration-200"
+    >
+      <nav className="w-full flex items-center justify-around">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeItemId === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={(e) => handleItemClick(e, item)}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
+              className="flex-1 flex flex-col items-center justify-center py-1 px-1 relative transition-all group focus:outline-none min-h-[48px]"
+            >
+              <div
+                className={`flex items-center justify-center transition-all duration-200 ${
+                  isActive
+                    ? 'w-10 h-10 rounded-full bg-[#851B2B]/45 border border-[#851B2B]/60 shadow-[0_0_12px_rgba(133,27,43,0.35)] scale-105'
+                    : 'w-10 h-10 rounded-full hover:bg-white/5'
+                }`}
+              >
+                <Icon
+                  className={`transition-colors duration-200 ${
+                    isActive ? 'w-5 h-5 text-[#D7FF00]' : 'w-5 h-5 text-white/70 group-hover:text-white'
+                  }`}
+                />
+              </div>
+
+              <span
+                className={`text-[10px] tracking-tight mt-0.5 transition-all select-none ${
+                  isActive ? 'font-bold font-heading scale-105' : 'font-medium opacity-90'
+                }`}
+                style={{ color: '#FFFFFF' }}
+              >
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+};

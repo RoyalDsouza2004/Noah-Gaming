@@ -1,0 +1,176 @@
+import React, { useState, useEffect } from 'react';
+import { sessionsApi } from '../../api/sessions.js';
+import {
+  Gamepad2,
+  Clock,
+  Tv,
+  AlertTriangle,
+  Flame,
+  CheckCircle2,
+  Users,
+  CreditCard,
+  Sparkles,
+} from 'lucide-react';
+
+export const ActiveSessionCountdown = ({ customerUser }) => {
+  const [activeSession, setActiveSession] = useState(null);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Poll backend for active sessions
+  const fetchActiveSession = async () => {
+    try {
+      const res = await sessionsApi.getActiveSessions();
+      if (res.success && res.data.sessions?.length > 0) {
+        // Customer's first active session
+        const session = res.data.sessions[0];
+        setActiveSession(session);
+        setRemainingSeconds(session.remainingSeconds);
+      } else {
+        setActiveSession(null);
+      }
+    } catch (err) {
+      console.warn('[ActiveSessionCountdown] poll error', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchActiveSession();
+    const syncInterval = setInterval(fetchActiveSession, 10000); // 10s backend sync
+    return () => clearInterval(syncInterval);
+  }, [customerUser]);
+
+  // Local 1-second ticker using authoritative scheduledEndAt
+  useEffect(() => {
+    if (!activeSession || !activeSession.scheduledEndAt) return;
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const endMs = new Date(activeSession.scheduledEndAt).getTime();
+      const diffSec = Math.max(0, Math.floor((endMs - now) / 1000));
+      setRemainingSeconds(diffSec);
+
+      if (diffSec === 0 && activeSession.status === 'ACTIVE') {
+        setActiveSession((prev) => (prev ? { ...prev, status: 'AWAITING_RECEPTIONIST' } : null));
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeSession]);
+
+  if (loading || !activeSession) return null;
+
+  // Format HH:MM:SS
+  const formatTime = (totalSec) => {
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const isExpired = remainingSeconds <= 0 || activeSession.status === 'AWAITING_RECEPTIONIST' || activeSession.status === 'TIME_EXPIRED';
+  const isUrgent = remainingSeconds > 0 && remainingSeconds <= 300; // <= 5 min
+  const isWarning = remainingSeconds > 300 && remainingSeconds <= 900; // <= 15 min
+
+  const themeBorder = isExpired
+    ? 'border-rose-500/60 bg-rose-950/20'
+    : isUrgent
+    ? 'border-amber-500/60 bg-amber-950/20 animate-pulse'
+    : isWarning
+    ? 'border-amber-500/40 bg-amber-950/10'
+    : 'border-[#49202C] bg-[#260D17]';
+
+  const timerColor = isExpired
+    ? 'text-rose-400'
+    : isUrgent
+    ? 'text-amber-400'
+    : isWarning
+    ? 'text-amber-300'
+    : 'text-[#D7FF00]';
+
+  return (
+    <div className={`p-5 rounded-2xl border shadow-2xl transition-all ${themeBorder} mb-6 animate-fadeIn`}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Left: Device & Game Info */}
+        <div className="flex items-start gap-3.5">
+          <div className="p-3 rounded-2xl bg-[#851B2B]/15 border border-[#49202C] text-[#D7FF00] shrink-0">
+            <Gamepad2 className="w-6 h-6 animate-bounce" />
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-[#851B2B] text-[#FFF4E8]">
+                Live Session Active
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                Booking ID: {activeSession.booking?.bookingId}
+              </span>
+            </div>
+
+            <h3 className="text-lg font-black text-white font-heading mt-1 flex items-center gap-2">
+              {activeSession.device?.name || 'Gaming Station'}
+              <span className="text-sm font-normal text-slate-400">
+                &bull; {activeSession.game?.name || 'Standard Play'}
+              </span>
+              {activeSession.game?.isExclusive && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                  Exclusive
+                </span>
+              )}
+            </h3>
+
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 mt-1">
+              <span className="flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-[#D7FF00]" />
+                {activeSession.booking?.numberOfPlayers || 1} Player(s)
+              </span>
+              <span>&bull;</span>
+              <span>Started: {new Date(activeSession.startedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST</span>
+              <span>&bull;</span>
+              <span>Ends: {new Date(activeSession.scheduledEndAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Countdown Clock */}
+        <div className="text-left md:text-right p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 shrink-0">
+          <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+            {isExpired ? 'Status' : 'Time Remaining'}
+          </span>
+          <div className={`text-3xl font-black font-mono tracking-wider ${timerColor}`}>
+            {isExpired ? '00:00:00' : formatTime(remainingSeconds)}
+          </div>
+          <span className="text-[11px] text-slate-400 block mt-0.5">
+            {isExpired
+              ? 'Awaiting Receptionist Checkout'
+              : `${activeSession.booking?.duration || 1}h total session`}
+          </span>
+        </div>
+      </div>
+
+      {/* Warning Banners */}
+      {isExpired && (
+        <div className="mt-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+          <span className="flex items-center gap-2 font-medium">
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            Your scheduled gaming session has expired. Please wrap up your game and visit reception for checkout.
+          </span>
+          <span className="text-[11px] text-slate-400 hidden sm:inline font-mono">
+            Device remains held until checkout
+          </span>
+        </div>
+      )}
+
+      {isUrgent && !isExpired && (
+        <div className="mt-4 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+          <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>
+            Only {Math.ceil(remainingSeconds / 60)} minute(s) remaining! Contact the front desk if you wish to extend your session.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};

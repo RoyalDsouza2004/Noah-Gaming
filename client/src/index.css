@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-noah-charcoal: #171014;
+  --color-noah-dark-burgundy: #260D17;
+  --color-noah-burgundy: #851B2B;
+  --color-noah-crimson: #A51F35;
+  --color-noah-lime: #D7FF00;
+  --color-noah-gold: #F5B942;
+  --color-noah-warm-white: #FFF4E8;
+  --color-noah-muted-rose: #C7A5A8;
+  --color-noah-wine: #49202C;
+  --color-noah-green: #45C987;
+  --color-noah-error: #F06A76;
+}
+
+@layer base {
+  html {
+    max-width: 100%;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-[#171014] text-[#FFF4E8] antialiased;
+    font-family: 'Inter', sans-serif;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, .font-heading {
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    letter-spacing: 0.05em;
+  }
+}
+
+.gaming-glow {
+  box-shadow: 0 0 25px -5px rgba(215, 255, 0, 0.25);
+}
+
+.gaming-glow-crimson {
+  box-shadow: 0 0 25px -5px rgba(165, 31, 53, 0.35);
+}
+
+.gaming-glow-burgundy {
+  box-shadow: 0 0 25px -5px rgba(133, 27, 43, 0.4);
+}
+
+.gaming-gradient-text {
+  background: linear-gradient(135deg, #FFF4E8 0%, #F5B942 50%, #A51F35 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gaming-gradient-brand {
+  background: linear-gradient(135deg, #851B2B 0%, #A51F35 100%);
+}
+
+.gaming-card {
+  background: rgba(38, 13, 23, 0.85);
+  border: 1px solid #49202C;
+  backdrop-filter: blur(12px);
+}
+
+.gaming-card:hover {
+  border-color: rgba(165, 31, 53, 0.5);
+}

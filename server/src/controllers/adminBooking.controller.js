@@ -1,0 +1,305 @@
+import Booking from '../models/Booking.js';
+import Device from '../models/Device.js';
+import DeviceMaintenance from '../models/DeviceMaintenance.js';
+import User from '../models/User.js';
+import { createBookingAtomic, cancelBookingService } from '../services/booking.service.js';
+import { parseISTDateTime, formatISTDate } from '../utils/timeSlots.js';
+
+// GET /api/admin/bookings
+export const getAllBookingsAdmin = async (req, res) => {
+  try {
+    const {
+      date,
+      device,
+      game,
+      customer,
+      bookingType,
+      bookingStatus,
+      paymentStatus,
+      search,
+      page = 1,
+      limit = 25,
+    } = req.query;
+
+    const filter = {};
+
+    if (date) filter.bookingDate = date;
+    if (device) filter.device = device;
+    if (game) filter.game = game;
+    if (customer) filter.customer = customer;
+    if (bookingType) filter.bookingType = bookingType;
+    if (bookingStatus) filter.bookingStatus = bookingStatus;
+    if (paymentStatus) filter.paymentStatus = paymentStatus;
+
+    if (search) {
+      filter.$or = [
+        { bookingId: { $regex: search, $options: 'i' } },
+        { notes: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [bookings, total, stats] = await Promise.all([
+      Booking.find(filter)
+        .populate('device', 'name deviceCode deviceType capacity')
+        .populate('game', 'name category isExclusive')
+        .populate('customer', 'name email phone')
+        .sort({ startAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Booking.countDocuments(filter),
+      Booking.aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            totalRevenuePaise: {
+              $sum: {
+                $cond: [{ $ne: ['$bookingStatus', 'CANCELLED'] }, '$totalAmount', 0],
+              },
+            },
+            confirmedCount: {
+              $sum: { $cond: [{ $eq: ['$bookingStatus', 'CONFIRMED'] }, 1, 0] },
+            },
+            cancelledCount: {
+              $sum: { $cond: [{ $eq: ['$bookingStatus', 'CANCELLED'] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const aggregateStats = stats[0] || {
+      totalRevenuePaise: 0,
+      confirmedCount: 0,
+      cancelledCount: 0,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        bookings,
+        stats: {
+          totalBookings: total,
+          totalRevenueRupees: aggregateStats.totalRevenuePaise / 100,
+          totalRevenuePaise: aggregateStats.totalRevenuePaise,
+          confirmedCount: aggregateStats.confirmedCount,
+          cancelledCount: aggregateStats.cancelledCount,
+        },
+        pagination: {
+          total,
+          page: parseInt(page),
+          pages: Math.ceil(total / parseInt(limit)),
+          limit: parseInt(limit),
+        },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve bookings',
+      error: err.message,
+    });
+  }
+};
+
+// POST /api/admin/bookings (Walk-in & manual creation by Staff/Admin)
+export const createBookingAdmin = async (req, res) => {
+  try {
+    const {
+      customerId,
+      customerPhone,
+      customerName,
+      customerEmail,
+      deviceId,
+      gameId,
+      bookingType = 'SHARED',
+      bookingDate,
+      startTime,
+      duration = 1,
+      numberOfPlayers = 1,
+      notes,
+    } = req.body;
+
+    let targetCustomerId = customerId;
+
+    // If customerId not provided, search or create customer on-the-fly for walk-in
+    if (!targetCustomerId) {
+      if (!customerPhone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Either customerId or customerPhone is required for booking',
+        });
+      }
+
+      let existing = await User.findOne({ phone: customerPhone.trim() });
+      if (!existing) {
+        existing = new User({
+          name: customerName ? customerName.trim() : `Walk-In Player (${customerPhone.slice(-4)})`,
+          email: customerEmail ? customerEmail.trim().toLowerCase() : `walkin_${Date.now()}@gaminglounge.local`,
+          phone: customerPhone.trim(),
+          password: 'WalkInPassword@123',
+          role: 'customer',
+        });
+        await existing.save();
+      }
+      targetCustomerId = existing._id;
+    }
+
+    const booking = await createBookingAtomic({
+      customerId: targetCustomerId,
+      deviceId,
+      gameId,
+      bookingType,
+      bookingDate,
+      startTime,
+      duration: parseFloat(duration) || 1,
+      numberOfPlayers: parseInt(numberOfPlayers) || 1,
+      notes: notes ? `[Admin/Walk-in] ${notes}` : '[Admin/Walk-in]',
+    });
+
+    const populated = await Booking.findById(booking._id)
+      .populate('device', 'name deviceCode deviceType capacity')
+      .populate('game', 'name category isExclusive')
+      .populate('customer', 'name email phone');
+
+    res.status(201).json({
+      success: true,
+      message: `Manual reservation ${booking.bookingId} confirmed successfully!`,
+      data: { booking: populated },
+    });
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || 'Error creating manual booking',
+    });
+  }
+};
+
+// PATCH /api/admin/bookings/:id
+export const updateBookingAdmin = async (req, res) => {
+  try {
+    const { bookingStatus, paymentStatus, notes, cancellationReason } = req.body;
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    if (bookingStatus) {
+      if (bookingStatus === 'CANCELLED' && booking.bookingStatus !== 'CANCELLED') {
+        booking.bookingStatus = 'CANCELLED';
+        booking.cancellationReason = cancellationReason || 'Cancelled by staff/admin';
+        booking.cancelledAt = new Date();
+      } else {
+        booking.bookingStatus = bookingStatus;
+      }
+    }
+
+    if (paymentStatus) booking.paymentStatus = paymentStatus;
+    if (typeof notes === 'string') booking.notes = notes;
+
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Booking ${booking.bookingId} updated successfully.`,
+      data: { booking },
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update booking',
+      error: err.message,
+    });
+  }
+};
+
+// GET /api/admin/bookings/calendar
+export const getCalendarBookings = async (req, res) => {
+  try {
+    const { date, view = 'daily', deviceId } = req.query;
+    const queryDateStr = date || formatISTDate(new Date());
+
+    const deviceFilter = {};
+    if (deviceId) {
+      deviceFilter._id = deviceId;
+    }
+
+    const devices = await Device.find(deviceFilter).sort({ deviceType: 1, name: 1 });
+
+    // Determine date range based on view
+    let startQueryDate = parseISTDateTime(queryDateStr, '00:00');
+    let endQueryDate = parseISTDateTime(queryDateStr, '23:59');
+
+    if (view === 'weekly') {
+      // 7 days from queryDate
+      endQueryDate = new Date(startQueryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    } else if (view === 'monthly') {
+      // 30 days
+      endQueryDate = new Date(startQueryDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Fetch confirmed bookings in interval
+    const bookings = await Booking.find({
+      startAt: { $lt: endQueryDate },
+      endAt: { $gt: startQueryDate },
+      bookingStatus: { $ne: 'CANCELLED' },
+      ...(deviceId ? { device: deviceId } : {}),
+    })
+      .populate('device', 'name deviceCode deviceType capacity')
+      .populate('customer', 'name phone')
+      .populate('game', 'name category isExclusive');
+
+    // Fetch maintenance records in interval
+    const maintenanceRecords = await DeviceMaintenance.find({
+      startDate: { $lt: endQueryDate },
+      status: { $in: ['SCHEDULED', 'IN_PROGRESS'] },
+      ...(deviceId ? { device: deviceId } : {}),
+    }).populate('device', 'name deviceCode');
+
+    // Group by device timeline
+    const timeline = devices.map((dev) => {
+      const devBookings = bookings.filter(
+        (b) => b.device?._id?.toString() === dev._id.toString()
+      );
+      const devMaintenance = maintenanceRecords.filter(
+        (m) => m.device?._id?.toString() === dev._id.toString()
+      );
+
+      return {
+        device: {
+          id: dev._id,
+          name: dev.name,
+          deviceCode: dev.deviceCode,
+          deviceType: dev.deviceType,
+          capacity: dev.capacity,
+          status: dev.status,
+        },
+        bookingsCount: devBookings.length,
+        bookings: devBookings,
+        maintenance: devMaintenance,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        view,
+        date: queryDateStr,
+        timeline,
+        totalBookingsInRange: bookings.length,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate calendar view',
+      error: err.message,
+    });
+  }
+};

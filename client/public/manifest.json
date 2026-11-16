@@ -1,0 +1,33 @@
+{
+  "name": "NOAH GAMING Lounge Management & Booking Platform",
+  "short_name": "NOAH GAMING",
+  "description": "NOAH GAMING: PLAY • CHILL • CONNECT - High-performance console and tournament gaming lounge booking platform",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#171014",
+  "theme_color": "#851B2B",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["entertainment", "games", "productivity", "utilities"]
+}

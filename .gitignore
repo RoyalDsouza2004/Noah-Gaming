@@ -1,0 +1,58 @@
+# Dependency directories
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+client/.env
+client/.env.*
+!client/.env.example
+server/.env
+server/.env.*
+!server/.env.example
+*.env
+
+# Production build outputs
+dist/
+client/dist/
+build/
+client/build/
+.output/
+
+# Local databases, data dumps & lock files
+data/
+server/data/
+server/data/db/
+server/data/backup/
+server/data/backup_gaming_lounge/
+*.dump
+*.sql
+*.sqlite
+*.sqlite3
+mongod.lock
+*.lock
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Keys, Certificates, and Credentials
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
