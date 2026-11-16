@@ -45,6 +45,7 @@ export const createCustomerBooking = async (req, res) => {
     const {
       deviceId,
       gameId,
+      isVenueSelection = false,
       bookingType = 'SHARED',
       bookingDate,
       startTime,
@@ -63,7 +64,8 @@ export const createCustomerBooking = async (req, res) => {
     const booking = await createBookingAtomic({
       customerId: req.user._id,
       deviceId,
-      gameId,
+      gameId: isVenueSelection ? null : gameId,
+      isVenueSelection: Boolean(isVenueSelection),
       bookingType,
       bookingDate,
       startTime,

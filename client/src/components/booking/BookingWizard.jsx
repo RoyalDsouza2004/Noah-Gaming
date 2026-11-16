@@ -50,6 +50,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedDevice, setSelectedDevice] = useState(initialDevice || null);
   const [selectedGame, setSelectedGame] = useState(initialGame || null);
+  const [isVenueSelection, setIsVenueSelection] = useState(false);
 
   // Date & Duration selection (default Tomorrow in YYYY-MM-DD IST)
   const tomorrowStr = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -134,7 +135,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
         selectedDevice._id,
         bookingDate,
         duration,
-        selectedGame?._id
+        isVenueSelection ? null : selectedGame?._id
       );
       if (res.success && res.data?.slots) {
         setAvailabilitySlots(res.data.slots);
@@ -148,7 +149,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
   useEffect(() => {
     fetchAvailability();
-  }, [selectedDevice, selectedGame, bookingDate, duration]);
+  }, [selectedDevice, selectedGame, isVenueSelection, bookingDate, duration]);
 
   // Fetch price quote whenever device, game, duration, or players change
   useEffect(() => {
@@ -158,7 +159,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       try {
         const res = await equipmentApi.calculatePrice({
           deviceId: selectedDevice._id,
-          gameId: selectedGame?._id,
+          gameId: isVenueSelection ? null : selectedGame?._id,
+          isVenueSelection,
           durationMinutes: duration * 60,
           playersCount: numberOfPlayers,
         });
@@ -172,10 +174,11 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       }
     };
     fetchQuote();
-  }, [selectedDevice, selectedGame, duration, numberOfPlayers, bookingType]);
+  }, [selectedDevice, selectedGame, isVenueSelection, duration, numberOfPlayers, bookingType]);
 
   // Minimum & Maximum selectable players for current game and state
   const getMinPlayersAllowed = () => {
+    if (isVenueSelection) return 1;
     if (selectedGame?.minPlayers) {
       return Math.max(1, selectedGame.minPlayers);
     }
@@ -184,7 +187,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
   const getMaxPlayersAllowed = () => {
     if (!selectedDevice) return 1;
-    const gameMax = selectedGame?.maxPlayers || selectedDevice.capacity;
+    const gameMax = isVenueSelection ? selectedDevice.capacity : (selectedGame?.maxPlayers || selectedDevice.capacity);
 
     if (bookingType === 'PRIVATE') {
       return gameMax;
@@ -197,7 +200,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
   // Synchronize player count and booking mode when game or slot changes
   useEffect(() => {
-    if (selectedGame) {
+    if (selectedGame && !isVenueSelection) {
       if (selectedGame.bookingMode === 'PRIVATE_ONLY' || selectedGame.isExclusive) {
         setBookingType('PRIVATE');
       } else if (selectedGame.bookingMode === 'SHARED') {
@@ -213,7 +216,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     } else if (numberOfPlayers > maxP) {
       setNumberOfPlayers(maxP);
     }
-  }, [selectedGame, selectedDevice, bookingType, selectedSlot]);
+  }, [selectedGame, isVenueSelection, selectedDevice, bookingType, selectedSlot]);
 
   const handleConfirmBooking = async () => {
     if (!isAuthenticated) {
@@ -231,7 +234,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     try {
       const payload = {
         deviceId: selectedDevice._id,
-        gameId: selectedGame?._id || null,
+        gameId: isVenueSelection ? null : (selectedGame?._id || null),
+        isVenueSelection,
         bookingType,
         bookingDate,
         startTime: selectedSlot.startTime,
@@ -407,14 +411,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     <span className="text-slate-400 flex items-center gap-1">
                       <Users className="w-3.5 h-3.5 text-[#D7FF00]" /> Max {device.capacity} Players
                     </span>
-                    <span className="text-emerald-400 font-bold">
-                      {(() => {
-                        const devPricing = pricingPlans.find(
-                          (p) => p.deviceType === device.deviceType || p.device === device._id
-                        );
-                        const rate = devPricing ? devPricing.amount / 100 : (device.deviceType === 'POOL' ? 150 : 70);
-                        return `₹${rate}/hr${device.deviceType === 'POOL' ? ' (table)' : '/p'}`;
-                      })()}
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                      {device.deviceType === 'POOL' ? 'Tournament Table' : 'Station Ready'}
                     </span>
                   </div>
                 </div>
@@ -424,154 +422,255 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
           <div className="flex justify-end pt-4">
             <button
-              onClick={() => setStep(2)}
+              onClick={() => {
+                if (selectedDevice?.deviceType === 'POOL') {
+                  setSelectedGame(null);
+                  setIsVenueSelection(false);
+                  setStep(3);
+                } else {
+                  setStep(2);
+                }
+              }}
               disabled={!selectedDevice}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider transition-all disabled:opacity-50"
             >
-              Continue to Game Selection <ArrowRight className="w-4 h-4" />
+              {selectedDevice?.deviceType === 'POOL'
+                ? 'Continue to Date & Time Slots'
+                : 'Continue to Game Selection'}{' '}
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
       {/* ---------------- STEP 2: SELECT GAME ---------------- */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <p className="text-xs text-slate-400">
-              Select the title you wish to play on <strong className="text-white">{selectedDevice?.name}</strong>.
-            </p>
+      {step === 2 && (() => {
+        const ps5Pricing = pricingPlans.find((p) => p.deviceType === 'PS5' && !p.game);
+        const ps5RateRupees = ps5Pricing ? ps5Pricing.amount / 100 : 70;
 
-            {/* Category filter */}
-            <div className="flex overflow-x-auto gap-1 text-xs">
-              <button
-                onClick={() => setSelectedCategory('ALL')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
-                  selectedCategory === 'ALL' ? 'bg-[#851B2B] text-[#FFF4E8] font-heading' : 'bg-slate-900 text-slate-400'
-                }`}
-              >
-                All
-              </button>
-              {categories.map((c) => (
+        const getExclusiveGameRate = (game) => {
+          const directPricing = pricingPlans.find(
+            (p) => (p.game && (p.game === game._id || p.game._id === game._id)) || p._id === game.pricing
+          );
+          if (directPricing) return directPricing.amount / 100;
+          const exclPricing = pricingPlans.find(
+            (p) => p.deviceType === 'EXCLUSIVE' || (p.name && /GTA 6|Exclusive/i.test(p.name))
+          );
+          return exclPricing ? exclPricing.amount / 100 : 150;
+        };
+
+        return (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-slate-400">
+                  Select a title or choose upon arrival for <strong className="text-white">{selectedDevice?.name}</strong>.
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Standard PS5 rate: <strong className="text-emerald-400 font-mono">₹{ps5RateRupees}/hr/p</strong>. Exclusive titles lock the entire physical console.
+                </p>
+              </div>
+
+              {/* Category filter */}
+              <div className="flex overflow-x-auto gap-1 text-xs">
                 <button
-                  key={c._id}
-                  onClick={() => setSelectedCategory(c._id)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
-                    selectedCategory === c._id ? 'bg-[#851B2B] text-[#FFF4E8] font-heading' : 'bg-slate-900 text-slate-400'
+                  onClick={() => setSelectedCategory('ALL')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                    selectedCategory === 'ALL' ? 'bg-[#851B2B] text-[#FFF4E8] font-heading' : 'bg-slate-900 text-slate-400'
                   }`}
                 >
-                  {c.name}
+                  All
                 </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 max-h-[360px] overflow-y-auto pr-1">
-            {/* Any / Skip option */}
-            <div
-              onClick={() => setSelectedGame(null)}
-              className={`p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
-                selectedGame === null
-                  ? 'bg-[#171014] border-[#851B2B] shadow-md shadow-[#851B2B]/20'
-                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-              }`}
-            >
-              <div>
-                <span className="text-[10px] font-semibold text-slate-400 uppercase">Open Session</span>
-                <h4 className="font-bold text-white text-sm font-heading mt-0.5">Select at Venue / Console</h4>
-                <p className="text-xs text-slate-400 mt-1">Pick your game directly from the library on arrival.</p>
+                {categories.map((c) => (
+                  <button
+                    key={c._id}
+                    onClick={() => setSelectedCategory(c._id)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
+                      selectedCategory === c._id ? 'bg-[#851B2B] text-[#FFF4E8] font-heading' : 'bg-slate-900 text-slate-400'
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {filteredGames.map((game) => {
-              const isSelected = selectedGame?._id === game._id;
-              return (
-                <div
-                  key={game._id}
-                  onClick={() => {
-                    setSelectedGame(game);
-                    if (game.bookingMode === 'PRIVATE_ONLY' || game.isExclusive) {
-                      setBookingType('PRIVATE');
-                    } else if (game.bookingMode === 'SHARED') {
-                      setBookingType('SHARED');
-                    }
-                    const minP = game.minPlayers || 1;
-                    const maxP = game.maxPlayers || 4;
-                    if (numberOfPlayers < minP) {
-                      setNumberOfPlayers(minP);
-                    } else if (numberOfPlayers > maxP) {
-                      setNumberOfPlayers(maxP);
-                    }
-                  }}
-                  className={`p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-[#171014] border-[#851B2B] shadow-md shadow-[#851B2B]/20'
-                      : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] px-2 py-0.5 rounded font-semibold bg-purple-500/15 text-purple-300">
-                        {game.category?.name || 'Action'}
-                      </span>
-                      {game.isExclusive && (
-                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 flex items-center gap-0.5">
-                          <Flame className="w-2.5 h-2.5" /> Exclusive
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 max-h-[360px] overflow-y-auto pr-1">
+              {/* Option 1: Prominent SELECT AT VENUE card */}
+              <div
+                onClick={() => {
+                  setIsVenueSelection(true);
+                  setSelectedGame(null);
+                  setBookingType('SHARED');
+                }}
+                className={`p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
+                  isVenueSelection && !selectedGame
+                    ? 'bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/25 ring-2 ring-[#851B2B]'
+                    : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 flex items-center gap-1 font-heading">
+                      <Sparkles className="w-2.5 h-2.5" /> Non-Exclusive
+                    </span>
+                    <span className="text-xs font-mono font-black text-emerald-400">
+                      ₹{ps5RateRupees}/hr/p
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-white text-sm font-heading mt-1">Select at Venue</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Choose your game when you arrive at NOAH GAMING.
+                  </p>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-[#D7FF00] font-semibold flex items-center gap-1">
+                    <Users className="w-3 h-3 text-[#D7FF00]" /> 1-4 Players
+                  </span>
+                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                    Shared / Private
+                  </span>
+                </div>
+              </div>
+
+              {/* Compatible Games */}
+              {filteredGames.map((game) => {
+                const isSelected = !isVenueSelection && selectedGame?._id === game._id;
+                const isGta6 = /GTA 6|Grand Theft Auto VI/i.test(game.name);
+                const isGta6Locked = isGta6 && (game.status === 'INACTIVE' || !game.status);
+                const isExclusive = Boolean(game.isExclusive || isGta6);
+                const gamePriceRupees = isExclusive ? getExclusiveGameRate(game) : ps5RateRupees;
+
+                return (
+                  <div
+                    key={game._id}
+                    onClick={() => {
+                      if (isGta6Locked) return;
+                      setIsVenueSelection(false);
+                      setSelectedGame(game);
+                      if (game.bookingMode === 'PRIVATE_ONLY' || isExclusive) {
+                        setBookingType('PRIVATE');
+                      } else if (game.bookingMode === 'SHARED') {
+                        setBookingType('SHARED');
+                      }
+                      const minP = game.minPlayers || 1;
+                      const maxP = game.maxPlayers || 4;
+                      if (numberOfPlayers < minP) {
+                        setNumberOfPlayers(minP);
+                      } else if (numberOfPlayers > maxP) {
+                        setNumberOfPlayers(maxP);
+                      }
+                    }}
+                    className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
+                      isGta6Locked
+                        ? 'bg-slate-950/60 border-slate-800/50 opacity-60 cursor-not-allowed'
+                        : isSelected
+                        ? 'bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/25 ring-2 ring-[#851B2B] cursor-pointer'
+                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 cursor-pointer'
+                    }`}
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        {isExclusive ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#851B2B]/30 border border-[#851B2B]/60 text-amber-300 flex items-center gap-1 font-heading">
+                            <Flame className="w-2.5 h-2.5 text-amber-400" /> Exclusive
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-heading">
+                            Non-Exclusive
+                          </span>
+                        )}
+
+                        <span
+                          className={`text-xs font-mono font-black ${
+                            isExclusive ? 'text-amber-300' : 'text-emerald-400'
+                          }`}
+                        >
+                          ₹{gamePriceRupees}/hr{isExclusive ? ' (console)' : '/p'}
                         </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="font-bold text-white text-sm font-heading">{game.name}</h4>
+                        {isGta6Locked && (
+                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold flex items-center gap-0.5 whitespace-nowrap">
+                            <Lock className="w-2.5 h-2.5" /> Locked
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 line-clamp-2">{game.description}</p>
+                      {isGta6Locked && (
+                        <p className="text-[10px] text-amber-300/80 font-mono mt-0.5">
+                          Admin Activation Required
+                        </p>
                       )}
                     </div>
-                    <h4 className="font-bold text-white text-sm font-heading">{game.name}</h4>
-                    <p className="text-xs text-slate-400 line-clamp-2">{game.description}</p>
-                  </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-                    <span className="text-[#D7FF00] font-semibold flex items-center gap-1">
-                      <Users className="w-3 h-3 text-[#D7FF00]" />
-                      {game.minPlayers === game.maxPlayers
-                        ? `${game.maxPlayers} Player${game.maxPlayers > 1 ? 's' : ''}`
-                        : `${game.minPlayers || 1}-${game.maxPlayers || 4} Players`}
-                    </span>
-                    <span
-                      className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                        game.bookingMode === 'PRIVATE_ONLY'
-                          ? 'bg-amber-500/20 text-amber-300'
+                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-[#D7FF00] font-semibold flex items-center gap-1">
+                        <Users className="w-3 h-3 text-[#D7FF00]" />
+                        {game.minPlayers === game.maxPlayers
+                          ? `${game.maxPlayers} Player${game.maxPlayers > 1 ? 's' : ''}`
+                          : `${game.minPlayers || 1}-${game.maxPlayers || 4} Players`}
+                      </span>
+                      <span
+                        className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                          isExclusive || game.bookingMode === 'PRIVATE_ONLY'
+                            ? 'bg-amber-500/20 text-amber-300'
+                            : game.bookingMode === 'SHARED'
+                            ? 'bg-blue-500/20 text-blue-300'
+                            : 'bg-emerald-500/20 text-emerald-300'
+                        }`}
+                      >
+                        {isExclusive || game.bookingMode === 'PRIVATE_ONLY'
+                          ? 'Private Only'
                           : game.bookingMode === 'SHARED'
-                          ? 'bg-blue-500/20 text-blue-300'
-                          : 'bg-emerald-500/20 text-emerald-300'
-                      }`}
-                    >
-                      {game.bookingMode === 'PRIVATE_ONLY'
-                        ? 'Private Only'
-                        : game.bookingMode === 'SHARED'
-                        ? 'Shared Only'
-                        : 'Shared/Private'}
-                    </span>
+                          ? 'Shared Only'
+                          : 'Shared/Private'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          <div className="flex justify-between pt-4 border-t border-slate-800">
-            <button
-              onClick={() => setStep(1)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back to Equipment
-            </button>
-            <button
-              onClick={() => setStep(3)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider"
-            >
-              Continue to Date & Time Slots <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex justify-between pt-4 border-t border-slate-800">
+              <button
+                onClick={() => setStep(1)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Stations
+              </button>
+              <button
+                onClick={() => setStep(3)}
+                disabled={!isVenueSelection && !selectedGame}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider disabled:opacity-50"
+              >
+                Continue to Date & Time Slots <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ---------------- STEP 3: SCHEDULE DATE, DURATION & LIVE SLOTS ---------------- */}
       {step === 3 && (
         <div className="space-y-4">
+          {isVenueSelection && (
+            <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 shadow-md shadow-emerald-500/10">
+              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div>
+                <span className="font-bold font-heading uppercase text-emerald-200">
+                  Select at Venue Session
+                </span>
+                <p className="text-[11px] text-emerald-300/90 mt-0.5">
+                  You can choose any non-exclusive title upon arrival at NOAH GAMING. Billed dynamically at the standard PS5 lounge rate.
+                </p>
+              </div>
+            </div>
+          )}
+
           {selectedGame?.isExclusive && (
             <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/50 text-amber-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-amber-500/10">
               <div className="flex items-start gap-2.5">
@@ -581,7 +680,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     GTA 6 Physical PS5 Console Lock
                   </span>
                   <p className="text-[11px] text-amber-300/90 mt-0.5">
-                    Reserving GTA 6 locks the entire physical <strong>{selectedDevice?.name}</strong> console for your private session at ₹150/hr. The other PS5 console remains independently available for regular or GTA 6 sessions. Mandatory advance payment required.
+                    Reserving GTA 6 locks the entire physical <strong>{selectedDevice?.name}</strong> console for your private session at ₹{pricingQuote?.pricingRule?.ratePerUnitRupees || 150}/hr. The other PS5 console remains independently available for regular or GTA 6 sessions. Mandatory advance payment required.
                   </p>
                 </div>
               </div>
@@ -778,10 +877,10 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
           <div className="flex justify-between pt-4 border-t border-slate-800">
             <button
-              onClick={() => setStep(2)}
+              onClick={() => setStep(selectedDevice?.deviceType === 'POOL' ? 1 : 2)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Games
+              <ArrowLeft className="w-4 h-4" /> Back to {selectedDevice?.deviceType === 'POOL' ? 'Stations' : 'Games'}
             </button>
             <button
               onClick={() => setStep(4)}
@@ -806,7 +905,15 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               </h4>
 
               <p className="text-xs text-slate-400">
-                {selectedGame ? (
+                {isVenueSelection ? (
+                  <span>
+                    <strong className="text-white">Select at Venue</strong> lets you choose your game on arrival. Accommodates{' '}
+                    <span className="text-[#D7FF00] font-bold">1 to {selectedDevice?.capacity || 4} players</span>.
+                    {bookingType === 'SHARED'
+                      ? ` Up to ${getMaxPlayersAllowed()} slot(s) currently open for booking.`
+                      : ` You are reserving the entire ${selectedDevice?.name} exclusively.`}
+                  </span>
+                ) : selectedGame ? (
                   <span>
                     <strong className="text-white">{selectedGame.name}</strong> accommodates{' '}
                     <span className="text-[#D7FF00] font-bold">
@@ -894,7 +1001,33 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-800">
                     <span className="text-slate-400">Title:</span>
-                    <span className="text-[#D7FF00] font-semibold">{selectedGame?.name || 'Open Library'}</span>
+                    <span className="text-[#D7FF00] font-semibold flex items-center gap-1.5">
+                      {isVenueSelection ? (
+                        <>
+                          Select at Venue{' '}
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                            Non-Exclusive
+                          </span>
+                        </>
+                      ) : selectedGame ? (
+                        <>
+                          {selectedGame.name}{' '}
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                              selectedGame.isExclusive
+                                ? 'bg-amber-500/20 text-amber-300'
+                                : 'bg-emerald-500/20 text-emerald-300'
+                            }`}
+                          >
+                            {selectedGame.isExclusive ? 'Exclusive' : 'Non-Exclusive'}
+                          </span>
+                        </>
+                      ) : selectedDevice?.deviceType === 'POOL' ? (
+                        'Tournament 8-Ball Pool'
+                      ) : (
+                        'Select at Venue'
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-800">
                     <span className="text-slate-400">Date & Slot:</span>
@@ -922,7 +1055,10 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     </div>
                     <div className="flex justify-between text-slate-400 text-[11px]">
                       <span>Rate per unit:</span>
-                      <span>₹{pricingQuote.pricingRule?.ratePerUnitRupees}/hr</span>
+                      <span>
+                        ₹{pricingQuote.pricingRule?.ratePerUnitRupees}/hr
+                        {pricingQuote.pricingRule?.billingType === 'PER_PLAYER_HOURLY' ? '/p' : ' (console)'}
+                      </span>
                     </div>
                     <div className="flex justify-between text-white font-bold text-base pt-2 border-t border-slate-800 font-sans">
                       <span>Total Amount:</span>
@@ -1072,6 +1208,21 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
             <div className="flex justify-between py-1 border-b border-slate-800">
               <span className="text-slate-400">Equipment:</span>
               <span className="text-white font-sans font-semibold">{confirmedBooking.device?.name}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-800">
+              <span className="text-slate-400">Game / Title:</span>
+              <span className="text-[#D7FF00] font-sans font-semibold flex items-center gap-1.5">
+                {confirmedBooking.isVenueSelection
+                  ? 'Select at Venue'
+                  : confirmedBooking.game?.name || confirmedBooking.gameTitle || 'Lounge Play'}
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">
+                  {confirmedBooking.isVenueSelection
+                    ? 'Non-Exclusive'
+                    : confirmedBooking.game?.isExclusive
+                    ? 'Exclusive'
+                    : 'Non-Exclusive'}
+                </span>
+              </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800">
               <span className="text-slate-400">Date & Slot:</span>

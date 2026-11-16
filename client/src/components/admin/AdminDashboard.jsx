@@ -1102,6 +1102,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                           genre: Array.isArray(game.genre) ? game.genre.join(', ') : (game.genre || ''),
                           bookingMode: game.bookingMode || 'BOTH',
                           isExclusive: game.isExclusive,
+                          pricing: game.pricing?._id || game.pricing || '',
                           advancePaymentRequired: game.advancePaymentRequired,
                           minimumAdvancePayment: game.minimumAdvancePayment || 0,
                           minimumDuration: game.minimumDuration || 60,
@@ -1913,6 +1914,65 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 </div>
               </div>
 
+              {/* Compatible Gaming Stations */}
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                <span className="text-xs font-bold text-white uppercase tracking-wider font-heading flex items-center gap-1.5">
+                  <Gamepad2 className="w-3.5 h-3.5 text-[#D7FF00]" /> Compatible Gaming Stations
+                </span>
+                <p className="text-[10px] text-slate-400">
+                  Select which registered lounge stations support this game:
+                </p>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {devices
+                    .filter((d) => d.deviceType === 'PS5')
+                    .map((d) => {
+                      const isChecked = gameForm.compatibleDevices?.includes(d._id);
+                      return (
+                        <label
+                          key={d._id}
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                            isChecked
+                              ? 'bg-[#171014] border-[#851B2B] text-white font-bold'
+                              : 'bg-slate-950 border-slate-800 text-slate-400'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const curr = gameForm.compatibleDevices || [];
+                              const updated = e.target.checked
+                                ? [...curr, d._id]
+                                : curr.filter((id) => id !== d._id);
+                              setGameForm({ ...gameForm, compatibleDevices: updated });
+                            }}
+                            className="rounded text-[#D7FF00]"
+                          />
+                          <span>{d.name} ({d.deviceCode})</span>
+                        </label>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Status Toggle (Activate/Deactivate) */}
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                <label className="block uppercase tracking-wider text-slate-400 text-[10px]">
+                  Game Availability Status
+                </label>
+                <select
+                  value={gameForm.status}
+                  onChange={(e) => setGameForm({ ...gameForm, status: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-semibold"
+                >
+                  <option value="ACTIVE">ACTIVE (Available for Customer Booking)</option>
+                  <option value="INACTIVE">INACTIVE (Locked / Admin Activation Required)</option>
+                </select>
+                <p className="text-[9px] text-slate-500">
+                  Setting to INACTIVE locks the title on customer interfaces (e.g. GTA 6 pre-release lock).
+                </p>
+              </div>
+
               <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2">
                 <label className="flex items-center gap-2 text-white font-semibold cursor-pointer">
                   <input
@@ -1931,24 +1991,54 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                     }
                     className="w-4 h-4 rounded text-[#D7FF00]"
                   />
-                  Mark as Exclusive Game (e.g. GTA 6 Suite)
+                  Mark as Exclusive Game (e.g. GTA 6 VIP Suite)
                 </label>
 
-                {gameForm.isExclusive && (
+                {gameForm.isExclusive ? (
                   <div className="pt-2 border-t border-slate-800 space-y-2">
-                    <label className="block uppercase tracking-wider text-amber-400 text-[10px]">
-                      Mandatory Advance Payment (Paise)
-                    </label>
-                    <input
-                      type="number"
-                      value={gameForm.minimumAdvancePayment}
-                      onChange={(e) =>
-                        setGameForm({ ...gameForm, minimumAdvancePayment: parseInt(e.target.value) || 0 })
-                      }
-                      className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded text-white"
-                    />
-                    <p className="text-[10px] text-slate-400">7500 paise = ₹75 advance required</p>
+                    <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px]">
+                      ⚠️ <strong>Exclusive Game Notice:</strong> Locks the entire physical console. Exclusive games cannot be configured as &quot;Select at Venue&quot;.
+                    </div>
+
+                    <div>
+                      <label className="block uppercase tracking-wider text-amber-400 text-[10px]">
+                        Linked Exclusive Pricing Plan
+                      </label>
+                      <select
+                        value={gameForm.pricing || ''}
+                        onChange={(e) => setGameForm({ ...gameForm, pricing: e.target.value || null })}
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded text-white text-xs mt-1"
+                      >
+                        <option value="">Default Exclusive Plan (₹150/hr flat console lock)</option>
+                        {pricingPlans
+                          .filter((p) => p.deviceType === 'EXCLUSIVE' || p.billingType === 'PER_DEVICE_HOURLY')
+                          .map((p) => (
+                            <option key={p._id} value={p._id}>
+                              {p.name} - ₹{p.amount / 100}/hr ({p.billingType})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block uppercase tracking-wider text-amber-400 text-[10px]">
+                        Mandatory Advance Payment (Paise)
+                      </label>
+                      <input
+                        type="number"
+                        value={gameForm.minimumAdvancePayment}
+                        onChange={(e) =>
+                          setGameForm({ ...gameForm, minimumAdvancePayment: parseInt(e.target.value) || 0 })
+                        }
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded text-white font-mono"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-0.5">7500 paise = ₹75 advance required</p>
+                    </div>
                   </div>
+                ) : (
+                  <p className="text-[10px] text-emerald-400/90 pt-1 border-t border-slate-800">
+                    ✓ Non-Exclusive game: Automatically uses the dynamic normal PS5 hourly rate configured under Pricing Settings.
+                  </p>
                 )}
               </div>
 

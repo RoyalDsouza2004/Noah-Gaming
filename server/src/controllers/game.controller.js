@@ -123,6 +123,14 @@ export const createGame = async (req, res) => {
     const validModes = ['SHARED', 'PRIVATE_ONLY', 'BOTH'];
     const effectiveBookingMode = validModes.includes(bookingMode) ? bookingMode : 'BOTH';
 
+    // Exclusive games cannot be configured as Select at Venue
+    if (isExclusive && req.body.isVenueSelectionEligible) {
+      return res.status(400).json({
+        success: false,
+        message: 'Exclusive games cannot be configured as Select at Venue.',
+      });
+    }
+
     // PS5 games cannot exceed 4 players
     if (Array.isArray(compatibleDevices) && compatibleDevices.length > 0) {
       const ps5Devices = await Device.find({ _id: { $in: compatibleDevices }, deviceType: 'PS5' });
@@ -362,7 +370,15 @@ export const updateGame = async (req, res) => {
       }
     }
 
-    if (typeof isExclusive === 'boolean') game.isExclusive = isExclusive;
+    if (typeof isExclusive === 'boolean') {
+      if (isExclusive && req.body.isVenueSelectionEligible) {
+        return res.status(400).json({
+          success: false,
+          message: 'Exclusive games cannot be configured as Select at Venue.',
+        });
+      }
+      game.isExclusive = isExclusive;
+    }
     if (pricing !== undefined) game.pricing = pricing;
     if (typeof advancePaymentRequired === 'boolean') game.advancePaymentRequired = advancePaymentRequired;
     if (minimumAdvancePayment !== undefined) game.minimumAdvancePayment = parseInt(minimumAdvancePayment);

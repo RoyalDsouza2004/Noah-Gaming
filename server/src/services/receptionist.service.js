@@ -404,6 +404,7 @@ export async function createWalkInBooking({
   customerId,
   deviceId,
   gameId = null,
+  isVenueSelection = false,
   bookingType = 'SHARED',
   bookingDate,
   startTime,
@@ -423,7 +424,8 @@ export async function createWalkInBooking({
   const booking = await createBookingAtomic({
     customerId,
     deviceId,
-    gameId,
+    gameId: isVenueSelection ? null : gameId,
+    isVenueSelection: Boolean(isVenueSelection),
     bookingType,
     bookingDate: targetDate,
     startTime,

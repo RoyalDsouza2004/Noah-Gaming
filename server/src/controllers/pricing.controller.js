@@ -228,7 +228,13 @@ export const deletePricing = async (req, res) => {
 // Calculate price endpoint for booking simulations
 export const calculatePrice = async (req, res) => {
   try {
-    const { deviceId, gameId, durationMinutes = 60, playersCount = 1 } = req.body;
+    const {
+      deviceId,
+      gameId,
+      isVenueSelection = false,
+      durationMinutes = 60,
+      playersCount = 1,
+    } = req.body;
 
     if (!deviceId) {
       return res.status(400).json({
@@ -239,7 +245,8 @@ export const calculatePrice = async (req, res) => {
 
     const breakdown = await calculateSessionPrice({
       deviceId,
-      gameId,
+      gameId: isVenueSelection ? null : gameId,
+      isVenueSelection: Boolean(isVenueSelection),
       durationMinutes: parseInt(durationMinutes),
       playersCount: parseInt(playersCount),
     });

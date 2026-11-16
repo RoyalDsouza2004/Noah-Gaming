@@ -39,11 +39,11 @@ export const GameCard = ({ game, onViewDetails, onBook }) => {
           <div className="flex flex-wrap gap-1.5">
             {game.isExclusive ? (
               <span className="px-2 py-0.5 rounded-md bg-[#F5B942] text-slate-950 font-bold font-heading text-[10px] uppercase tracking-wider shadow-md flex items-center gap-1">
-                <Sparkles className="w-2.5 h-2.5" /> VIP Exclusive
+                <Sparkles className="w-2.5 h-2.5" /> Exclusive
               </span>
             ) : (
               <span className="px-2 py-0.5 rounded-md bg-emerald-500/90 text-slate-950 font-bold font-heading text-[10px] uppercase tracking-wider shadow-md flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Available Now
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Non-Exclusive
               </span>
             )}
           </div>

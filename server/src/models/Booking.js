@@ -28,6 +28,21 @@ const bookingSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    isVenueSelection: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    gameClassification: {
+      type: String,
+      enum: ['NON_EXCLUSIVE', 'EXCLUSIVE', 'NONE'],
+      default: 'NON_EXCLUSIVE',
+      index: true,
+    },
+    gameTitle: {
+      type: String,
+      default: null,
+    },
     bookingType: {
       type: String,
       enum: ['SHARED', 'PRIVATE'],

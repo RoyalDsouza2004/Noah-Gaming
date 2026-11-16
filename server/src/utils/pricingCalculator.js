@@ -7,12 +7,14 @@ import Game from '../models/Game.js';
  * @param {Object} options
  * @param {string} options.deviceId
  * @param {string} [options.gameId]
+ * @param {boolean} [options.isVenueSelection=false]
  * @param {number} [options.durationMinutes=60]
  * @param {number} [options.playersCount=1]
  */
 export async function calculateSessionPrice({
   deviceId,
   gameId = null,
+  isVenueSelection = false,
   durationMinutes = 60,
   playersCount = 1,
 }) {
@@ -21,42 +23,65 @@ export async function calculateSessionPrice({
     throw new Error('Device not found for price calculation');
   }
 
+  // Validate Select at Venue restrictions
+  if (isVenueSelection && device.deviceType !== 'PS5') {
+    throw new Error('Select at Venue is only available for PlayStation 5 consoles.');
+  }
+
   let game = null;
   if (gameId) {
     game = await Game.findById(gameId);
   }
 
+  if (isVenueSelection && game && (game.isExclusive || game.name === 'GTA 6')) {
+    throw new Error('Exclusive games cannot be configured as Select at Venue.');
+  }
+
+  // If Select at Venue, ignore specific game reference for pricing
+  const effectiveGame = isVenueSelection ? null : game;
+
+  // Determine game booking classification
+  let gameClassification = 'NON_EXCLUSIVE';
+  if (device.deviceType === 'POOL') {
+    gameClassification = 'NONE';
+  } else if (game && (game.isExclusive || game.name === 'GTA 6')) {
+    gameClassification = 'EXCLUSIVE';
+  } else {
+    gameClassification = 'NON_EXCLUSIVE';
+  }
+
   // Determine applicable pricing rule
   let pricingRule = null;
 
-  // 1. Check game-specific pricing if game is assigned
-  if (game && game.pricing) {
+  // 1. If not venue selection and game has specific pricing, check it
+  if (!isVenueSelection && game && game.pricing) {
     pricingRule = await Pricing.findOne({ _id: game.pricing, status: 'ACTIVE' });
   }
 
-  // 2. Check game direct match or exclusive game rule
-  if (!pricingRule && game) {
-    if (game.isExclusive || game.name === 'GTA 6') {
-      pricingRule = await Pricing.findOne({
-        $or: [{ game: game._id }, { name: /GTA 6/i }, { deviceType: 'EXCLUSIVE' }],
-        status: 'ACTIVE',
-      });
-    } else {
-      pricingRule = await Pricing.findOne({ game: game._id, status: 'ACTIVE' });
-    }
+  // 2. If exclusive game, find exclusive pricing rule
+  if (!pricingRule && !isVenueSelection && game && (game.isExclusive || game.name === 'GTA 6')) {
+    pricingRule = await Pricing.findOne({
+      $or: [{ game: game._id }, { name: /GTA 6/i }, { deviceType: 'EXCLUSIVE' }],
+      status: 'ACTIVE',
+    });
   }
 
-  // 3. Check device direct match
+  // 3. For non-exclusive games or Select at Venue on PS5, use the normal PS5 pricing rule
+  if (!pricingRule && device.deviceType === 'PS5') {
+    pricingRule = await Pricing.findOne({ deviceType: 'PS5', status: 'ACTIVE' });
+  }
+
+  // 4. Check device direct match
   if (!pricingRule) {
     pricingRule = await Pricing.findOne({ device: device._id, status: 'ACTIVE' });
   }
 
-  // 4. Check deviceType match
+  // 5. Check deviceType match
   if (!pricingRule) {
     pricingRule = await Pricing.findOne({ deviceType: device.deviceType, status: 'ACTIVE' });
   }
 
-  // 5. Fallback to general active pricing rule
+  // 6. Fallback to general active pricing rule
   if (!pricingRule) {
     pricingRule = await Pricing.findOne({ deviceType: 'GENERAL', status: 'ACTIVE' });
   }
@@ -66,7 +91,7 @@ export async function calculateSessionPrice({
     const isPool = device.deviceType === 'POOL';
     pricingRule = {
       name: 'Default Fallback Pricing',
-      billingType: 'PER_PLAYER_HOURLY',
+      billingType: isPool ? 'PER_DEVICE_HOURLY' : 'PER_PLAYER_HOURLY',
       amount: isPool ? 15000 : 7000, // 15000 paise = ₹150, 7000 paise = ₹70
       currency: 'INR',
     };
@@ -111,6 +136,8 @@ export async function calculateSessionPrice({
       ratePerUnitPaise: pricingRule.amount,
       ratePerUnitRupees: pricingRule.amount / 100,
     },
+    gameClassification,
+    isVenueSelection: Boolean(isVenueSelection),
     durationMinutes,
     durationHours: hours,
     playersCount: players,
