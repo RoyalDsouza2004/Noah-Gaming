@@ -44,7 +44,7 @@ export const Navbar = ({
       case 'admin':
         return 'Administrator Management Suite';
       default:
-        return 'Jaipur Premier Gaming Lounge';
+        return 'Bajagoli Premier Gaming Lounge';
     }
   };
 

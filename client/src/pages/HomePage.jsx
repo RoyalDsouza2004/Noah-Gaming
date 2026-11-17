@@ -177,7 +177,7 @@ export const HomePage = ({
             Engineered For Serious Gamers & Social Chillouts
           </h2>
           <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
-            Whether you want intense competitive FIFA tournaments with friends, relaxed 8-ball pool matches, or deep private campaign sessions, NOAH GAMING delivers the premier gaming atmosphere in Jaipur.
+            Whether you want intense competitive FIFA tournaments with friends, relaxed 8-ball pool matches, or deep private campaign sessions, NOAH GAMING delivers the premier gaming atmosphere in Bajagoli.
           </p>
         </div>
 
