@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Setting from '../models/Setting.js';
 import Holiday from '../models/Holiday.js';
 import Booking from '../models/Booking.js';
@@ -21,13 +22,13 @@ export const CANONICAL_WEEKDAYS = [
 
 // Default standard weekly operating schedule (Mon-Sun)
 export const DEFAULT_WEEKLY_SCHEDULE = [
-  { day: 'Monday', dayIndex: 1, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
-  { day: 'Tuesday', dayIndex: 2, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
-  { day: 'Wednesday', dayIndex: 3, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
-  { day: 'Thursday', dayIndex: 4, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
-  { day: 'Friday', dayIndex: 5, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
-  { day: 'Saturday', dayIndex: 6, isOpen: true, openTime: '09:00', closeTime: '23:00', slotDurationMinutes: 60 },
-  { day: 'Sunday', dayIndex: 0, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Monday', dayOfWeek: 'monday', key: 'monday', dayIndex: 1, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Tuesday', dayOfWeek: 'tuesday', key: 'tuesday', dayIndex: 2, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Wednesday', dayOfWeek: 'wednesday', key: 'wednesday', dayIndex: 3, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Thursday', dayOfWeek: 'thursday', key: 'thursday', dayIndex: 4, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Friday', dayOfWeek: 'friday', key: 'friday', dayIndex: 5, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Saturday', dayOfWeek: 'saturday', key: 'saturday', dayIndex: 6, isOpen: true, openTime: '09:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Sunday', dayOfWeek: 'sunday', key: 'sunday', dayIndex: 0, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
 ];
 
 /**
@@ -36,7 +37,15 @@ export const DEFAULT_WEEKLY_SCHEDULE = [
 export async function getWeeklyOperatingHours() {
   const setting = await Setting.findOne({ key: 'operating_hours_weekly' });
   if (setting && Array.isArray(setting.value) && setting.value.length === 7) {
-    return setting.value;
+    return setting.value.map((d) => {
+      const dayKey = (d.key || d.dayOfWeek || d.day || '').toLowerCase();
+      return {
+        ...d,
+        day: d.day || dayKey.charAt(0).toUpperCase() + dayKey.slice(1),
+        dayOfWeek: dayKey,
+        key: dayKey,
+      };
+    });
   }
 
   // Fallback to legacy single setting if present
@@ -61,13 +70,13 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
 
   // Handle various payload structures: raw array, { schedule: [...] }, or object with day keys
   let rawItems = schedule;
-  if (schedule && typeof schedule === 'object' && !Array.isArray(schedule)) {
-    if (Array.isArray(schedule.schedule)) {
-      rawItems = schedule.schedule;
-    } else if (schedule.weeklySchedule && Array.isArray(schedule.weeklySchedule)) {
-      rawItems = schedule.weeklySchedule;
-    } else if (schedule.schedule && typeof schedule.schedule === 'object') {
-      rawItems = schedule.schedule;
+  while (rawItems && typeof rawItems === 'object' && !Array.isArray(rawItems)) {
+    if (rawItems.schedule !== undefined) {
+      rawItems = rawItems.schedule;
+    } else if (rawItems.weeklySchedule !== undefined) {
+      rawItems = rawItems.weeklySchedule;
+    } else {
+      break;
     }
   }
 
@@ -82,12 +91,15 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
           d &&
           (d.dayIndex === canonical.dayIndex ||
             (d.day && d.day.toLowerCase() === canonical.key) ||
+            (d.dayOfWeek && d.dayOfWeek.toLowerCase() === canonical.key) ||
+            (d.key && d.key.toLowerCase() === canonical.key) ||
             (d.name && d.name.toLowerCase() === canonical.key))
       );
     } else if (rawItems && typeof rawItems === 'object') {
       dayData =
         rawItems[canonical.key] ||
         rawItems[canonical.day] ||
+        rawItems[canonical.day.toLowerCase()] ||
         rawItems[canonical.key.toUpperCase()];
     }
 
@@ -106,6 +118,8 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
 
     normalizedSchedule.push({
       day: canonical.day,
+      dayOfWeek: canonical.key,
+      key: canonical.key,
       dayIndex: canonical.dayIndex,
       isOpen,
       openTime,
@@ -139,6 +153,8 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
     }
   }
 
+  const validUpdatedBy = (updatedBy && mongoose.Types.ObjectId.isValid(updatedBy)) ? updatedBy : null;
+
   const updated = await Setting.findOneAndUpdate(
     { key: 'operating_hours_weekly' },
     {
@@ -146,9 +162,9 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
       value: normalizedSchedule,
       category: 'HOURS',
       description: 'Admin-configured weekly operating schedule for each weekday',
-      updatedBy: updatedBy || null,
+      updatedBy: validUpdatedBy,
     },
-    { upsert: true, new: true }
+    { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
   // Synchronize legacy operating_hours setting as well
@@ -161,16 +177,17 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
         openTime: mondayEntry.openTime || '10:00',
         closeTime: mondayEntry.closeTime || '23:00',
         slotDurationMinutes: mondayEntry.slotDurationMinutes || 60,
+        isOpen: mondayEntry.isOpen !== false,
         allowCustomDuration: true,
       },
       category: 'HOURS',
       description: 'Default operating hours',
-      updatedBy: updatedBy || null,
+      updatedBy: validUpdatedBy,
     },
-    { upsert: true, new: true }
+    { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
-  return updated.value;
+  return normalizedSchedule;
 }
 
 /**
@@ -419,11 +436,12 @@ export async function getEffectiveDaySchedule(dateStr) {
  * Checks existing confirmed bookings against proposed schedule changes
  */
 export async function checkScheduleConflicts({
-  type, // 'WEEKLY_DAY', 'HOLIDAY', 'PARTIAL_HOURS'
+  type, // 'WEEKLY_DAY', 'WEEKLY_SCHEDULE', 'HOLIDAY', 'PARTIAL_HOURS'
   dayIndex, // for WEEKLY_DAY
   isOpen, // for WEEKLY_DAY
   openTime,
   closeTime,
+  weeklySchedule, // for WEEKLY_SCHEDULE
   startDate, // for HOLIDAY
   endDate, // for HOLIDAY
   closureType = 'FULL_DAY',
@@ -452,7 +470,70 @@ export async function checkScheduleConflicts({
   const conflicts = [];
 
   for (const b of futureBookings) {
-    // If weekly day change
+    // If checking full weekly schedule
+    if (type === 'WEEKLY_SCHEDULE' && weeklySchedule) {
+      const bDate = parseISTDateTime(b.bookingDate, '12:00');
+      const bDayIndex = bDate.getDay();
+      let dayData = null;
+
+      if (Array.isArray(weeklySchedule)) {
+        dayData = weeklySchedule.find(
+          (d) =>
+            d.dayIndex === bDayIndex ||
+            (d.key && d.key === CANONICAL_WEEKDAYS.find((c) => c.dayIndex === bDayIndex)?.key)
+        );
+      } else if (typeof weeklySchedule === 'object') {
+        const canonical = CANONICAL_WEEKDAYS.find((c) => c.dayIndex === bDayIndex);
+        if (canonical) {
+          dayData = weeklySchedule[canonical.key] || weeklySchedule[canonical.day];
+        }
+      }
+
+      if (dayData) {
+        const dayIsOpen = dayData.isOpen !== false;
+        if (!dayIsOpen) {
+          conflicts.push({
+            bookingId: b.bookingId,
+            customerName: b.customer?.name || 'Customer',
+            customerPhone: b.customer?.phone || '',
+            deviceName: b.device?.name || 'Station',
+            bookingDate: b.bookingDate,
+            startTime: b.startTime,
+            endTime: b.endTime,
+            totalAmountRupees: (b.totalAmount || 0) / 100,
+            paymentStatus: b.paymentStatus,
+            conflictReason: `Lounge closed on ${b.bookingDate} (${b.startTime} - ${b.endTime}) due to scheduled weekday closure.`,
+          });
+          continue;
+        }
+
+        if (dayData.openTime && dayData.closeTime) {
+          const bStartAt = parseISTDateTime(b.bookingDate, b.startTime);
+          const bEndAt = parseISTDateTime(b.bookingDate, b.endTime);
+          const dayOpenAt = parseISTDateTime(b.bookingDate, dayData.openTime);
+          const dayCloseAt = parseISTDateTime(b.bookingDate, dayData.closeTime);
+
+          if (bStartAt.getTime() < dayOpenAt.getTime() || bEndAt.getTime() > dayCloseAt.getTime()) {
+            conflicts.push({
+              bookingId: b.bookingId,
+              customerName: b.customer?.name || 'Customer',
+              customerPhone: b.customer?.phone || '',
+              deviceName: b.device?.name || 'Station',
+              bookingDate: b.bookingDate,
+              startTime: b.startTime,
+              endTime: b.endTime,
+              totalAmountRupees: (b.totalAmount || 0) / 100,
+              paymentStatus: b.paymentStatus,
+              conflictReason: `Reservation falls outside new operating hours (${dayData.openTime} to ${dayData.closeTime} IST).`,
+            });
+            continue;
+          }
+        }
+      }
+      continue;
+    }
+
+    // If single weekly day change
     if (type === 'WEEKLY_DAY' && typeof dayIndex === 'number') {
       const bDate = parseISTDateTime(b.bookingDate, '12:00');
       if (bDate.getDay() !== dayIndex) continue;
@@ -547,6 +628,7 @@ export async function checkScheduleConflicts({
   return {
     hasConflicts: conflicts.length > 0,
     conflictCount: conflicts.length,
+    conflicts,
     affectedBookings: conflicts,
   };
 }

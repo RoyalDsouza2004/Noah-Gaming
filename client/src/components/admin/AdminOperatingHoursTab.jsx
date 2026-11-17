@@ -97,18 +97,34 @@ export const AdminOperatingHoursTab = () => {
         setOperatingStatus(statusRes.data);
       }
       if (weeklyRes.success) {
-        if (weeklyRes.data?.schedule) {
-          setWeeklySchedule(weeklyRes.data.schedule);
-        } else if (Array.isArray(weeklyRes.data?.weeklySchedule)) {
-          const map = {};
-          weeklyRes.data.weeklySchedule.forEach((d) => {
-            map[d.dayOfWeek.toLowerCase()] = {
-              isOpen: d.isOpen !== false,
-              openTime: d.openTime || '10:00',
-              closeTime: d.closeTime || '23:00',
+        const scheduleObj = weeklyRes.data?.schedule || weeklyRes.schedule;
+        const weeklyArray = weeklyRes.data?.weeklySchedule || weeklyRes.weeklySchedule;
+
+        if (scheduleObj && typeof scheduleObj === 'object' && Object.keys(scheduleObj).length > 0) {
+          const formatted = {};
+          DAYS_OF_WEEK.forEach((d) => {
+            const entry = scheduleObj[d] || scheduleObj[d.toLowerCase()] || scheduleObj[DAY_LABELS[d]];
+            formatted[d] = {
+              isOpen: entry?.isOpen !== false,
+              openTime: entry?.openTime || '10:00',
+              closeTime: entry?.closeTime || '23:00',
             };
           });
-          setWeeklySchedule(map);
+          setWeeklySchedule(formatted);
+        } else if (Array.isArray(weeklyArray) && weeklyArray.length > 0) {
+          const formatted = {};
+          DAYS_OF_WEEK.forEach((d) => {
+            const entry = weeklyArray.find((item) => {
+              const name = (item.key || item.day || item.dayOfWeek || item.name || '').toLowerCase();
+              return name === d;
+            });
+            formatted[d] = {
+              isOpen: entry?.isOpen !== false,
+              openTime: entry?.openTime || '10:00',
+              closeTime: entry?.closeTime || '23:00',
+            };
+          });
+          setWeeklySchedule(formatted);
         }
       }
       if (holidaysRes.success && holidaysRes.data?.holidays) {
@@ -176,8 +192,11 @@ export const AdminOperatingHoursTab = () => {
     setSavingSchedule(true);
     try {
       // Build canonical array for backend
-      const canonicalSchedule = DAYS_OF_WEEK.map((day) => ({
+      const canonicalSchedule = DAYS_OF_WEEK.map((day, idx) => ({
+        day: DAY_LABELS[day],
         dayOfWeek: day,
+        key: day,
+        dayIndex: idx === 6 ? 0 : idx + 1,
         isOpen: weeklySchedule[day]?.isOpen !== false,
         openTime: weeklySchedule[day]?.openTime || '10:00',
         closeTime: weeklySchedule[day]?.closeTime || '23:00',
@@ -187,11 +206,40 @@ export const AdminOperatingHoursTab = () => {
       if (res.success) {
         showToast.success('Weekly operating hours updated successfully!');
         setConflictModalOpen(false);
-        if (res.data?.schedule) {
-          setWeeklySchedule(res.data.schedule);
-        } else {
-          loadData();
+
+        const scheduleObj = res.data?.schedule || res.schedule;
+        const weeklyArray = res.data?.weeklySchedule || res.weeklySchedule;
+        if (scheduleObj && typeof scheduleObj === 'object') {
+          const formatted = {};
+          DAYS_OF_WEEK.forEach((d) => {
+            const entry = scheduleObj[d] || scheduleObj[d.toLowerCase()] || scheduleObj[DAY_LABELS[d]];
+            if (entry) {
+              formatted[d] = {
+                isOpen: entry.isOpen !== false,
+                openTime: entry.openTime || '10:00',
+                closeTime: entry.closeTime || '23:00',
+              };
+            }
+          });
+          setWeeklySchedule((prev) => ({ ...prev, ...formatted }));
+        } else if (Array.isArray(weeklyArray)) {
+          const formatted = {};
+          DAYS_OF_WEEK.forEach((d) => {
+            const entry = weeklyArray.find((item) => {
+              const name = (item.key || item.day || item.dayOfWeek || item.name || '').toLowerCase();
+              return name === d;
+            });
+            if (entry) {
+              formatted[d] = {
+                isOpen: entry.isOpen !== false,
+                openTime: entry.openTime || '10:00',
+                closeTime: entry.closeTime || '23:00',
+              };
+            }
+          });
+          setWeeklySchedule((prev) => ({ ...prev, ...formatted }));
         }
+        await loadData();
       }
     } catch (err) {
       showToast.error(err.message || 'Failed to update weekly hours.');

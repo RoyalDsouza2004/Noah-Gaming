@@ -45,12 +45,16 @@ export const getAdminWeeklyHours = async (req, res, next) => {
     const weeklySchedule = await scheduleService.getWeeklyOperatingHours();
     const scheduleMap = {};
     for (const d of weeklySchedule) {
-      scheduleMap[d.day.toLowerCase()] = {
-        day: d.day,
-        dayIndex: d.dayIndex,
-        isOpen: d.isOpen,
-        openTime: d.openTime,
-        closeTime: d.closeTime,
+      const dayKey = (d.key || d.dayOfWeek || d.day || '').toLowerCase();
+      if (!dayKey) continue;
+      scheduleMap[dayKey] = {
+        day: d.day || dayKey.charAt(0).toUpperCase() + dayKey.slice(1),
+        dayOfWeek: dayKey,
+        key: dayKey,
+        dayIndex: d.dayIndex !== undefined ? d.dayIndex : 0,
+        isOpen: d.isOpen !== false,
+        openTime: d.openTime || '10:00',
+        closeTime: d.closeTime || '23:00',
         slotDurationMinutes: d.slotDurationMinutes || 60,
       };
     }
@@ -81,12 +85,16 @@ export const updateAdminWeeklyHours = async (req, res, next) => {
     });
     const scheduleMap = {};
     for (const d of updated) {
-      scheduleMap[d.day.toLowerCase()] = {
-        day: d.day,
-        dayIndex: d.dayIndex,
-        isOpen: d.isOpen,
-        openTime: d.openTime,
-        closeTime: d.closeTime,
+      const dayKey = (d.key || d.dayOfWeek || d.day || '').toLowerCase();
+      if (!dayKey) continue;
+      scheduleMap[dayKey] = {
+        day: d.day || dayKey.charAt(0).toUpperCase() + dayKey.slice(1),
+        dayOfWeek: dayKey,
+        key: dayKey,
+        dayIndex: d.dayIndex !== undefined ? d.dayIndex : 0,
+        isOpen: d.isOpen !== false,
+        openTime: d.openTime || '10:00',
+        closeTime: d.closeTime || '23:00',
         slotDurationMinutes: d.slotDurationMinutes || 60,
       };
     }
