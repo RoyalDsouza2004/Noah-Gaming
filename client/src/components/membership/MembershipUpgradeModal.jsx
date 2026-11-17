@@ -181,9 +181,9 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#171014] border border-[#49202C] rounded-2xl sm:rounded-3xl shadow-2xl text-[#FFF4E8] my-auto overflow-hidden">
+      <div id="membership-upgrade-modal" className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#171014] border border-[#49202C] rounded-2xl sm:rounded-3xl shadow-2xl text-[#FFF4E8] my-auto overflow-hidden">
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between p-4 sm:p-6 pb-4 border-b border-[#49202C] bg-[#260D17]">
+        <div id="membership-upgrade-header" className="flex items-center justify-between p-4 sm:p-6 pb-4 border-b border-[#49202C] bg-[#260D17]">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-[#851B2B]/20 text-[#D7FF00] border border-[#851B2B]/40">
               <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -295,7 +295,7 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
                       <div
                         key={plan._id}
                         onClick={() => handleSelectPlan(plan)}
-                        className={`p-4 sm:p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                        className={`membership-plan-card p-4 sm:p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
                           isSelected
                             ? 'bg-gradient-to-br from-[#851B2B]/40 to-[#260D17] border-[#851B2B] shadow-xl shadow-[#851B2B]/20'
                             : 'bg-[#260D17]/50 border-[#49202C] hover:border-[#851B2B]'

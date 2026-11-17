@@ -393,9 +393,151 @@ html.light [class*="bg-white/5"] {
 /* Gradients that need to be clean white in Light Mode */
 html.light [class*="from-slate-900"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
 html.light [class*="from-[#1a1217]"],
-html.light [class*="from-rose-950"] {
+html.light [class*="from-rose-950"],
+html.light [class*="from-[#260D17]"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="via-[#260D17]"],
+html.light [class*="via-[#171014]"],
+html.light [class*="to-[#171014]"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="from-[#851B2B]/30"][class*="via-"],
+html.light [class*="from-[#851B2B]/20"][class*="via-"],
+html.light .membership-plan-card {
   background: #FFFFFF !important;
+  background-image: none !important;
   border-color: #E2E5EC !important;
+}
+
+/* Membership Plans Modal & Header */
+html.light #membership-plans-modal,
+html.light #membership-upgrade-modal {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  color: #171923 !important;
+}
+
+html.light #membership-plans-header,
+html.light #membership-upgrade-header,
+html.light [class*="from-[#260D17]"][class*="via-[#171014]"] {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  border-color: #E2E5EC !important;
+}
+
+html.light #membership-plans-header h2,
+html.light #membership-upgrade-header h2,
+html.light [class*="from-[#260D17]"][class*="via-[#171014]"] h2 {
+  color: #171923 !important;
+}
+
+html.light #membership-plans-header span[class*="text-[#F5B942]"],
+html.light [class*="from-[#260D17]"][class*="via-[#171014]"] span[class*="text-[#F5B942]"] {
+  color: #851B2B !important;
+}
+
+/* Active Membership Banner in Plans Modal */
+html.light div[class*="from-amber-950"] {
+  background: #FFF4DF !important;
+  background-image: none !important;
+  border-color: #F5D499 !important;
+  color: #855000 !important;
+}
+html.light div[class*="from-amber-950"] span,
+html.light div[class*="from-amber-950"] p {
+  color: #855000 !important;
+}
+
+/* Dynamic Membership Plan Cards (Standard, Unlimited, VIP, Diamond, etc.) */
+html.light .membership-plan-card {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 2px 10px -2px rgba(23, 25, 35, 0.05) !important;
+}
+
+html.light .membership-plan-card:hover {
+  border-color: #851B2B !important;
+  box-shadow: 0 6px 20px -4px rgba(133, 27, 43, 0.12) !important;
+}
+
+/* Selected plan card */
+html.light .membership-plan-card.ring-2,
+html.light .membership-plan-card[class*="ring-2"],
+html.light .membership-plan-card[class*="border-[#851B2B]"][class*="shadow-lg"] {
+  background: #FCECEF !important;
+  background-image: none !important;
+  border-color: #851B2B !important;
+  box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.15) !important;
+}
+
+/* Plan Card Typography & Details */
+html.light .membership-plan-card h3,
+html.light .membership-plan-card h4,
+html.light .membership-plan-card .text-white {
+  color: #171923 !important;
+}
+
+html.light .membership-plan-card p,
+html.light .membership-plan-card .text-slate-400,
+html.light .membership-plan-card .text-\[\#C7A5A8\] {
+  color: #414858 !important;
+}
+
+html.light .membership-plan-card .text-slate-300 {
+  color: #171923 !important;
+}
+
+html.light .membership-plan-card .text-slate-500 {
+  color: #747B8C !important;
+}
+
+/* Feature dividers inside plan cards */
+html.light .membership-plan-card div[class*="border-t"],
+html.light .membership-plan-card div[class*="border-slate-800"] {
+  border-color: #ECEEF3 !important;
+}
+
+/* Checkmarks inside plan cards */
+html.light .membership-plan-card .text-emerald-400 {
+  color: #176B3A !important;
+}
+
+html.light .membership-plan-card .text-amber-300,
+html.light .membership-plan-card .text-amber-400 {
+  color: #855000 !important;
+}
+
+/* Badges inside plan cards */
+html.light .membership-plan-card span[class*="uppercase"] {
+  background-color: #F0F2F6 !important;
+  color: #414858 !important;
+  border-color: #E2E5EC !important;
+}
+
+/* Unlimited / VIP Pass Badges */
+html.light .membership-plan-card span[class*="bg-[#851B2B]"],
+html.light .membership-plan-card span[class*="text-[#FFF4E8]"],
+html.light .membership-plan-card span[class*="text-[#D7FF00]"] {
+  background-color: #FCECEF !important;
+  color: #851B2B !important;
+  border-color: #CDD2DC !important;
+}
+
+/* Buttons inside plan cards */
+html.light .membership-plan-card button {
+  background: #851B2B !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+  border: 1px solid #851B2B !important;
+  box-shadow: 0 4px 12px -2px rgba(133, 27, 43, 0.25) !important;
+}
+
+html.light .membership-plan-card button:hover {
+  background: #A51F35 !important;
+  border-color: #A51F35 !important;
+  color: #FFFFFF !important;
+}
+
+html.light .membership-plan-card button * {
+  color: #FFFFFF !important;
 }
 
 /* Soft accent / selected surfaces */

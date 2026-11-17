@@ -545,7 +545,7 @@ export const HomePage = ({
             return (
               <div
                 key={plan._id}
-                className={`p-5 rounded-2xl bg-[#260D17] border transition-all flex flex-col justify-between ${
+                className={`membership-plan-card p-5 rounded-2xl bg-[#260D17] border transition-all flex flex-col justify-between ${
                   isVip
                     ? 'border-[#F5B942]/60 shadow-xl shadow-[#F5B942]/10'
                     : 'border-[#49202C] hover:border-[#851B2B]/60'

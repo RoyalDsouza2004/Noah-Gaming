@@ -183,9 +183,9 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
 
   return (
     <div className="fixed inset-0 md:left-64 z-40 flex items-center justify-center p-3 sm:p-4 md:p-6 pb-28 md:pb-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[#171014] border border-[#49202C] rounded-2xl sm:rounded-3xl shadow-2xl text-[#FFF4E8] m-auto overflow-hidden">
+      <div id="membership-plans-modal" className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[#171014] border border-[#49202C] rounded-2xl sm:rounded-3xl shadow-2xl text-[#FFF4E8] m-auto overflow-hidden">
         {/* Header */}
-        <div className="p-4 sm:p-6 bg-gradient-to-r from-[#260D17] via-[#171014] to-[#260D17] border-b border-[#49202C] flex items-center justify-between shrink-0">
+        <div id="membership-plans-header" className="p-4 sm:p-6 bg-gradient-to-r from-[#260D17] via-[#171014] to-[#260D17] border-b border-[#49202C] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] text-white flex items-center justify-center font-bold shadow-lg shadow-[#851B2B]/20">
               <Crown className="w-5 h-5 text-[#D7FF00]" />
@@ -261,7 +261,7 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
                   <div
                     key={plan._id}
                     onClick={() => handleSelectPlan(plan)}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative ${
+                    className={`membership-plan-card p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative ${
                       isVIP
                         ? 'bg-gradient-to-b from-[#851B2B]/30 via-[#260D17] to-[#171014] border-[#851B2B] hover:border-[#A51F35] shadow-lg shadow-[#851B2B]/20'
                         : isUnlim
