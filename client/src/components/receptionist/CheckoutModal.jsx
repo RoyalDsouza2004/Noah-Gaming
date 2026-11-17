@@ -199,7 +199,7 @@ export const CheckoutModal = ({ session, onClose, onSuccess }) => {
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-slate-950 bg-gradient-to-r from-purple-400 to-indigo-500 hover:from-purple-300 hover:to-indigo-400 transition-all shadow-lg shadow-purple-500/20 flex items-center gap-1.5 disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 transition-all shadow-lg shadow-purple-600/25 flex items-center gap-1.5 disabled:opacity-50"
             >
               {submitting ? (
                 <>

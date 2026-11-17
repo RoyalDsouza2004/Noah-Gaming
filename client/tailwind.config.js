@@ -12,12 +12,17 @@ export default {
         noah: {
           charcoal: '#171014',     // Primary background
           darkBurgundy: '#260D17', // Secondary background
+          card: '#260D17',         // Card background
+          elevated: '#30121E',     // Elevated surface
+          input: '#171421',        // Input background
           burgundy: '#851B2B',     // Primary brand
           crimson: '#A51F35',      // Secondary brand
           lime: '#D7FF00',         // Highlight
           gold: '#F5B942',         // Secondary accent / Warning
           warmWhite: '#FFF4E8',    // Main text
           mutedRose: '#C7A5A8',    // Secondary text
+          mutedText: '#D0B9BC',    // Muted text (readable)
+          disabledText: '#BCA3A7', // Disabled text (accessible)
           wine: '#49202C',         // Borders
           green: '#45C987',        // Success
           error: '#F06A76',        // Error

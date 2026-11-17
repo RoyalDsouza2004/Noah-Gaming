@@ -319,8 +319,8 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
       {/* Top Banner & Customer Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] flex items-center justify-center font-bold text-2xl text-slate-950 shadow-lg shadow-[#851B2B]/20 shrink-0 overflow-hidden border border-[#851B2B]/50 relative">
-            <span className="font-heading font-black text-2xl text-slate-950">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] flex items-center justify-center font-bold text-2xl text-white shadow-lg shadow-[#851B2B]/20 shrink-0 overflow-hidden border border-[#851B2B]/50 relative">
+            <span className="font-heading font-black text-2xl text-white">
               {customer?.name?.charAt(0).toUpperCase() || user?.name?.charAt(0).toUpperCase() || 'P'}
             </span>
             {(profileForm.profilePicture || customer?.profilePicture || user?.profilePicture) && (

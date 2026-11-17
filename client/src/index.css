@@ -6,12 +6,17 @@
   /* DARK THEME TOKENS (Default) */
   --color-noah-charcoal: #171014;
   --color-noah-dark-burgundy: #260D17;
+  --color-noah-card: #260D17;
+  --color-noah-elevated: #30121E;
+  --color-noah-input: #171421;
   --color-noah-burgundy: #851B2B;
   --color-noah-crimson: #A51F35;
   --color-noah-lime: #D7FF00;
   --color-noah-gold: #F5B942;
   --color-noah-warm-white: #FFF4E8;
   --color-noah-muted-rose: #C7A5A8;
+  --color-noah-muted-text: #D0B9BC;
+  --color-noah-disabled-text: #BCA3A7;
   --color-noah-wine: #49202C;
   --color-noah-green: #45C987;
   --color-noah-error: #F06A76;
@@ -20,10 +25,13 @@
   --bg-primary: #171014;
   --bg-secondary: #260D17;
   --bg-card: #260D17;
+  --bg-elevated: #30121E;
   --bg-card-hover: #341220;
-  --bg-input: #171014;
+  --bg-input: #171421;
   --text-primary: #FFF4E8;
   --text-secondary: #C7A5A8;
+  --text-muted: #D0B9BC;
+  --text-disabled: #BCA3A7;
   --border-primary: #49202C;
   --accent-primary: #851B2B;
   --accent-secondary: #A51F35;
@@ -39,12 +47,17 @@ html.light,
   /* LIGHT THEME TOKENS (Warm White, Cream & Orange) */
   --color-noah-charcoal: #FFF8F0;
   --color-noah-dark-burgundy: #FFFFFF;
+  --color-noah-card: #FFFFFF;
+  --color-noah-elevated: #FFF1E6;
+  --color-noah-input: #FFFFFF;
   --color-noah-burgundy: #E87524;
   --color-noah-crimson: #D46317;
   --color-noah-lime: #E87524;
   --color-noah-gold: #F5A623;
   --color-noah-warm-white: #382019;
   --color-noah-muted-rose: #936D5B;
+  --color-noah-muted-text: #936D5B;
+  --color-noah-disabled-text: #B59585;
   --color-noah-wine: #F0DCCB;
   --color-noah-green: #16A34A;
   --color-noah-error: #DC2626;
@@ -53,10 +66,13 @@ html.light,
   --bg-primary: #FFF8F0;          /* Main warm cream background */
   --bg-secondary: #FFFFFF;        /* Secondary pure white surface */
   --bg-card: #FFFFFF;             /* Pure white card */
+  --bg-elevated: #FFF1E6;         /* Elevated surface */
   --bg-card-hover: #FFF1E6;       /* Soft warm cream card hover */
   --bg-input: #FFFFFF;
   --text-primary: #382019;        /* Main dark chocolate/espresso text */
   --text-secondary: #936D5B;      /* Secondary warm brown text */
+  --text-muted: #936D5B;          /* Muted text */
+  --text-disabled: #B59585;       /* Disabled text */
   --border-primary: #F0DCCB;      /* Soft warm cream border */
   --accent-primary: #E87524;      /* Primary accent orange */
   --accent-secondary: #F5A623;    /* Secondary accent golden orange */
@@ -171,6 +187,64 @@ html.theme-transition *:after {
 
 .table-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #D7FF00;
+}
+
+/* ========================================================================= */
+/* UNIVERSAL FORM CONTROLS & CONTRAST GUARDS (DARK THEME DEFAULT)           */
+/* ========================================================================= */
+
+/* Inputs, Textareas & Selects in Dark Theme */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+textarea,
+select {
+  color: #FFF4E8 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #C7A5A8 !important;
+  opacity: 0.9 !important;
+}
+
+/* Native Select Options Dropdown (Guarantees visible text on all OS/browsers) */
+select option {
+  background-color: #260D17 !important;
+  color: #FFF4E8 !important;
+}
+
+select option:checked,
+select option:hover {
+  background-color: #851B2B !important;
+  color: #FFF4E8 !important;
+}
+
+select option:disabled {
+  color: #BCA3A7 !important;
+}
+
+/* Dark Theme Text Contrast Guards (Eliminates muddy, near-black low contrast text) */
+html:not(.light) .text-slate-400,
+html:not(.light) .text-gray-400 {
+  color: #E2D4D6 !important;
+}
+
+html:not(.light) .text-slate-500,
+html:not(.light) .text-gray-500 {
+  color: #D0B9BC !important;
+}
+
+html:not(.light) .text-slate-600,
+html:not(.light) .text-gray-600 {
+  color: #BCA3A7 !important;
+}
+
+/* SVG Chart Typography in Dark Theme */
+html:not(.light) svg text[fill="#64748b"] {
+  fill: #D0B9BC !important;
+}
+
+html:not(.light) svg text[fill="#94a3b8"] {
+  fill: #E2D4D6 !important;
 }
 
 /* ========================================================================= */
@@ -364,6 +438,18 @@ html.light textarea:focus,
 html.light select:focus {
   border-color: #E87524 !important;
   box-shadow: 0 0 0 2px rgba(232, 117, 36, 0.2) !important;
+}
+html.light select option {
+  background-color: #FFFFFF !important;
+  color: #382019 !important;
+}
+html.light select option:checked,
+html.light select option:hover {
+  background-color: #FFE8D4 !important;
+  color: #E87524 !important;
+}
+html.light select option:disabled {
+  color: #B59585 !important;
 }
 
 /* 8. Tables & Lists */

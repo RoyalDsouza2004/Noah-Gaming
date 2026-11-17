@@ -205,7 +205,7 @@ export const AdminAnalyticsView = () => {
 
           <button
             onClick={() => setExportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#851B2B] to-[#A51F35] text-slate-950 font-bold text-xs shadow-lg shadow-[#851B2B]/20 hover:brightness-110 transition-all font-heading"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#851B2B] to-[#A51F35] text-white font-bold text-xs shadow-lg shadow-[#851B2B]/20 hover:brightness-110 transition-all font-heading"
           >
             <Download className="w-4 h-4" />
             Export Reports (11)

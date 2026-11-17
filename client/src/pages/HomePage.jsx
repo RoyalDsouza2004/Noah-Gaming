@@ -309,7 +309,7 @@ export const HomePage = ({
                   ) : (
                     <button
                       disabled
-                      className="w-full py-2.5 px-3 rounded-xl bg-[#171014] text-[#C7A5A8]/50 text-xs font-semibold cursor-not-allowed uppercase border border-[#49202C]"
+                      className="w-full py-2.5 px-3 rounded-xl bg-[#171014] text-[#D0B9BC] text-xs font-semibold cursor-not-allowed uppercase border border-[#49202C]"
                     >
                       Station Under Maintenance
                     </button>

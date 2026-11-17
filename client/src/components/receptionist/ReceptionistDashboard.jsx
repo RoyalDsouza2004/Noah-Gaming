@@ -1499,7 +1499,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                 <button
                   type="submit"
                   disabled={walkInSubmitting || !walkInSelectedCustomer || !walkInSelectedDevice}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-slate-950 bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] transition-all shadow-lg shadow-[#851B2B]/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold font-heading uppercase tracking-wider bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] transition-all shadow-lg shadow-[#851B2B]/20 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {walkInSubmitting ? (
                     <>
