@@ -13,6 +13,7 @@ import { NotificationCenter } from '../notifications/NotificationCenter.jsx';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
 import ProfilePictureUpload from './ProfilePictureUpload.jsx';
+import { ThemeToggle } from '../common/ThemeToggle.jsx';
 import { showToast } from '../../utils/toast.js';
 import {
   User,
@@ -408,6 +409,9 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
               <Crown className="w-4 h-4" /> Membership Passes
             </button>
           )}
+
+          {/* Theme Switcher Toggle */}
+          <ThemeToggle className="h-9 px-3" />
         </div>
       </div>
 
@@ -514,6 +518,9 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
       {/* ---------------- 1. TAB: OVERVIEW ---------------- */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Appearance & Theme Selector Card */}
+          <ThemeToggle variant="card" />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Membership Status Card */}
             <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 space-y-4">
@@ -1113,6 +1120,9 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
               }
             }}
           />
+
+          {/* Appearance & Theme Selector Card */}
+          <ThemeToggle variant="card" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Details Form */}

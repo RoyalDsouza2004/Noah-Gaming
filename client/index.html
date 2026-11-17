@@ -19,6 +19,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Instant Zero-Flash Theme Initialization -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('noah_theme');
+          var theme = saved === 'light' ? 'light' : 'dark';
+          var doc = document.documentElement;
+          doc.classList.remove('light', 'dark');
+          doc.classList.add(theme);
+          doc.setAttribute('data-theme', theme);
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) {
+            meta.setAttribute('content', theme === 'light' ? '#E87524' : '#851B2B');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="bg-[#171014] text-[#FFF4E8] min-h-screen selection:bg-[#851B2B] selection:text-[#FFF4E8]">
     <div id="root"></div>

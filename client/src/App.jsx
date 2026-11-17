@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { PwaProvider } from './context/PwaContext.jsx';
 import { PushNotificationProvider } from './context/PushNotificationContext.jsx';
@@ -23,6 +24,7 @@ import { showToast } from './utils/toast.js';
 
 function AppContent() {
   const { user, loading, openLoginModal, logout } = useAuth();
+  const { isDark } = useTheme();
   const [activeNav, setActiveNav] = useState('home');
   const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
   const [selectedDeviceForBooking, setSelectedDeviceForBooking] = useState(null);
@@ -456,40 +458,48 @@ function AppContent() {
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#260D17',
-            color: '#FFF4E8',
-            border: '1px solid #49202C',
+            background: isDark ? '#260D17' : '#FFFFFF',
+            color: isDark ? '#FFF4E8' : '#382019',
+            border: isDark ? '1px solid #49202C' : '1px solid #F0DCCB',
             borderRadius: '16px',
             fontSize: '13px',
             fontFamily: 'Inter, sans-serif',
             padding: '12px 16px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7)',
+            boxShadow: isDark
+              ? '0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7)'
+              : '0 10px 25px -5px rgba(56, 32, 25, 0.1), 0 8px 10px -6px rgba(56, 32, 25, 0.05)',
           },
           success: {
             iconTheme: {
-              primary: '#45C987',
-              secondary: '#171014',
+              primary: isDark ? '#45C987' : '#16A34A',
+              secondary: isDark ? '#171014' : '#FFFFFF',
             },
             style: {
-              border: '1px solid rgba(69, 201, 135, 0.4)',
+              border: isDark
+                ? '1px solid rgba(69, 201, 135, 0.4)'
+                : '1px solid rgba(22, 163, 74, 0.4)',
             },
           },
           error: {
             iconTheme: {
-              primary: '#F06A76',
-              secondary: '#171014',
+              primary: isDark ? '#F06A76' : '#DC2626',
+              secondary: isDark ? '#171014' : '#FFFFFF',
             },
             style: {
-              border: '1px solid rgba(240, 106, 118, 0.4)',
+              border: isDark
+                ? '1px solid rgba(240, 106, 118, 0.4)'
+                : '1px solid rgba(220, 38, 38, 0.4)',
             },
           },
           loading: {
             iconTheme: {
-              primary: '#D7FF00',
-              secondary: '#171014',
+              primary: isDark ? '#D7FF00' : '#E87524',
+              secondary: isDark ? '#171014' : '#FFFFFF',
             },
             style: {
-              border: '1px solid rgba(215, 255, 0, 0.4)',
+              border: isDark
+                ? '1px solid rgba(215, 255, 0, 0.4)'
+                : '1px solid rgba(232, 117, 36, 0.4)',
             },
           },
         }}
@@ -705,12 +715,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <PwaProvider>
-        <PushNotificationProvider>
-          <AppContent />
-        </PushNotificationProvider>
-      </PwaProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <PwaProvider>
+          <PushNotificationProvider>
+            <AppContent />
+          </PushNotificationProvider>
+        </PwaProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -12,6 +12,7 @@ import { PushNotificationSettings } from '../notifications/PushNotificationSetti
 import { ReportExportModal } from './analytics/ReportExportModal.jsx';
 import { AdminGameImportModal } from './AdminGameImportModal.jsx';
 import { AdminOperatingHoursTab } from './AdminOperatingHoursTab.jsx';
+import { ThemeToggle } from '../common/ThemeToggle.jsx';
 import { cloudinaryApi } from '../../api/cloudinary.js';
 import {
   Tv,
@@ -611,6 +612,9 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#D7FF00]' : ''}`} />
             Refresh Data
           </button>
+
+          {/* Theme Toggle Button */}
+          <ThemeToggle className="h-9 px-2.5" />
 
           {onClose && (
             <button

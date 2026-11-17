@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePwa } from '../context/PwaContext.jsx';
+import { ThemeToggle } from './common/ThemeToggle.jsx';
 import {
   Gamepad2,
   Coins,
@@ -388,14 +389,17 @@ export const Sidebar = ({
               </div>
             </button>
 
-            <button
-              type="button"
-              onClick={logout}
-              title="Log Out"
-              className="p-1.5 rounded-lg text-[#C7A5A8] hover:text-[#F06A76] hover:bg-[#851B2B]/30 transition-colors focus:outline-none shrink-0"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <ThemeToggle className="h-8 w-8 px-1" />
+              <button
+                type="button"
+                onClick={logout}
+                title="Log Out"
+                className="p-1.5 rounded-lg text-[#C7A5A8] hover:text-[#F06A76] hover:bg-[#851B2B]/30 transition-colors focus:outline-none shrink-0"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         ) : (
           <div className="p-2.5 rounded-xl bg-[#260D17] border border-[#49202C] flex items-center justify-between gap-2">
@@ -408,13 +412,16 @@ export const Sidebar = ({
                 <span className="text-[10px] text-[#C7A5A8]">Public visitor</span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={openLoginModal}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#851B2B] text-[#FFF4E8] hover:bg-[#A51F35] transition-colors shrink-0"
-            >
-              Sign In
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <ThemeToggle className="h-8 w-8 px-1" />
+              <button
+                type="button"
+                onClick={openLoginModal}
+                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#851B2B] text-[#FFF4E8] hover:bg-[#A51F35] transition-colors shrink-0"
+              >
+                Sign In
+              </button>
+            </div>
           </div>
         )}
       </div>

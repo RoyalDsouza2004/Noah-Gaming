@@ -6,6 +6,7 @@ import { equipmentApi } from '../../api/equipment.js';
 import { bookingApi } from '../../api/booking.js';
 import { reportsApi } from '../../api/reports.js';
 import { scheduleApi } from '../../api/schedule.js';
+import { ThemeToggle } from '../common/ThemeToggle.jsx';
 import { ExtendSessionModal } from './ExtendSessionModal.jsx';
 import { CheckInModal } from './CheckInModal.jsx';
 import { CheckoutModal } from './CheckoutModal.jsx';
@@ -476,6 +477,9 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                 <span className="hidden xs:inline">Admin Suite</span>
               </button>
             )}
+
+            {/* Theme Toggle Button */}
+            <ThemeToggle className="h-9 px-2.5" />
 
             {/* Refresh Data Button */}
             <button

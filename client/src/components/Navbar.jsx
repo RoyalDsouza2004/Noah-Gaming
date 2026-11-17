@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { usePwa } from '../context/PwaContext.jsx';
+import { ThemeToggle } from './common/ThemeToggle.jsx';
 import {
   Gamepad2,
   Sparkles,
@@ -163,6 +164,9 @@ export const Navbar = ({
               <span>Admin Suite</span>
             </button>
           )}
+
+          {/* 5b. Theme Toggle (Desktop Header) */}
+          <ThemeToggle className="hidden sm:flex" />
 
           {/* 6. Logout / Login */}
           {isAuthenticated ? (
