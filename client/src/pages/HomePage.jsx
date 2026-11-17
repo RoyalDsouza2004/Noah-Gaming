@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { equipmentApi } from '../api/equipment.js';
 import { membershipApi } from '../api/membership.js';
+import { scheduleApi } from '../api/schedule.js';
 import { GameCard } from '../components/games/GameCard.jsx';
 import { GameDetailsModal } from '../components/games/GameDetailsModal.jsx';
 import {
@@ -41,24 +42,27 @@ export const HomePage = ({
   const [games, setGames] = useState([]);
   const [pricingRules, setPricingRules] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [operatingStatus, setOperatingStatus] = useState(null);
   const [selectedGameCategory, setSelectedGameCategory] = useState('ALL');
   const [selectedGameForDetails, setSelectedGameForDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch dynamic equipment, games, pricing, and membership plans from backend
+  // Fetch dynamic equipment, games, pricing, membership plans, and operating hours from backend
   const fetchLoungeData = async () => {
     try {
       setLoading(true);
-      const [devRes, gmRes, prRes, planRes] = await Promise.all([
+      const [devRes, gmRes, prRes, planRes, schedRes] = await Promise.all([
         equipmentApi.getDevices(),
         equipmentApi.getGames(),
         equipmentApi.getPricing(),
         membershipApi.getPlans().catch(() => ({ success: false })),
+        scheduleApi.getOperatingStatus().catch(() => ({ success: false })),
       ]);
       if (devRes.success) setDevices(devRes.data.devices);
       if (gmRes.success) setGames(gmRes.data.games);
       if (prRes.success) setPricingRules(prRes.data.pricingPlans);
       if (planRes?.success && planRes.data?.plans) setPlans(planRes.data.plans);
+      if (schedRes?.success && schedRes.data) setOperatingStatus(schedRes.data);
     } catch (err) {
       console.warn('Failed to fetch lounge data:', err.message);
     } finally {
@@ -624,9 +628,26 @@ export const HomePage = ({
             </div>
             <h3 className="text-lg font-bold font-heading text-[#FFF4E8]">Operating Hours</h3>
             <div className="text-xs text-[#C7A5A8] space-y-1">
-              <p><strong className="text-[#FFF4E8]">Monday – Sunday:</strong> 10:00 AM – 11:00 PM IST</p>
-              <p>Walk-ins welcome & online bookings open 24/7</p>
-              <p className="text-[#45C987] font-medium pt-1">Open 365 Days a Year</p>
+              {(() => {
+                const format12h = (timeStr) => {
+                  if (!timeStr) return '';
+                  const [h, m] = timeStr.split(':').map(Number);
+                  const period = h >= 12 ? 'PM' : 'AM';
+                  const hour12 = h % 12 === 0 ? 12 : h % 12;
+                  return `${hour12}:${String(m || 0).padStart(2, '0')} ${period}`;
+                };
+                const todayHours = operatingStatus?.todaySchedule || operatingStatus?.today;
+                const hoursFormatted = todayHours?.openTime && todayHours?.closeTime
+                  ? `${format12h(todayHours.openTime)} – ${format12h(todayHours.closeTime)} IST`
+                  : '10:00 AM – 11:00 PM IST';
+                return (
+                  <>
+                    <p><strong className="text-[#FFF4E8]">Today's Hours:</strong> {hoursFormatted}</p>
+                    <p>{operatingStatus?.statusMessage || 'Walk-ins welcome & online bookings open 24/7'}</p>
+                    <p className="text-[#45C987] font-medium pt-1">Open 365 Days a Year</p>
+                  </>
+                );
+              })()}
             </div>
           </div>
 

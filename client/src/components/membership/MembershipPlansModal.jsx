@@ -182,19 +182,19 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 md:left-64 z-40 flex items-center justify-center p-3 sm:p-4 md:p-6 pb-28 md:pb-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div id="membership-plans-modal" className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[#171014] border border-[#49202C] rounded-2xl sm:rounded-3xl shadow-2xl text-[#FFF4E8] m-auto overflow-hidden">
+    <div className="fixed inset-0 md:left-64 z-40 flex items-center justify-center p-3 sm:p-4 md:p-6 pb-28 md:pb-6 bg-black/50 dark:bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
+      <div id="membership-plans-modal" className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-white dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] rounded-2xl sm:rounded-3xl shadow-2xl text-slate-900 dark:text-[#FFF4E8] m-auto overflow-hidden">
         {/* Header */}
-        <div id="membership-plans-header" className="p-4 sm:p-6 bg-gradient-to-r from-[#260D17] via-[#171014] to-[#260D17] border-b border-[#49202C] flex items-center justify-between shrink-0">
+        <div id="membership-plans-header" className="p-4 sm:p-6 bg-slate-50 dark:bg-gradient-to-r dark:from-[#260D17] dark:via-[#171014] dark:to-[#260D17] border-b border-slate-200 dark:border-[#49202C] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] text-white flex items-center justify-center font-bold shadow-lg shadow-[#851B2B]/20">
               <Crown className="w-5 h-5 text-[#D7FF00]" />
             </div>
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#F5B942] font-bold">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#851B2B] dark:text-[#F5B942] font-bold">
                 NOAH Club Passes
               </span>
-              <h2 className="text-xl sm:text-2xl font-black font-heading text-white">
+              <h2 className="text-xl sm:text-2xl font-black font-heading text-slate-900 dark:text-white">
                 MONTHLY MEMBERSHIP PLANS
               </h2>
             </div>
@@ -202,7 +202,7 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -263,49 +263,49 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
                     onClick={() => handleSelectPlan(plan)}
                     className={`membership-plan-card p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative ${
                       isVIP
-                        ? 'bg-gradient-to-b from-[#851B2B]/30 via-[#260D17] to-[#171014] border-[#851B2B] hover:border-[#A51F35] shadow-lg shadow-[#851B2B]/20'
+                        ? 'bg-gradient-to-b from-amber-50 to-orange-50/50 dark:from-[#851B2B]/30 dark:via-[#260D17] dark:to-[#171014] border-amber-300 dark:border-[#851B2B] hover:border-amber-500 dark:hover:border-[#A51F35] shadow-md shadow-amber-500/10 dark:shadow-[#851B2B]/20'
                         : isUnlim
-                        ? 'bg-gradient-to-b from-[#851B2B]/20 via-[#260D17] to-[#171014] border-[#851B2B]/40 hover:border-[#851B2B] shadow-lg shadow-[#851B2B]/10'
-                        : 'bg-[#260D17]/50 border-[#49202C] hover:border-[#851B2B]'
-                    } ${isSelected ? 'ring-2 ring-[#D7FF00] border-[#D7FF00]' : ''}`}
+                        ? 'bg-white dark:bg-gradient-to-b dark:from-[#851B2B]/20 dark:via-[#260D17] dark:to-[#171014] border-slate-200 dark:border-[#851B2B]/40 hover:border-[#851B2B] shadow-sm shadow-slate-900/5 dark:shadow-[#851B2B]/10'
+                        : 'bg-white dark:bg-[#260D17]/50 border-slate-200 dark:border-[#49202C] hover:border-[#851B2B]'
+                    } ${isSelected ? 'ring-2 ring-[#851B2B] dark:ring-[#D7FF00] border-[#851B2B] dark:border-[#D7FF00]' : ''}`}
                   >
                     {/* Badge */}
                     <div className="flex items-center justify-between mb-3">
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
                           isVIP
-                            ? 'bg-[#851B2B]/30 text-[#FFF4E8] border border-[#851B2B]'
+                            ? 'bg-amber-100 dark:bg-[#851B2B]/30 text-amber-900 dark:text-[#FFF4E8] border border-amber-300 dark:border-[#851B2B]'
                             : isUnlim
-                            ? 'bg-[#851B2B]/20 text-[#D7FF00] border border-[#851B2B]/40'
-                            : 'bg-[#171014] text-[#C7A5A8] border border-[#49202C]'
+                            ? 'bg-[#851B2B]/10 dark:bg-[#851B2B]/20 text-[#851B2B] dark:text-[#D7FF00] border border-[#851B2B]/20 dark:border-[#851B2B]/40'
+                            : 'bg-slate-100 dark:bg-[#171014] text-slate-700 dark:text-[#C7A5A8] border border-slate-200 dark:border-[#49202C]'
                         }`}
                       >
                         {isVIP ? 'GTA 6 INCLUDED' : isUnlim ? 'UNLIMITED PASS' : 'STANDARD'}
                       </span>
 
                       {plan.isUnlimited && (
-                        <Zap className="w-4 h-4 text-[#D7FF00]" />
+                        <Zap className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00]" />
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <h3 className="text-lg font-bold font-heading text-white">{plan.name}</h3>
-                      <p className="text-xs text-slate-400 line-clamp-2">{plan.description}</p>
+                      <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white">{plan.name}</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{plan.description}</p>
 
                       {/* Pricing */}
                       <div className="pt-2">
-                        <span className="text-2xl font-black font-heading text-white">
+                        <span className="text-2xl font-black font-heading text-slate-900 dark:text-white">
                           ₹{plan.price / 100}
                         </span>
-                        <span className="text-xs text-slate-400 font-mono">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                           /{plan.validityDuration} {plan.validityUnit?.toLowerCase()}
                         </span>
                       </div>
 
                       {/* Feature Bullet points */}
-                      <div className="pt-3 border-t border-slate-800/80 space-y-2 text-xs text-slate-300 font-mono">
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 space-y-2 text-xs text-slate-700 dark:text-slate-300 font-mono">
                         <div className="flex items-center gap-2">
-                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>
                             {plan.dailyUsageLimit
                               ? `${plan.dailyUsageLimit / 60}h Daily Gaming Allowance`
@@ -314,31 +314,31 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>
                             {plan.maximumBookingsPerDay} Booking(s) Per Day
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>
                             {plan.advanceBookingLimit} Days Advance Booking
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>PS5 Consoles & Pool Table</span>
                         </div>
 
                         {plan.includesExclusiveGames ? (
-                          <div className="flex items-center gap-2 text-amber-300 font-bold">
-                            <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-bold">
+                            <Flame className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                             <span>GTA 6 Exclusive Sessions</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 text-slate-500 text-[11px]">
+                          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-500 text-[11px]">
                             <Lock className="w-3.5 h-3.5 shrink-0" />
                             <span>GTA 6 requires separate booking</span>
                           </div>

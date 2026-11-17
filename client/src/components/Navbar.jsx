@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { usePwa } from '../context/PwaContext.jsx';
 import { ThemeToggle } from './common/ThemeToggle.jsx';
+import { scheduleApi } from '../api/schedule.js';
 import {
   Gamepad2,
   Sparkles,
@@ -24,6 +25,15 @@ export const Navbar = ({
 }) => {
   const { user, isAuthenticated, logout, openLoginModal, openRegisterModal, isAdmin, isReceptionist } = useAuth();
   const { isInstalled, triggerInstall } = usePwa();
+  const [operatingStatus, setOperatingStatus] = useState(null);
+
+  useEffect(() => {
+    scheduleApi.getOperatingStatus()
+      .then((res) => {
+        if (res?.success && res.data) setOperatingStatus(res.data);
+      })
+      .catch(() => {});
+  }, []);
 
   const getPageTitle = (nav) => {
     switch (nav) {
@@ -82,7 +92,17 @@ export const Navbar = ({
               {getPageTitle(activeNav)}
             </h1>
             <span className="hidden xl:inline-block text-[10px] px-2 py-0.5 rounded-full bg-[#260D17] border border-[#49202C] text-[#C7A5A8] font-mono">
-              Open 10 AM – 11 PM
+              {(() => {
+                const todayHours = operatingStatus?.todaySchedule || operatingStatus?.today;
+                if (!todayHours?.openTime || !todayHours?.closeTime) return 'Open 10 AM – 11 PM';
+                const format12 = (t) => {
+                  const [h, m] = t.split(':').map(Number);
+                  const period = h >= 12 ? 'PM' : 'AM';
+                  const h12 = h % 12 === 0 ? 12 : h % 12;
+                  return m > 0 ? `${h12}:${String(m).padStart(2, '0')} ${period}` : `${h12} ${period}`;
+                };
+                return `Open ${format12(todayHours.openTime)} – ${format12(todayHours.closeTime)}`;
+              })()}
             </span>
           </div>
         </div>

@@ -387,9 +387,9 @@ export const AdminOperatingHoursTab = () => {
               {operatingStatus?.statusMessage || 'Loading status...'}
             </div>
             <p className="text-xs text-[#C7A5A8]">
-              {operatingStatus?.todaySchedule?.isClosed
-                ? `Closed today (${operatingStatus.todaySchedule.reason || 'Rest Day'})`
-                : `Today's Operating Hours: ${operatingStatus?.todaySchedule?.openTime || '10:00'} - ${operatingStatus?.todaySchedule?.closeTime || '23:00'} IST`}
+              {operatingStatus?.todaySchedule?.isClosed || operatingStatus?.today?.isClosed
+                ? `Closed today (${operatingStatus?.todaySchedule?.reason || operatingStatus?.today?.reason || 'Rest Day'})`
+                : `Today's Operating Hours: ${operatingStatus?.todaySchedule?.openTime || operatingStatus?.today?.openTime || '10:00'} - ${operatingStatus?.todaySchedule?.closeTime || operatingStatus?.today?.closeTime || '23:00'} IST`}
             </p>
           </div>
         </div>

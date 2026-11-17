@@ -45,7 +45,7 @@ export const Footer = () => {
             </p>
             <div className="flex flex-wrap items-center gap-4 text-xs text-[#C7A5A8] pt-2">
               <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#D7FF00]" /> 10:00 AM – 11:00 PM IST (Daily)
+                <Clock className="w-3.5 h-3.5 text-[#D7FF00]" /> Open Daily (IST Schedule)
               </span>
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#F5B942]" /> Bajagoli , Karkala

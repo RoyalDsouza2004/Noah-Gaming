@@ -847,39 +847,39 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                       key={dev.deviceId || dev.deviceCode}
                       className={`station-status-card relative p-5 rounded-2xl border transition-all ${
                         dev.status === 'MAINTENANCE'
-                          ? 'bg-amber-950/20 border-amber-500/40'
+                          ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-500/40'
                           : currentSession
                           ? isGTA6
-                            ? 'bg-gradient-to-b from-rose-950/30 to-slate-900 border-rose-500/50 shadow-lg shadow-rose-950/20'
-                            : 'bg-gradient-to-b from-[#851B2B]/20 to-[#260D17] border-[#49202C] shadow-lg shadow-[#851B2B]/10'
-                          : 'bg-slate-900/60 border-slate-800'
+                            ? 'bg-gradient-to-b from-rose-50 to-orange-50/40 dark:from-rose-950/30 dark:to-slate-900 border-rose-300 dark:border-rose-500/50 shadow-md dark:shadow-rose-950/20'
+                            : 'bg-gradient-to-b from-amber-50/50 to-slate-50 dark:from-[#851B2B]/20 dark:to-[#260D17] border-[#851B2B]/30 dark:border-[#49202C] shadow-md dark:shadow-[#851B2B]/10'
+                          : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 shadow-sm'
                       }`}
                     >
                       {/* Station Header */}
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                               {dev.deviceCode}
                             </span>
-                            <h4 className="text-base font-bold text-white font-heading">{dev.name}</h4>
+                            <h4 className="text-base font-bold text-slate-900 dark:text-white font-heading">{dev.name}</h4>
                           </div>
-                          <p className="text-xs text-slate-400 mt-0.5">
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                             {dev.deviceType === 'PS5' ? 'PlayStation 5 Console' : '8-Ball Billiards'} &bull; Max {dev.capacity} Players
                           </p>
                         </div>
 
                         {/* Status Badge */}
                         {dev.status === 'MAINTENANCE' ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40">
                             MAINTENANCE
                           </span>
                         ) : currentSession ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> IN SESSION
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping" /> IN SESSION
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#851B2B]/25 text-[#FFF4E8] border border-[#49202C]">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-[#851B2B]/25 text-slate-700 dark:text-[#FFF4E8] border border-slate-200 dark:border-[#49202C]">
                             AVAILABLE
                           </span>
                         )}
@@ -965,15 +965,15 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                           </div>
                         </div>
                       ) : (
-                        <div className="mt-4 pt-4 border-t border-slate-800 text-center py-6">
-                          <p className="text-xs text-slate-400">Station idle and ready</p>
+                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-center py-6">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Station idle and ready</p>
                           <button
                             onClick={() => {
                               const devObj = devicesList.find((d) => d.deviceCode === dev.deviceCode) || dev;
                               setWalkInSelectedDevice(devObj);
                               setActiveTab('walkin');
                             }}
-                            className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#FFF4E8] bg-[#851B2B]/15 hover:bg-[#851B2B]/25 border border-[#49202C] transition-colors inline-flex items-center gap-1"
+                            className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-800 dark:text-[#FFF4E8] bg-slate-100 hover:bg-slate-200 border border-slate-200 dark:bg-[#851B2B]/15 dark:hover:bg-[#851B2B]/25 dark:border-[#49202C] transition-colors inline-flex items-center gap-1 shadow-sm"
                           >
                             <Plus className="w-3.5 h-3.5" /> Book Station
                           </button>
@@ -988,22 +988,22 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
             {/* Active Sessions List Table */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-white font-heading uppercase tracking-wider flex items-center gap-2">
-                  <Gamepad2 className="w-4 h-4 text-emerald-400" /> Active Gaming Sessions Table ({activeSessions.length})
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white font-heading uppercase tracking-wider flex items-center gap-2">
+                  <Gamepad2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Active Gaming Sessions Table ({activeSessions.length})
                 </h3>
               </div>
 
               {activeSessions.length === 0 ? (
-                <div className="active-sessions-table-card p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center">
-                  <Tv className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-slate-300">No active gaming sessions right now</p>
-                  <p className="text-xs text-slate-500 mt-1">Walk-in customers or checked-in reservations will show up here</p>
+                <div className="active-sessions-table-card p-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
+                  <Tv className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">No active gaming sessions right now</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Walk-in customers or checked-in reservations will show up here</p>
                 </div>
               ) : (
                 <>
-                  <div className="active-sessions-table-card overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
+                  <div className="active-sessions-table-card overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
                     <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[11px]">
                       <tr>
                         <th className="p-3.5">Booking ID</th>
                         <th className="p-3.5">Customer</th>
@@ -1559,16 +1559,16 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
               </div>
 
               {/* Step 5: Price Summary & Payment Collection */}
-              <div className="walkin-fee-card p-4 rounded-xl bg-gradient-to-r from-[#851B2B]/20 to-[#260D17] border border-[#49202C] space-y-4">
+              <div className="walkin-fee-card p-4 rounded-xl bg-slate-50 dark:bg-gradient-to-r dark:from-[#851B2B]/20 dark:to-[#260D17] border border-slate-200 dark:border-[#49202C] space-y-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs text-slate-300">Total Calculated Booking Fee</span>
-                    <p className="text-[11px] text-slate-400">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-300">Total Calculated Booking Fee</span>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
                       Based on station rates, duration ({walkInDuration}h) and players
                     </p>
                   </div>
-                  <span className="text-2xl font-black text-white font-mono flex items-center">
-                    <IndianRupee className="w-5 h-5 text-[#D7FF00]" /> {walkInTotalPrice}
+                  <span className="text-2xl font-black text-slate-900 dark:text-white font-mono flex items-center">
+                    <IndianRupee className="w-5 h-5 text-[#851B2B] dark:text-[#D7FF00]" /> {walkInTotalPrice}
                   </span>
                 </div>
 

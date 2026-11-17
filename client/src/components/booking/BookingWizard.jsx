@@ -340,17 +340,17 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   });
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 max-h-[92vh] flex flex-col bg-[#260D17] border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-100 overflow-hidden">
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 max-h-[92vh] flex flex-col bg-white dark:bg-[#260D17] border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-900 dark:text-slate-100 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800 shrink-0">
+      <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono uppercase tracking-wider text-[#D7FF00]">Step {step} of 4</span>
-            <span className="sm:hidden text-[10px] px-1.5 py-0.5 rounded bg-[#171014] text-[#D7FF00] font-mono font-bold">
+            <span className="text-xs font-mono uppercase tracking-wider text-[#851B2B] dark:text-[#D7FF00]">Step {step} of 4</span>
+            <span className="sm:hidden text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#171014] text-[#851B2B] dark:text-[#D7FF00] font-mono font-bold">
               {step}/4
             </span>
           </div>
-          <h2 className="text-lg sm:text-2xl font-bold font-heading text-white mt-0.5">
+          <h2 className="text-lg sm:text-2xl font-bold font-heading text-slate-900 dark:text-white mt-0.5">
             {step === 1 && 'SELECT GAMING STATION'}
             {step === 2 && 'CHOOSE YOUR TITLE'}
             {step === 3 && 'SCHEDULE DATE & LIVE TIME SLOT'}
@@ -367,10 +367,10 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   key={s}
                   className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-all ${
                     step === s
-                      ? 'bg-[#851B2B] text-[#FFF4E8] font-heading'
+                      ? 'bg-[#851B2B] text-white font-heading'
                       : step > s
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-slate-900 text-slate-500'
+                      ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30'
+                      : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-500'
                   }`}
                 >
                   {step > s ? '✓' : s}
@@ -417,35 +417,35 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   onClick={() => setSelectedDevice(device)}
                   className={`booking-station-card p-5 rounded-2xl cursor-pointer transition-all border flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/20'
-                      : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                      ? 'bg-amber-50/70 dark:bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/20 ring-2 ring-[#851B2B]'
+                      : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B]/40 dark:hover:border-slate-700 shadow-sm'
                   }`}
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="p-2.5 rounded-xl bg-slate-800 text-[#D7FF00]">
+                      <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-[#851B2B] dark:text-[#D7FF00]">
                         {device.deviceType === 'POOL' ? (
-                          <CircleDot className="w-5 h-5 text-purple-400" />
+                          <CircleDot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                         ) : (
-                          <Gamepad2 className="w-5 h-5 text-[#D7FF00]" />
+                          <Gamepad2 className="w-5 h-5 text-[#851B2B] dark:text-[#D7FF00]" />
                         )}
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700">
                         {device.deviceCode}
                       </span>
                     </div>
 
                     <div>
-                      <h4 className="font-bold text-white text-base font-heading">{device.name}</h4>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-2">{device.description}</p>
+                      <h4 className="font-bold text-slate-900 dark:text-white text-base font-heading">{device.name}</h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{device.description}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-[#D7FF00]" /> Max {device.capacity} Players
+                  <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                    <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5 text-[#851B2B] dark:text-[#D7FF00]" /> Max {device.capacity} Players
                     </span>
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                       {device.deviceType === 'POOL' ? 'Tournament Table' : 'Station Ready'}
                     </span>
                   </div>
@@ -1038,25 +1038,25 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
             </div>
 
             {/* Price calculation summary */}
-            <div className="booking-quote-summary p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 space-y-4 flex flex-col justify-between">
+            <div className="booking-quote-summary p-5 rounded-2xl bg-slate-50 dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-800 space-y-4 flex flex-col justify-between shadow-sm">
               <div className="space-y-3">
-                <h4 className="text-sm font-bold text-white font-heading uppercase tracking-wider flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-emerald-400" />
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white font-heading uppercase tracking-wider flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Booking Summary & Official Quote
                 </h4>
 
-                <div className="space-y-2 text-xs text-slate-300">
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Station:</span>
-                    <span className="font-semibold text-white">{selectedDevice?.name}</span>
+                <div className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                  <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Station:</span>
+                    <span className="font-semibold text-slate-900 dark:text-white">{selectedDevice?.name}</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Title:</span>
-                    <span className="text-[#D7FF00] font-semibold flex items-center gap-1.5">
+                  <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Title:</span>
+                    <span className="text-[#851B2B] dark:text-[#D7FF00] font-semibold flex items-center gap-1.5">
                       {isVenueSelection ? (
                         <>
                           Select at Venue{' '}
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-mono font-bold">
                             Non-Exclusive
                           </span>
                         </>
@@ -1066,8 +1066,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           <span
                             className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
                               selectedGame.isExclusive
-                                ? 'bg-amber-500/20 text-amber-300'
-                                : 'bg-emerald-500/20 text-emerald-300'
+                                ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300'
+                                : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300'
                             }`}
                           >
                             {selectedGame.isExclusive ? 'Exclusive' : 'Non-Exclusive'}
@@ -1080,31 +1080,31 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       )}
                     </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Date & Slot:</span>
-                    <span className="text-white font-mono">
+                  <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Date & Slot:</span>
+                    <span className="text-slate-900 dark:text-white font-mono">
                       {bookingDate} ({selectedSlot?.startTime} – {selectedSlot?.endTime})
                     </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Duration & Mode:</span>
-                    <span className="text-white">
-                      {duration} hour(s) • <span className="text-purple-400 font-semibold">{bookingType}</span>
+                  <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Duration & Mode:</span>
+                    <span className="text-slate-900 dark:text-white">
+                      {duration} hour(s) • <span className="text-purple-600 dark:text-purple-400 font-semibold">{bookingType}</span>
                     </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Players:</span>
-                    <span className="text-white font-bold">{numberOfPlayers} Player(s)</span>
+                  <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Players:</span>
+                    <span className="text-slate-900 dark:text-white font-bold">{numberOfPlayers} Player(s)</span>
                   </div>
                 </div>
 
                 {pricingQuote && (
-                  <div className="p-3 rounded-xl bg-slate-950 border border-emerald-500/30 text-xs font-mono space-y-1 mt-2">
-                    <div className="flex justify-between text-slate-400 text-[11px]">
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-emerald-500/30 text-xs font-mono space-y-1 mt-2 shadow-sm">
+                    <div className="flex justify-between text-slate-600 dark:text-slate-400 text-[11px]">
                       <span>Rate Model:</span>
                       <span>{pricingQuote.pricingRule?.billingType}</span>
                     </div>
-                    <div className="flex justify-between text-slate-400 text-[11px]">
+                    <div className="flex justify-between text-slate-600 dark:text-slate-400 text-[11px]">
                       <span>Rate per unit:</span>
                       <span>
                         ₹{pricingQuote.pricingRule?.ratePerUnitRupees}/hr
@@ -1114,23 +1114,23 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
                     {membershipBenefit?.applied && (
                       <>
-                        <div className="flex justify-between text-slate-400 text-[11px] pt-1 border-t border-slate-800">
+                        <div className="flex justify-between text-slate-600 dark:text-slate-400 text-[11px] pt-1 border-t border-slate-200 dark:border-slate-800">
                           <span>Standard Amount:</span>
-                          <span className="line-through text-slate-500">₹{pricingQuote.standardAmountRupees}</span>
+                          <span className="line-through text-slate-400 dark:text-slate-500">₹{pricingQuote.standardAmountRupees}</span>
                         </div>
-                        <div className="flex justify-between text-emerald-400 text-[11px]">
+                        <div className="flex justify-between text-emerald-700 dark:text-emerald-400 text-[11px]">
                           <span>Membership Benefit ({membershipBenefit.planName}):</span>
                           <span>-₹{membershipBenefit.discountRupees}</span>
                         </div>
                       </>
                     )}
 
-                    <div className="flex justify-between text-white font-bold text-base pt-2 border-t border-slate-800 font-sans">
+                    <div className="flex justify-between text-slate-900 dark:text-white font-bold text-base pt-2 border-t border-slate-200 dark:border-slate-800 font-sans">
                       <span>Total Amount:</span>
-                      <span className={`font-mono ${isMembershipFullyCovered ? 'text-[#D7FF00]' : 'text-emerald-400'}`}>
+                      <span className={`font-mono ${isMembershipFullyCovered ? 'text-[#851B2B] dark:text-[#D7FF00]' : 'text-emerald-700 dark:text-emerald-400'}`}>
                         ₹{pricingQuote.totalAmountRupees}
                         {isMembershipFullyCovered && (
-                          <span className="ml-2 text-xs font-normal text-emerald-400 font-mono">
+                          <span className="ml-2 text-xs font-normal text-emerald-700 dark:text-emerald-400 font-mono">
                             (Free Session)
                           </span>
                         )}
@@ -1138,7 +1138,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     </div>
 
                     {pricingQuote.advanceRequired && (
-                      <div className="pt-2 border-t border-amber-500/30 flex justify-between text-amber-300 font-bold text-xs">
+                      <div className="pt-2 border-t border-amber-300 dark:border-amber-500/30 flex justify-between text-amber-800 dark:text-amber-300 font-bold text-xs">
                         <span>Mandatory Advance Required:</span>
                         <span className="font-mono">₹{pricingQuote.minimumAdvanceRupees} (50%)</span>
                       </div>
@@ -1158,41 +1158,41 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               </div>
 
                 {/* Phase 4 Payment Selection Box */}
-                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5">
-                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold block font-heading">
+                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-sm">
+                  <span className="text-[11px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-bold block font-heading">
                     Payment Channel
                   </span>
 
                   {isMembershipFullyCovered ? (
-                    <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs space-y-1.5">
+                    <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs space-y-1.5">
                       <div className="flex items-center gap-1.5 font-bold">
-                        <Crown className="w-4 h-4 text-[#D7FF00]" />
+                        <Crown className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00]" />
                         <span>100% Covered by Membership</span>
                       </div>
-                      <p className="text-[11px] text-slate-300">
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300">
                         Your daily gaming perk covers this session in full. No payment gateway or counter cash needed!
                       </p>
-                      <div className="text-[10px] text-emerald-400 font-mono font-bold">
+                      <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-bold">
                         Payable Amount: ₹0
                       </div>
                     </div>
                   ) : pricingQuote?.advanceRequired || selectedGame?.isExclusive ? (
-                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
+                    <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs space-y-1">
                       <div className="flex items-center gap-1.5 font-bold">
-                        <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                         <span>Mandatory Online Advance Required</span>
                       </div>
-                      <p className="text-[11px] text-slate-300">
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300">
                         GTA 6 exclusive bookings lock the entire physical PS5 console. A 50% advance (₹{pricingQuote?.minimumAdvanceRupees}) must be paid online via Razorpay (UPI, Debit/Credit Cards).
                       </p>
-                      <div className="text-[10px] text-amber-200/80 pt-1 font-mono">
+                      <div className="text-[10px] text-amber-800 dark:text-amber-200/80 pt-1 font-mono">
                         Remaining balance of ₹{pricingQuote ? pricingQuote.totalAmountRupees - pricingQuote.minimumAdvanceRupees : 0} payable at front desk.
                       </div>
                     </div>
                   ) : (
                     <>
                       {membershipBenefit?.applied && (
-                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex justify-between items-center">
+                        <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 text-emerald-800 dark:text-emerald-300 text-xs flex justify-between items-center">
                           <span>Partial Membership Discount Applied:</span>
                           <span className="font-mono font-bold">-₹{membershipBenefit.discountRupees}</span>
                         </div>
@@ -1203,15 +1203,15 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           onClick={() => setPaymentChoice('ONLINE')}
                           className={`p-2.5 rounded-xl border text-left transition-all ${
                             paymentChoice === 'ONLINE'
-                              ? 'bg-[#851B2B]/20 border-[#851B2B] text-[#FFF4E8]'
-                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                              ? 'bg-amber-50/70 dark:bg-[#851B2B]/20 border-[#851B2B] text-slate-900 dark:text-[#FFF4E8] ring-1 ring-[#851B2B]'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
                           <div className="flex items-center gap-1.5 font-bold">
                             <CreditCard className="w-3.5 h-3.5" />
                             <span>Pay Online</span>
                           </div>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
                             Razorpay (UPI / Cards)
                           </span>
                         </button>
@@ -1221,8 +1221,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           onClick={() => setPaymentChoice('COUNTER')}
                           className={`p-2.5 rounded-xl border text-left transition-all ${
                             paymentChoice === 'COUNTER'
-                              ? 'bg-emerald-500/15 border-emerald-400 text-emerald-300'
-                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                              ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-500 text-emerald-800 dark:text-emerald-300 ring-1 ring-emerald-500'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
                           <div className="flex items-center gap-1.5 font-bold">

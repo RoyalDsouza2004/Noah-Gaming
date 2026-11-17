@@ -38,7 +38,7 @@ export const PushNotificationSettings = ({ compact = false }) => {
 
   return (
     <div
-      className={`push-settings-card rounded-2xl border border-white/10 bg-gradient-to-br from-[#1a1217] via-[#140e13] to-[#0d090c] p-5 sm:p-6 shadow-xl ${
+      className={`push-settings-card rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-[#1a1217] dark:via-[#140e13] dark:to-[#0d090c] p-5 sm:p-6 shadow-sm dark:shadow-xl ${
         compact ? 'text-sm' : ''
       }`}
     >
@@ -49,10 +49,10 @@ export const PushNotificationSettings = ({ compact = false }) => {
             <BellRing className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-wide">
               Browser Push Notifications
             </h3>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate-600 dark:text-gray-400">
               Receive real-time alerts on desktop & mobile even when NOAH GAMING is closed
             </p>
           </div>
@@ -125,25 +125,25 @@ export const PushNotificationSettings = ({ compact = false }) => {
 
       {/* Device Info & Active Counts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-        <div className="push-device-card p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-300">
+        <div className="push-device-card p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-700 dark:text-gray-300">
             <Laptop className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-xs text-gray-400">This Device</div>
-            <div className="text-sm font-semibold text-white">
+            <div className="text-xs text-slate-500 dark:text-gray-400">This Device</div>
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">
               {currentDeviceSubscribed ? 'Subscribed & Live' : 'Not Subscribed'}
             </div>
           </div>
         </div>
 
-        <div className="push-device-card p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-300">
+        <div className="push-device-card p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-700 dark:text-gray-300">
             <Smartphone className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-xs text-gray-400">All Connected Devices</div>
-            <div className="text-sm font-semibold text-white">
+            <div className="text-xs text-slate-500 dark:text-gray-400">All Connected Devices</div>
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">
               {activeDevicesCount} {activeDevicesCount === 1 ? 'Device' : 'Devices'}
             </div>
           </div>
@@ -167,7 +167,7 @@ export const PushNotificationSettings = ({ compact = false }) => {
             type="button"
             disabled={isLoading}
             onClick={disablePushNotifications}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 dark:bg-white/10 dark:hover:bg-white/15 dark:text-gray-300 dark:hover:text-white dark:border-white/10 font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             <BellOff className="w-4 h-4" />
             <span>{isLoading ? 'Updating...' : 'Disable on this Device'}</span>

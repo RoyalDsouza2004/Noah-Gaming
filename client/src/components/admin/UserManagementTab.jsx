@@ -420,62 +420,62 @@ export const UserManagementTab = ({ isAdmin = false }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn text-[#FFF4E8]">
+    <div className="space-y-6 animate-fadeIn text-slate-900 dark:text-[#FFF4E8]">
       {/* Header & KPI Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="user-management-kpi p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
+        <div className="user-management-kpi p-4 rounded-2xl bg-white dark:bg-[#260D17]/80 border border-slate-200 dark:border-[#49202C] shadow-sm dark:shadow-lg flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider text-[#C7A5A8]">Total Users</span>
-            <h3 className="text-xl sm:text-2xl font-black font-heading text-white mt-0.5">{kpis.totalUsersCount}</h3>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-[#C7A5A8]">Total Users</span>
+            <h3 className="text-xl sm:text-2xl font-black font-heading text-slate-900 dark:text-white mt-0.5">{kpis.totalUsersCount}</h3>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 border border-[#851B2B]/40 flex items-center justify-center text-[#D7FF00]">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#851B2B]/20 border border-slate-200 dark:border-[#851B2B]/40 flex items-center justify-center text-[#851B2B] dark:text-[#D7FF00]">
             <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="user-management-kpi p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
+        <div className="user-management-kpi p-4 rounded-2xl bg-white dark:bg-[#260D17]/80 border border-slate-200 dark:border-[#49202C] shadow-sm dark:shadow-lg flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400">Guest Accounts</span>
-            <h3 className="text-xl sm:text-2xl font-black font-heading text-amber-300 mt-0.5">{kpis.totalGuestsCount}</h3>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-amber-700 dark:text-amber-400">Guest Accounts</span>
+            <h3 className="text-xl sm:text-2xl font-black font-heading text-amber-800 dark:text-amber-300 mt-0.5">{kpis.totalGuestsCount}</h3>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
             <UserX className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="user-management-kpi p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
+        <div className="user-management-kpi p-4 rounded-2xl bg-white dark:bg-[#260D17]/80 border border-slate-200 dark:border-[#49202C] shadow-sm dark:shadow-lg flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400">Registered</span>
-            <h3 className="text-xl sm:text-2xl font-black font-heading text-emerald-300 mt-0.5">{kpis.totalRegisteredCount}</h3>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Registered</span>
+            <h3 className="text-xl sm:text-2xl font-black font-heading text-emerald-800 dark:text-emerald-300 mt-0.5">{kpis.totalRegisteredCount}</h3>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
             <UserCheck className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="user-management-kpi p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
+        <div className="user-management-kpi p-4 rounded-2xl bg-white dark:bg-[#260D17]/80 border border-slate-200 dark:border-[#49202C] shadow-sm dark:shadow-lg flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider text-purple-400">Active Passes</span>
-            <h3 className="text-xl sm:text-2xl font-black font-heading text-purple-300 mt-0.5">{kpis.activeMembersCount}</h3>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-purple-700 dark:text-purple-400">Active Passes</span>
+            <h3 className="text-xl sm:text-2xl font-black font-heading text-purple-800 dark:text-purple-300 mt-0.5">{kpis.activeMembersCount}</h3>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
             <Crown className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* Control Panel: Search & Filters */}
-      <div className="user-management-card p-4 sm:p-5 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-xl space-y-4">
+      <div className="user-management-card p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#260D17]/80 border border-slate-200 dark:border-[#49202C] shadow-sm dark:shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Search Bar */}
           <form onSubmit={handleSearchSubmit} className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C7A5A8]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-[#C7A5A8]" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by customer name, mobile, email, or Customer ID..."
-              className="w-full pl-10 pr-24 py-2.5 rounded-xl bg-[#171014] border border-[#49202C] text-xs sm:text-sm text-[#FFF4E8] placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"
+              className="w-full pl-10 pr-24 py-2.5 rounded-xl bg-slate-50 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] text-xs sm:text-sm text-slate-900 dark:text-[#FFF4E8] placeholder-slate-400 dark:placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"
             />
             <button
               type="submit"
@@ -499,7 +499,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                 fetchUsers();
               }}
               title="Refresh and Reset Filters"
-              className="p-2.5 rounded-xl bg-[#171014] border border-[#49202C] text-[#C7A5A8] hover:text-[#FFF4E8] hover:bg-[#851B2B]/20 transition-colors"
+              className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] text-slate-600 dark:text-[#C7A5A8] hover:text-slate-900 dark:hover:text-[#FFF4E8] hover:bg-slate-100 dark:hover:bg-[#851B2B]/20 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -508,7 +508,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
               <button
                 type="button"
                 onClick={() => setMergeModalOpen(true)}
-                className="px-3 py-2.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider bg-[#171014] border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 transition-colors flex items-center gap-1.5 shadow-md"
+                className="px-3 py-2.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider bg-slate-50 dark:bg-[#171014] border border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10 transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <GitMerge className="w-3.5 h-3.5" /> Merge Duplicate
               </button>
@@ -517,8 +517,8 @@ export const UserManagementTab = ({ isAdmin = false }) => {
         </div>
 
         {/* Filters Row */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#49202C]/60 text-xs">
-          <span className="text-[#C7A5A8] flex items-center gap-1 mr-1 font-mono uppercase tracking-wider text-[10px]">
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200 dark:border-[#49202C]/60 text-xs">
+          <span className="text-slate-600 dark:text-[#C7A5A8] flex items-center gap-1 mr-1 font-mono uppercase tracking-wider text-[10px]">
             <Filter className="w-3 h-3" /> Filters:
           </span>
 
@@ -529,7 +529,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
               setAccountType(e.target.value);
               setPage(1);
             }}
-            className="px-2.5 py-1.5 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8] focus:outline-none focus:border-[#851B2B]"
+            className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] text-slate-900 dark:text-[#FFF4E8] focus:outline-none focus:border-[#851B2B]"
           >
             <option value="ALL">All Types (Guest & Registered)</option>
             <option value="GUEST">Guest Accounts Only</option>
@@ -543,7 +543,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
               setRoleFilter(e.target.value);
               setPage(1);
             }}
-            className="px-2.5 py-1.5 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8] focus:outline-none focus:border-[#851B2B]"
+            className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] text-slate-900 dark:text-[#FFF4E8] focus:outline-none focus:border-[#851B2B]"
           >
             <option value="ALL">All Roles</option>
             <option value="customer">Customers</option>
@@ -558,7 +558,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="px-2.5 py-1.5 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8] focus:outline-none focus:border-[#851B2B]"
+            className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] text-slate-900 dark:text-[#FFF4E8] focus:outline-none focus:border-[#851B2B]"
           >
             <option value="ALL">All Statuses</option>
             <option value="ACTIVE">Active</option>
@@ -574,7 +574,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
               setMembershipFilter(e.target.value);
               setPage(1);
             }}
-            className="px-2.5 py-1.5 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8] focus:outline-none focus:border-[#851B2B]"
+            className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] text-slate-900 dark:text-[#FFF4E8] focus:outline-none focus:border-[#851B2B]"
           >
             <option value="ALL">All Memberships</option>
             <option value="ACTIVE">Active Membership</option>
@@ -584,7 +584,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
       </div>
 
       {/* Main Users Table */}
-      <div className="user-management-table rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-2xl overflow-hidden">
+      <div className="user-management-table rounded-2xl bg-white dark:bg-[#260D17]/80 border border-slate-200 dark:border-[#49202C] shadow-sm dark:shadow-2xl overflow-hidden">
         {loading ? (
           <div className="p-16 text-center text-[#C7A5A8]">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#D7FF00] mb-3" />
@@ -599,7 +599,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#171014] text-[#C7A5A8] font-mono uppercase tracking-wider text-[10px] border-b border-[#49202C]">
+              <thead className="bg-slate-50 dark:bg-[#171014] text-slate-700 dark:text-[#C7A5A8] font-mono uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-[#49202C]">
                 <tr>
                   <th className="p-3.5">Customer & ID</th>
                   <th className="p-3.5">Contact Details</th>
@@ -613,11 +613,11 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                   <th className="p-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#49202C]/60 text-slate-200">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#49202C]/60 text-slate-800 dark:text-slate-200">
                 {users.map((u) => {
                   const isGuest = u.accountType === 'GUEST' || u.isGuest;
                   return (
-                    <tr key={u._id} className="hover:bg-[#851B2B]/10 transition-colors">
+                    <tr key={u._id} className="hover:bg-slate-50 dark:hover:bg-[#851B2B]/10 transition-colors">
                       {/* Name & ID */}
                       <td className="p-3.5">
                         <div className="flex items-center gap-2.5">
@@ -627,10 +627,10 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                             {u.name?.slice(0, 2) || 'GU'}
                           </div>
                           <div>
-                            <div className="font-bold text-white hover:text-[#D7FF00] cursor-pointer" onClick={() => handleViewUser(u._id)}>
+                            <div className="font-bold text-slate-900 dark:text-white hover:text-[#851B2B] dark:hover:text-[#D7FF00] cursor-pointer" onClick={() => handleViewUser(u._id)}>
                               {u.name}
                             </div>
-                            <span className="font-mono text-[10px] text-[#C7A5A8] block">
+                            <span className="font-mono text-[10px] text-slate-500 dark:text-[#C7A5A8] block">
                               {u.customerId || u._id.slice(-6)}
                             </span>
                           </div>
@@ -640,11 +640,11 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                       {/* Contact */}
                       <td className="p-3.5">
                         <div className="space-y-0.5">
-                          <div className="font-mono text-white flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-[#C7A5A8]" />
+                          <div className="font-mono text-slate-800 dark:text-white flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-slate-400 dark:text-[#C7A5A8]" />
                             {u.phone}
                           </div>
-                          <div className="text-[11px] text-[#C7A5A8] truncate max-w-[170px]" title={u.email}>
+                          <div className="text-[11px] text-slate-500 dark:text-[#C7A5A8] truncate max-w-[170px]" title={u.email}>
                             {u.email}
                           </div>
                         </div>

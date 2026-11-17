@@ -693,6 +693,8 @@ export async function getLoungeOperatingStatus() {
     }
   }
 
+  const isCurrentlyOpen = currentStatus === 'OPEN';
+
   return {
     today: {
       ...todaySchedule,
@@ -700,7 +702,32 @@ export async function getLoungeOperatingStatus() {
       currentStatus,
       statusMessage,
     },
+    todaySchedule: {
+      ...todaySchedule,
+      currentTime: currentTimeIST,
+      currentStatus,
+      statusMessage,
+    },
+    isCurrentlyOpen,
+    currentStatus,
+    statusMessage,
     weeklySchedule,
     upcomingHolidays,
   };
 }
+
+export const scheduleService = {
+  CANONICAL_WEEKDAYS,
+  DEFAULT_WEEKLY_SCHEDULE,
+  getWeeklyOperatingHours,
+  updateWeeklyOperatingHours,
+  getHolidays,
+  createHoliday,
+  updateHoliday,
+  deleteHoliday,
+  getEffectiveDaySchedule,
+  checkScheduleConflicts,
+  getLoungeOperatingStatus,
+};
+
+export default scheduleService;
