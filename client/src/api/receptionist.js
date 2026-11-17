@@ -18,6 +18,8 @@ export const receptionistApi = {
         startDate ? `&startDate=${startDate}` : ''
       }${endDate ? `&endDate=${endDate}` : ''}`
     ),
+  getMembershipQuota: (customerId, date = '') =>
+    apiRequest(`/receptionist/customers/${customerId}/membership-quota${date ? `?date=${date}` : ''}`),
 
   // 3. Bookings & Walk-ins
   createWalkInBooking: (data) =>
@@ -49,8 +51,12 @@ export const receptionistApi = {
     apiRequest(`/receptionist/sessions/${id}/start`, {
       method: 'POST',
     }),
-  previewExtension: (id, durationHours = 1) =>
-    apiRequest(`/receptionist/sessions/${id}/preview-extension?durationHours=${durationHours}`),
+  previewExtension: (id, durationHours = 1, useMembershipFreeHours = false) =>
+    apiRequest(
+      `/receptionist/sessions/${id}/preview-extension?durationHours=${durationHours}&useMembershipFreeHours=${Boolean(
+        useMembershipFreeHours
+      )}`
+    ),
   extendSession: (id, data) =>
     apiRequest(`/receptionist/sessions/${id}/extend`, {
       method: 'POST',

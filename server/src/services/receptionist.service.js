@@ -15,6 +15,8 @@ import { generateReceipt } from '../utils/receiptGenerator.js';
 import { formatISTDate, formatISTTime } from '../utils/timeSlots.js';
 import { calculateRevenueMetrics } from './revenue.service.js';
 import { sendPaymentSuccessEmail } from './email.service.js';
+import { getCustomerMembershipQuota } from './membership.service.js';
+export { getCustomerMembershipQuota };
 
 /**
  * Log receptionist action to immutable ActivityLog
@@ -455,12 +457,14 @@ export async function createWalkInBooking({
   paymentAmountPaise = 0,
   transactionReference = '',
   staffUser,
+  useMembershipFreeHours = false,
 }) {
   const now = new Date();
   const todayIST = formatISTDate(now);
   const targetDate = bookingDate || todayIST;
 
   // 1. Create booking using existing Phase 3 atomic booking engine
+  // Free hours are only applied if useMembershipFreeHours is explicitly true!
   const booking = await createBookingAtomic({
     customerId,
     deviceId,
@@ -472,6 +476,7 @@ export async function createWalkInBooking({
     duration,
     numberOfPlayers,
     notes: notes ? `Walk-in: ${notes}` : 'Walk-in booking created at reception counter',
+    applyMembershipBenefit: Boolean(useMembershipFreeHours),
   });
 
   // 2. Mark as Walk-In
@@ -520,19 +525,27 @@ export async function createWalkInBooking({
 
   // 4. Auto check-in if session starts immediately (now is between startAt and endAt)
   if (now >= booking.startAt && now < booking.endAt) {
+    const bookedDuration = booking.duration || 1;
+    const scheduledEndAt = new Date(now.getTime() + bookedDuration * 3600 * 1000);
+    const formattedEndTime = formatISTTime(scheduledEndAt);
+
     booking.checkInStatus = 'CHECKED_IN';
     booking.checkedInAt = now;
     booking.checkedInBy = staffUser._id;
     booking.sessionStatus = 'ACTIVE';
     booking.sessionStartedAt = now;
     booking.sessionStartedBy = staffUser._id;
+    booking.startAt = now;
+    booking.startTime = formatISTTime(now);
+    booking.endAt = scheduledEndAt;
+    booking.endTime = formattedEndTime;
   }
 
   await booking.save();
 
   if (booking.sessionStatus === 'ACTIVE') {
     let gamingSession = await GamingSession.findOne({ booking: booking._id });
-    const scheduledEndAt = new Date(now.getTime() + (booking.duration || 1) * 3600 * 1000);
+    const scheduledEndAt = booking.endAt;
     if (!gamingSession) {
       gamingSession = new GamingSession({
         booking: booking._id,
@@ -547,6 +560,7 @@ export async function createWalkInBooking({
       gamingSession.status = 'ACTIVE';
       gamingSession.startedAt = now;
       gamingSession.scheduledEndAt = scheduledEndAt;
+      gamingSession.actualEndAt = null;
     }
     await gamingSession.save();
   }
@@ -643,18 +657,25 @@ export async function checkInBooking({ bookingId, staffUser, paymentCollection }
   }
 
   // Update check-in and start active session
+  const bookedDurationHours = booking.duration || 1;
+  const scheduledEndAt = new Date(now.getTime() + bookedDurationHours * 3600 * 1000);
+  const formattedEndTime = formatISTTime(scheduledEndAt);
+
   booking.checkInStatus = 'CHECKED_IN';
   booking.checkedInAt = now;
   booking.checkedInBy = staffUser._id;
   booking.sessionStatus = 'ACTIVE';
   booking.sessionStartedAt = now;
   booking.sessionStartedBy = staffUser._id;
+  booking.startAt = now;
+  booking.startTime = formatISTTime(now);
+  booking.endAt = scheduledEndAt;
+  booking.endTime = formattedEndTime;
 
   await booking.save();
 
   // Initialize or update GamingSession for Phase 8 automation
   let gamingSession = await GamingSession.findOne({ booking: booking._id });
-  const scheduledEndAt = new Date(now.getTime() + (booking.duration || 1) * 3600 * 1000);
   if (!gamingSession) {
     gamingSession = new GamingSession({
       booking: booking._id,
@@ -669,6 +690,7 @@ export async function checkInBooking({ bookingId, staffUser, paymentCollection }
     gamingSession.status = 'ACTIVE';
     gamingSession.startedAt = now;
     gamingSession.scheduledEndAt = scheduledEndAt;
+    gamingSession.actualEndAt = null;
   }
   await gamingSession.save();
 
@@ -820,9 +842,17 @@ export async function startSession({ bookingId, staffUser }) {
   }
 
   const now = new Date();
+  const bookedDurationHours = booking.duration || 1;
+  const scheduledEndAt = new Date(now.getTime() + bookedDurationHours * 3600 * 1000);
+  const formattedEndTime = formatISTTime(scheduledEndAt);
+
   booking.sessionStatus = 'ACTIVE';
   booking.sessionStartedAt = now;
   booking.sessionStartedBy = staffUser._id;
+  booking.startAt = now;
+  booking.startTime = formatISTTime(now);
+  booking.endAt = scheduledEndAt;
+  booking.endTime = formattedEndTime;
   if (booking.checkInStatus !== 'CHECKED_IN') {
     booking.checkInStatus = 'CHECKED_IN';
     booking.checkedInAt = now;
@@ -833,7 +863,6 @@ export async function startSession({ bookingId, staffUser }) {
 
   // Initialize or update GamingSession
   let gamingSession = await GamingSession.findOne({ booking: booking._id });
-  const scheduledEndAt = new Date(now.getTime() + (booking.duration || 1) * 3600 * 1000);
   if (!gamingSession) {
     gamingSession = new GamingSession({
       booking: booking._id,
@@ -848,6 +877,7 @@ export async function startSession({ bookingId, staffUser }) {
     gamingSession.status = 'ACTIVE';
     gamingSession.startedAt = now;
     gamingSession.scheduledEndAt = scheduledEndAt;
+    gamingSession.actualEndAt = null;
   }
   await gamingSession.save();
 
@@ -863,9 +893,13 @@ export async function startSession({ bookingId, staffUser }) {
 }
 
 /**
- * Preview Session Extension with Authoritative Dynamic Pricing Breakdown
+ * Preview Session Extension with Authoritative Dynamic Pricing Breakdown & Membership Free Hours
  */
-export async function previewSessionExtension({ bookingId, extendedDurationHours = 1 }) {
+export async function previewSessionExtension({
+  bookingId,
+  extendedDurationHours = 1,
+  useMembershipFreeHours = false,
+}) {
   const booking = await Booking.findById(bookingId).populate('customer device game');
   if (!booking) {
     const err = new Error('Booking not found');
@@ -933,8 +967,14 @@ export async function previewSessionExtension({ bookingId, extendedDurationHours
     }
   }
 
-  // Calculate extension pricing using centralized pricing engine
-  const pricingResult = await calculateSessionPrice({
+  // Fetch customer's membership quota details
+  const quota = await getCustomerMembershipQuota({
+    customerId: booking.customer?._id,
+    dateIST: booking.bookingDate,
+  });
+
+  // Calculate standard extension pricing
+  const standardPricing = await calculateSessionPrice({
     deviceId: booking.device._id,
     gameId: booking.isVenueSelection ? null : (booking.game?._id || null),
     isVenueSelection: booking.isVenueSelection,
@@ -944,16 +984,54 @@ export async function previewSessionExtension({ bookingId, extendedDurationHours
     bookingDate: booking.bookingDate,
     startTime: previousEndTime,
     bookingType: booking.bookingType,
+    applyMembershipBenefit: false, // Standard base rate without auto deduction
   });
 
-  const rate = pricingResult.pricingRule.ratePerUnitRupees;
-  const billingType = pricingResult.pricingRule.billingType;
+  const rate = standardPricing.pricingRule.ratePerUnitRupees;
+  const billingType = standardPricing.pricingRule.billingType;
+  const billableUnits = billingType === 'PER_DEVICE_HOURLY' ? 1 : booking.numberOfPlayers;
+  const standardUnitCostRupees = rate * billableUnits;
+
+  let freeHoursApplied = 0;
+  let paidDurationHours = parsedDuration;
+  let additionalAmountRupees = standardPricing.totalAmountRupees;
+  let additionalAmountPaise = standardPricing.totalAmountPaise;
+  let membershipDiscountRupees = 0;
   let calculationFormula = '';
 
-  if (billingType === 'PER_DEVICE_HOURLY') {
-    calculationFormula = `₹${rate}/hr × ${parsedDuration}h = ₹${pricingResult.totalAmountRupees}`;
+  const canUseFreeHours = Boolean(
+    useMembershipFreeHours &&
+    quota.isEligibleForFreeHours &&
+    quota.remainingHours > 0 &&
+    !isExclusiveSession
+  );
+
+  if (canUseFreeHours) {
+    freeHoursApplied = Math.min(parsedDuration, quota.remainingHours);
+    paidDurationHours = Math.max(0, parsedDuration - freeHoursApplied);
+    additionalAmountRupees = Math.round(paidDurationHours * standardUnitCostRupees * 100) / 100;
+    additionalAmountPaise = Math.round(additionalAmountRupees * 100);
+    membershipDiscountRupees = Math.round(freeHoursApplied * standardUnitCostRupees * 100) / 100;
+
+    if (freeHoursApplied > 0 && paidDurationHours > 0) {
+      calculationFormula = `${freeHoursApplied}h Free (${quota.planName}) + ${paidDurationHours}h @ ₹${rate}/hr × ${billableUnits} = ₹${additionalAmountRupees}`;
+    } else if (freeHoursApplied > 0 && paidDurationHours === 0) {
+      calculationFormula = `${freeHoursApplied}h Free (${quota.planName}) = ₹0`;
+    } else {
+      calculationFormula = `₹${rate}/hr × ${parsedDuration}h × ${billableUnits} = ₹${additionalAmountRupees}`;
+    }
   } else {
-    calculationFormula = `₹${rate}/hr × ${parsedDuration}h × ${booking.numberOfPlayers} player${booking.numberOfPlayers > 1 ? 's' : ''} = ₹${pricingResult.totalAmountRupees}`;
+    // Option A: Cash / Counter Payment (0 free hours deducted)
+    additionalAmountRupees = standardPricing.totalAmountRupees;
+    additionalAmountPaise = standardPricing.totalAmountPaise;
+    freeHoursApplied = 0;
+    paidDurationHours = parsedDuration;
+    membershipDiscountRupees = 0;
+    if (billingType === 'PER_DEVICE_HOURLY') {
+      calculationFormula = `₹${rate}/hr × ${parsedDuration}h = ₹${additionalAmountRupees} (Paid in Full)`;
+    } else {
+      calculationFormula = `₹${rate}/hr × ${parsedDuration}h × ${billableUnits} player${billableUnits > 1 ? 's' : ''} = ₹${additionalAmountRupees} (Paid in Full)`;
+    }
   }
 
   const gameDisplayName = booking.isVenueSelection
@@ -973,7 +1051,7 @@ export async function previewSessionExtension({ bookingId, extendedDurationHours
     bookingType: booking.bookingType,
     bookingModeDisplay: booking.bookingType === 'PRIVATE' ? 'Private Session' : 'Shared Session',
     numberOfPlayers: booking.numberOfPlayers,
-    billableUnits: billingType === 'PER_DEVICE_HOURLY' ? 1 : booking.numberOfPlayers,
+    billableUnits,
     previousEndTime,
     previousEndAt,
     newEndTime,
@@ -981,14 +1059,18 @@ export async function previewSessionExtension({ bookingId, extendedDurationHours
     extendedDurationHours: parsedDuration,
     hourlyRateRupees: rate,
     billingType,
-    pricingRuleName: pricingResult.pricingRule.name,
+    pricingRuleName: standardPricing.pricingRule.name,
     calculationFormula,
-    additionalAmountPaise: pricingResult.totalAmountPaise,
-    additionalAmountRupees: pricingResult.totalAmountRupees,
-    membershipApplied: pricingResult.membershipBenefit?.applied || false,
-    membershipDiscountRupees: pricingResult.membershipBenefit?.discountRupees || 0,
+    additionalAmountPaise,
+    additionalAmountRupees,
+    membershipApplied: freeHoursApplied > 0,
+    freeHoursApplied,
+    paidDurationHours,
+    membershipDiscountRupees,
     canExtend: !exceedsClosingHours && !hasConflict,
     warning: exceedsClosingHours ? closingHoursWarning : conflictWarning,
+    quota,
+    useMembershipFreeHours: Boolean(useMembershipFreeHours),
   };
 }
 
@@ -1003,6 +1085,7 @@ export async function extendSession({
   transactionReference = '',
   staffUser,
   notes = '',
+  useMembershipFreeHours = false,
 }) {
   const booking = await Booking.findById(bookingId).populate('customer device game');
   if (!booking) {
@@ -1024,8 +1107,8 @@ export async function extendSession({
     throw err;
   }
 
-  const previousEndAt = new Date(booking.endAt);
-  const previousEndTime = booking.endTime;
+  const previousEndAt = new Date(booking.endAt || new Date());
+  const previousEndTime = booking.endTime || formatISTTime(previousEndAt);
   const newEndAt = new Date(previousEndAt.getTime() + parsedDuration * 3600 * 1000);
   const newEndTime = formatISTTime(newEndAt);
 
@@ -1082,8 +1165,13 @@ export async function extendSession({
     }
   }
 
-  // Calculate extension pricing using centralized pricing engine
-  const pricingResult = await calculateSessionPrice({
+  // Pricing & Quota calculation
+  const quota = await getCustomerMembershipQuota({
+    customerId: booking.customer?._id,
+    dateIST: booking.bookingDate,
+  });
+
+  const standardPricing = await calculateSessionPrice({
     deviceId: booking.device._id,
     gameId: booking.isVenueSelection ? null : (booking.game?._id || null),
     isVenueSelection: booking.isVenueSelection,
@@ -1093,9 +1181,49 @@ export async function extendSession({
     bookingDate: booking.bookingDate,
     startTime: previousEndTime,
     bookingType: booking.bookingType,
+    applyMembershipBenefit: false,
   });
 
-  const additionalAmountPaise = pricingResult.totalAmountPaise;
+  const rate = standardPricing.pricingRule.ratePerUnitRupees;
+  const billingType = standardPricing.pricingRule.billingType;
+  const billableUnits = billingType === 'PER_DEVICE_HOURLY' ? 1 : booking.numberOfPlayers;
+  const standardUnitCostRupees = rate * billableUnits;
+
+  let freeHoursApplied = 0;
+  let paidDurationHours = parsedDuration;
+  let additionalAmountPaise = standardPricing.totalAmountPaise;
+
+  const canApplyFreeHours = Boolean(
+    useMembershipFreeHours &&
+    quota.isEligibleForFreeHours &&
+    quota.remainingHours > 0 &&
+    !isExclusiveSession
+  );
+
+  if (canApplyFreeHours) {
+    freeHoursApplied = Math.min(parsedDuration, quota.remainingHours);
+    paidDurationHours = Math.max(0, parsedDuration - freeHoursApplied);
+    const paidAmountRupees = Math.round(paidDurationHours * standardUnitCostRupees * 100) / 100;
+    additionalAmountPaise = Math.round(paidAmountRupees * 100);
+
+    // Record MembershipUsage for the free hours consumed
+    if (freeHoursApplied > 0) {
+      await MembershipUsage.create({
+        customer: booking.customer._id,
+        subscription: quota.subscriptionId,
+        booking: booking._id,
+        device: booking.device._id,
+        game: booking.game?._id || null,
+        usageDate: booking.bookingDate,
+        startTime: previousEndTime,
+        endTime: newEndTime,
+        duration: Math.round(freeHoursApplied * 60),
+        status: 'COMPLETED',
+        notes: `Session extended +${parsedDuration}h using ${freeHoursApplied}h membership free allowance`,
+      });
+    }
+  }
+
   const now = new Date();
 
   // Create extension record
@@ -1109,7 +1237,7 @@ export async function extendSession({
     additionalAmountPaise,
     extendedBy: staffUser._id,
     extendedAt: now,
-    notes,
+    notes: `${notes ? notes + ' | ' : ''}${freeHoursApplied > 0 ? `Used ${freeHoursApplied}h membership free quota` : 'Cash/Counter extension (quota untouched)'}`,
   };
 
   booking.extensions.push(extensionEntry);
@@ -1284,13 +1412,18 @@ export async function completeSession({
     });
   }
 
-  // Complete GamingSession
-  let gamingSession = await GamingSession.findOne({ booking: booking._id });
-  if (gamingSession) {
-    gamingSession.status = 'COMPLETED';
-    gamingSession.actualEndAt = now;
-    gamingSession.completedBy = staffUser._id;
-    await gamingSession.save();
+  // Complete GamingSession(s) comprehensively to prevent ghost/zombie active timers
+  const gamingSessions = await GamingSession.find({
+    $or: [
+      { booking: booking._id },
+      { customer: booking.customer._id, device: booking.device._id, status: { $ne: 'COMPLETED' } },
+    ],
+  });
+  for (const gs of gamingSessions) {
+    gs.status = 'COMPLETED';
+    gs.actualEndAt = now;
+    gs.completedBy = staffUser._id;
+    await gs.save();
   }
 
   await logReceptionistActivity({

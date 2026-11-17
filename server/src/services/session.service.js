@@ -29,34 +29,52 @@ export async function getActiveSessions({ customerId = null } = {}) {
     .populate('game', 'name thumbnail isExclusive')
     .populate({
       path: 'booking',
-      select: 'bookingId bookingDate startTime endTime duration numberOfPlayers bookingType totalAmount amountPaid balanceRemaining paymentStatus isWalkIn',
+      select: 'bookingId bookingDate startTime endTime duration numberOfPlayers bookingType totalAmount amountPaid balanceRemaining paymentStatus isWalkIn sessionStatus bookingStatus endAt startAt sessionStartedAt',
     })
     .sort({ scheduledEndAt: 1 });
 
   const now = Date.now();
+  const validSessions = [];
 
-  return sessions.map((sess) => {
-    const endMs = new Date(sess.scheduledEndAt).getTime();
+  for (const sess of sessions) {
+    // If the associated booking is completed or cancelled, synchronize and mark the session completed
+    if (
+      sess.booking &&
+      (sess.booking.sessionStatus === 'COMPLETED' ||
+        sess.booking.bookingStatus === 'COMPLETED' ||
+        sess.booking.bookingStatus === 'CANCELLED')
+    ) {
+      sess.status = sess.booking.bookingStatus === 'CANCELLED' ? 'CANCELLED' : 'COMPLETED';
+      sess.actualEndAt = sess.actualEndAt || new Date();
+      await sess.save();
+      continue;
+    }
+
+    // Authoritative end timestamp from booking.endAt or scheduledEndAt
+    const effectiveEndAt = sess.booking?.endAt || sess.scheduledEndAt;
+    const endMs = new Date(effectiveEndAt).getTime();
     const remainingSeconds = Math.max(0, Math.floor((endMs - now) / 1000));
     const isOverdue = now >= endMs;
 
-    return {
+    validSessions.push({
       id: sess._id,
       sessionId: sess._id,
       booking: sess.booking,
       customer: sess.customer,
       device: sess.device,
       game: sess.game,
-      startedAt: sess.startedAt,
-      scheduledEndAt: sess.scheduledEndAt,
+      startedAt: sess.booking?.sessionStartedAt || sess.booking?.startAt || sess.startedAt,
+      scheduledEndAt: effectiveEndAt,
       actualEndAt: sess.actualEndAt,
       status: isOverdue && sess.status === 'ACTIVE' ? 'AWAITING_RECEPTIONIST' : sess.status,
       remainingSeconds,
       isOverdue,
       lastReminderSent: sess.lastReminderSent,
       extensionHistory: sess.extensionHistory || [],
-    };
-  });
+    });
+  }
+
+  return validSessions;
 }
 
 /**
@@ -125,11 +143,16 @@ export async function startGamingSession({ bookingId, staffUser }) {
   const now = new Date();
   const durationHours = booking.duration || 1;
   const scheduledEndAt = new Date(now.getTime() + durationHours * 3600 * 1000);
+  const formattedEndTime = formatISTTime(scheduledEndAt);
 
   // Update booking
   booking.sessionStatus = 'ACTIVE';
   booking.sessionStartedAt = now;
   booking.sessionStartedBy = staffUser._id;
+  booking.startAt = now;
+  booking.startTime = formatISTTime(now);
+  booking.endAt = scheduledEndAt;
+  booking.endTime = formattedEndTime;
   if (booking.checkInStatus !== 'CHECKED_IN') {
     booking.checkInStatus = 'CHECKED_IN';
     booking.checkedInAt = now;

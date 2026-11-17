@@ -13,6 +13,7 @@ import {
   Tv,
   Gamepad2,
   Users,
+  Sparkles,
 } from 'lucide-react';
 
 export const ExtendSessionModal = ({ session, onClose, onSuccess }) => {
@@ -22,6 +23,7 @@ export const ExtendSessionModal = ({ session, onClose, onSuccess }) => {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [useMembershipFreeHours, setUseMembershipFreeHours] = useState(false);
 
   // Dynamic preview state from server
   const [preview, setPreview] = useState(null);
@@ -43,7 +45,11 @@ export const ExtendSessionModal = ({ session, onClose, onSuccess }) => {
       setPreviewLoading(true);
       setError('');
       try {
-        const res = await receptionistApi.previewExtension(session._id, extendedHours);
+        const res = await receptionistApi.previewExtension(
+          session._id,
+          extendedHours,
+          useMembershipFreeHours
+        );
         if (isMounted && res?.success && res.data) {
           setPreview(res.data);
         }
@@ -60,7 +66,7 @@ export const ExtendSessionModal = ({ session, onClose, onSuccess }) => {
     return () => {
       isMounted = false;
     };
-  }, [session._id, extendedHours]);
+  }, [session._id, extendedHours, useMembershipFreeHours]);
 
   const activeFeeRupees = preview ? preview.additionalAmountRupees : fallbackAdditionalRupees;
   const currentEndDisplay = session.endTime || (session.endAt ? new Date(session.endAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--');
@@ -94,10 +100,15 @@ export const ExtendSessionModal = ({ session, onClose, onSuccess }) => {
         paymentAmountPaise,
         transactionReference: `Counter Extension (+${extendedHours}h)`,
         notes,
+        useMembershipFreeHours: Boolean(useMembershipFreeHours),
       });
 
       if (res?.success) {
         toast.success(`Session extended successfully by +${extendedHours}h!`);
+        try {
+          localStorage.setItem('noah_session_sync', Date.now().toString());
+          window.dispatchEvent(new Event('session_updated'));
+        } catch {}
         if (onSuccess) onSuccess(res.data);
         onClose();
       } else {
@@ -201,6 +212,85 @@ export const ExtendSessionModal = ({ session, onClose, onSuccess }) => {
               </p>
             </div>
           </div>
+
+          {/* Customer Membership & Daily Free-Hour Quota Visibility */}
+          {preview?.quota?.isMember && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold flex items-center gap-1.5 text-amber-300">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  {preview.quota.planName}
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">
+                  {preview.quota.isExpired ? 'EXPIRED' : 'ACTIVE MEMBER'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-1.5 border-t border-amber-500/20 text-[11px] font-mono text-center">
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase">Daily Limit</span>
+                  <span className="text-white font-bold">{preview.quota.dailyAllowanceHours}h</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase">Used Today</span>
+                  <span className="text-slate-300 font-bold">{preview.quota.usedTodayHours}h</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase">Remaining</span>
+                  <span className={`font-bold ${preview.quota.remainingHours > 0 ? 'text-[#D7FF00]' : 'text-slate-400'}`}>
+                    {preview.quota.remainingHours}h free
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Explicit Quota & Payment Method Choice (Option A vs Option B) */}
+          {preview?.quota?.isEligibleForFreeHours && preview?.quota?.remainingHours > 0 && !isExclusive ? (
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <span className="text-xs font-semibold text-slate-200 block">
+                Membership Free-Hour Benefit
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUseMembershipFreeHours(false)}
+                  className={`p-2.5 rounded-xl text-left border transition-all ${
+                    !useMembershipFreeHours
+                      ? 'bg-emerald-500/15 border-emerald-500/60 text-emerald-200 shadow-md'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="font-bold text-xs flex items-center gap-1.5 text-emerald-300">
+                    💵 Option A: Pay Cash / UPI
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    0 free hours deducted. Keep customer's {preview.quota.remainingHours}h quota untouched.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUseMembershipFreeHours(true)}
+                  className={`p-2.5 rounded-xl text-left border transition-all ${
+                    useMembershipFreeHours
+                      ? 'bg-[#851B2B]/35 border-[#D7FF00]/60 text-[#FFF4E8] shadow-md'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="font-bold text-xs flex items-center gap-1.5 text-[#D7FF00]">
+                    ★ Option B: Use Free Hours
+                  </div>
+                  <p className="text-[10px] text-slate-300 mt-1">
+                    Apply up to {preview.quota.remainingHours}h free quota. Charge balance if needed.
+                  </p>
+                </button>
+              </div>
+            </div>
+          ) : preview?.quota?.isMember && preview?.quota?.remainingHours <= 0 ? (
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400">
+              Customer has 0 membership free hours remaining today. Standard counter extension rates apply.
+            </div>
+          ) : null}
 
           {/* Extension Duration Selector */}
           <div>

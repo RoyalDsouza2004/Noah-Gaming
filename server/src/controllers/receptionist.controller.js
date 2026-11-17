@@ -180,12 +180,28 @@ export const startSessionHandler = async (req, res, next) => {
   }
 };
 
+export const getCustomerMembershipQuotaHandler = async (req, res, next) => {
+  try {
+    const quota = await receptionistService.getCustomerMembershipQuota({
+      customerId: req.params.id,
+      dateIST: req.query.date || null,
+    });
+    res.status(200).json({
+      success: true,
+      data: quota,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const previewExtensionHandler = async (req, res, next) => {
   try {
-    const { durationHours } = req.query;
+    const { durationHours, useMembershipFreeHours } = req.query;
     const preview = await receptionistService.previewSessionExtension({
       bookingId: req.params.id,
       extendedDurationHours: parseFloat(durationHours) || 1,
+      useMembershipFreeHours: useMembershipFreeHours === 'true' || useMembershipFreeHours === true,
     });
     res.status(200).json({
       success: true,
@@ -204,6 +220,7 @@ export const extendSessionHandler = async (req, res, next) => {
       paymentAmountPaise,
       transactionReference,
       notes,
+      useMembershipFreeHours,
     } = req.body;
 
     const result = await receptionistService.extendSession({
@@ -214,6 +231,7 @@ export const extendSessionHandler = async (req, res, next) => {
       transactionReference,
       staffUser: req.user,
       notes,
+      useMembershipFreeHours: Boolean(useMembershipFreeHours),
     });
 
     res.status(200).json({

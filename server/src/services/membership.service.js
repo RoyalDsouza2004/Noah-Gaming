@@ -939,6 +939,131 @@ export async function checkMembershipBookingCoverage({
 }
 
 /**
+ * Returns customer membership quota details including daily allowance,
+ * used today, and remaining free hours.
+ */
+export async function getCustomerMembershipQuota({ customerId, dateIST = null }) {
+  if (!customerId) {
+    return {
+      isMember: false,
+      status: 'NONE',
+      planName: null,
+      dailyAllowanceHours: 0,
+      dailyAllowanceMinutes: 0,
+      usedTodayHours: 0,
+      usedTodayMinutes: 0,
+      remainingHours: 0,
+      remainingMinutes: 0,
+      freeHoursAvailable: false,
+      isEligibleForFreeHours: false,
+      expirationDate: null,
+      isExpired: false,
+    };
+  }
+
+  const customer = await User.findById(customerId).populate('membership.planId');
+  if (!customer) {
+    return {
+      isMember: false,
+      status: 'NONE',
+      planName: null,
+      dailyAllowanceHours: 0,
+      dailyAllowanceMinutes: 0,
+      usedTodayHours: 0,
+      usedTodayMinutes: 0,
+      remainingHours: 0,
+      remainingMinutes: 0,
+      freeHoursAvailable: false,
+      isEligibleForFreeHours: false,
+      expirationDate: null,
+      isExpired: false,
+    };
+  }
+
+  const now = new Date();
+  const targetDate = dateIST || getTodayIST();
+
+  // Find active subscription
+  let subscription = null;
+  if (customer.membership?.subscriptionId) {
+    subscription = await MembershipSubscription.findById(customer.membership.subscriptionId).populate('membershipPlan');
+  }
+
+  if (!subscription) {
+    subscription = await MembershipSubscription.findOne({
+      customer: customer._id,
+      status: 'ACTIVE',
+    }).populate('membershipPlan');
+  }
+
+  const isExpired = Boolean(
+    (customer.membership?.expiresAt && customer.membership.expiresAt < now) ||
+    (subscription && subscription.expirationDate && subscription.expirationDate < now)
+  );
+
+  const isActive = Boolean(
+    !isExpired &&
+    (customer.membership?.status === 'ACTIVE' || (subscription && subscription.status === 'ACTIVE'))
+  );
+
+  if (!isActive) {
+    return {
+      isMember: Boolean(subscription || customer.membership?.planId),
+      status: isExpired ? 'EXPIRED' : (customer.membership?.status || 'NONE'),
+      planName: subscription?.membershipPlan?.name || customer.membership?.planId?.name || null,
+      dailyAllowanceHours: 0,
+      dailyAllowanceMinutes: 0,
+      usedTodayHours: 0,
+      usedTodayMinutes: 0,
+      remainingHours: 0,
+      remainingMinutes: 0,
+      freeHoursAvailable: false,
+      isEligibleForFreeHours: false,
+      expirationDate: subscription?.expirationDate || customer.membership?.expiresAt || null,
+      isExpired,
+    };
+  }
+
+  const plan = subscription?.membershipPlan || customer.membership?.planId;
+  const dailyAllowanceMinutes = plan?.dailyUsageLimit || 120; // default 2 hours if not specified
+  const dailyAllowanceHours = Math.round((dailyAllowanceMinutes / 60) * 10) / 10;
+
+  // Calculate used minutes today
+  const todayUsages = await MembershipUsage.find({
+    customer: customer._id,
+    usageDate: targetDate,
+    status: { $ne: 'CANCELLED' },
+  });
+
+  const usedTodayMinutes = todayUsages.reduce((sum, u) => sum + (u.duration || 0), 0);
+  const usedTodayHours = Math.round((usedTodayMinutes / 60) * 10) / 10;
+
+  const remainingMinutes = Math.max(0, dailyAllowanceMinutes - usedTodayMinutes);
+  const remainingHours = Math.round((remainingMinutes / 60) * 10) / 10;
+
+  return {
+    isMember: true,
+    status: 'ACTIVE',
+    subscriptionId: subscription?._id || customer.membership?.subscriptionId,
+    planId: plan?._id,
+    planName: plan?.name || 'Membership',
+    dailyAllowanceMinutes,
+    dailyAllowanceHours,
+    usedTodayMinutes,
+    usedTodayHours,
+    remainingMinutes,
+    remainingHours,
+    freeHoursAvailable: remainingMinutes > 0,
+    isEligibleForFreeHours: remainingMinutes > 0,
+    expirationDate: subscription?.expirationDate || customer.membership?.expiresAt,
+    expiresAtIST: (subscription?.expirationDate || customer.membership?.expiresAt)
+      ? new Date(subscription?.expirationDate || customer.membership?.expiresAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })
+      : null,
+    isExpired: false,
+  };
+}
+
+/**
  * Records membership usage for a confirmed booking
  */
 export async function recordMembershipUsage({ booking, customerId, subscriptionId }) {

@@ -326,6 +326,7 @@ export async function createBookingAtomic({
   numberOfPlayers = 1,
   notes = '',
   idempotencyKey = null,
+  applyMembershipBenefit = true,
 }) {
   // 0. Idempotency Check: if identical idempotencyKey was already submitted by this customer, return that booking
   if (idempotencyKey && customerId) {
@@ -590,6 +591,7 @@ export async function createBookingAtomic({
       bookingDate,
       startTime,
       bookingType: effectiveBookingType,
+      applyMembershipBenefit,
     });
 
     let totalAmountPaise = pricingCalculation.totalAmountPaise;
@@ -597,13 +599,13 @@ export async function createBookingAtomic({
     let advanceAmountPaise = pricingCalculation.minimumAdvancePaise || 0;
     let isAdvancePaid = false;
     let initialPaymentStatus = 'UNPAID';
-    let membershipApplied = Boolean(pricingCalculation.membershipBenefit?.applied);
+    let membershipApplied = Boolean(pricingCalculation.membershipBenefit?.applied && applyMembershipBenefit);
     let membershipSubscriptionId = null;
     let membershipDiscountPaise = pricingCalculation.membershipBenefit?.discountPaise || 0;
     let reservedEntitlement = null;
 
     // 6b. Evaluate Membership Coverage & Reserve Entitlement Atomically
-    if (customerId && membershipApplied) {
+    if (customerId && membershipApplied && applyMembershipBenefit) {
       const coverage = await checkMembershipBookingCoverage({
         customerId,
         deviceId: device._id,

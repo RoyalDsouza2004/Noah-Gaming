@@ -108,6 +108,8 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
   const [walkInSearchingCustomer, setWalkInSearchingCustomer] = useState(false);
   const [walkInHasSearched, setWalkInHasSearched] = useState(false);
   const [walkInSelectedCustomer, setWalkInSelectedCustomer] = useState(null);
+  const [walkInCustomerQuota, setWalkInCustomerQuota] = useState(null);
+  const [walkInUseMembershipFreeHours, setWalkInUseMembershipFreeHours] = useState(false);
   const [walkInSelectedDevice, setWalkInSelectedDevice] = useState(null);
   const [walkInSelectedGame, setWalkInSelectedGame] = useState(null);
   const [walkInBookingType, setWalkInBookingType] = useState('SHARED');
@@ -261,6 +263,38 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
     }
   };
 
+  // Fetch Membership Quota when a walk-in customer is selected
+  useEffect(() => {
+    let isMounted = true;
+    if (walkInSelectedCustomer?._id) {
+      receptionistApi
+        .getMembershipQuota(walkInSelectedCustomer._id)
+        .then((res) => {
+          if (isMounted && res?.success && res.data) {
+            setWalkInCustomerQuota(res.data);
+            if (res.data.isEligibleForFreeHours && res.data.remainingHours > 0) {
+              setWalkInUseMembershipFreeHours(true);
+            } else {
+              setWalkInUseMembershipFreeHours(false);
+            }
+          }
+        })
+        .catch((err) => {
+          if (isMounted) {
+            console.warn('Quota fetch error:', err.message);
+            setWalkInCustomerQuota(null);
+            setWalkInUseMembershipFreeHours(false);
+          }
+        });
+    } else {
+      setWalkInCustomerQuota(null);
+      setWalkInUseMembershipFreeHours(false);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [walkInSelectedCustomer?._id]);
+
   // Walk-In Price Calculator (authoritative pricing rules from backend)
   const calculateWalkInPrice = () => {
     if (!walkInSelectedDevice) return 0;
@@ -280,10 +314,27 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
     }
 
     const billablePlayers = isPool ? 1 : (walkInPlayersCount || 1);
+
+    if (
+      walkInUseMembershipFreeHours &&
+      walkInCustomerQuota?.isEligibleForFreeHours &&
+      walkInCustomerQuota?.remainingHours > 0 &&
+      !isExclusiveGame
+    ) {
+      const freeHours = Math.min(walkInDuration, walkInCustomerQuota.remainingHours);
+      const paidHours = Math.max(0, walkInDuration - freeHours);
+      return paidHours * rate * billablePlayers;
+    }
+
     return rate * walkInDuration * billablePlayers;
   };
 
   const walkInTotalPrice = calculateWalkInPrice();
+
+  // Auto-sync payment input with calculated price
+  useEffect(() => {
+    setWalkInPaymentAmountRupees(walkInTotalPrice);
+  }, [walkInTotalPrice]);
 
   // Auto-set immediate start time
   useEffect(() => {
@@ -331,6 +382,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
         paymentAmountPaise,
         transactionReference: 'Walk-in Counter POS',
         notes: walkInNotes,
+        useMembershipFreeHours: Boolean(walkInUseMembershipFreeHours),
       });
 
       if (res?.success) {
@@ -1096,41 +1148,124 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                   1. Customer (Search by Phone, Name, or ID) <span className="text-rose-400">*</span>
                 </label>
                 {walkInSelectedCustomer ? (
-                  <div className="p-3.5 rounded-xl bg-[#851B2B]/15 border border-[#49202C] flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-sm">{walkInSelectedCustomer.name}</span>
-                        <span className="font-mono text-xs text-[#D7FF00] font-semibold">
-                          ({walkInSelectedCustomer.phone})
-                        </span>
-                        {walkInSelectedCustomer.membership?.status === 'ACTIVE' && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                            ★ Active Member
+                  <div className="space-y-3">
+                    <div className="p-3.5 rounded-xl bg-[#851B2B]/15 border border-[#49202C] flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-sm">{walkInSelectedCustomer.name}</span>
+                          <span className="font-mono text-xs text-[#D7FF00] font-semibold">
+                            ({walkInSelectedCustomer.phone})
                           </span>
-                        )}
-                        {walkInSelectedCustomer.accountType === 'GUEST' && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                            GUEST
-                          </span>
-                        )}
+                          {walkInSelectedCustomer.membership?.status === 'ACTIVE' && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              ★ Active Member
+                            </span>
+                          )}
+                          {walkInSelectedCustomer.accountType === 'GUEST' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                              GUEST
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          ID: {walkInSelectedCustomer.customerId || walkInSelectedCustomer._id} &bull; {walkInSelectedCustomer.email}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        ID: {walkInSelectedCustomer.customerId || walkInSelectedCustomer._id} &bull; {walkInSelectedCustomer.email}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWalkInSelectedCustomer(null);
+                          setWalkInCustomerQuery('');
+                          setWalkInCustomerResults([]);
+                          setWalkInHasSearched(false);
+                          setWalkInCustomerQuota(null);
+                          setWalkInUseMembershipFreeHours(false);
+                        }}
+                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        title="Change customer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setWalkInSelectedCustomer(null);
-                        setWalkInCustomerQuery('');
-                        setWalkInCustomerResults([]);
-                        setWalkInHasSearched(false);
-                      }}
-                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                      title="Change customer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+
+                    {/* Membership Daily Quota Visibility */}
+                    {walkInCustomerQuota?.isMember && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold flex items-center gap-1.5 text-amber-300">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            {walkInCustomerQuota.planName}
+                          </span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">
+                            {walkInCustomerQuota.isExpired ? 'EXPIRED' : 'ACTIVE MEMBER'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-1.5 border-t border-amber-500/20 text-[11px] font-mono text-center">
+                          <div>
+                            <span className="text-slate-400 block text-[9px] uppercase">Daily Limit</span>
+                            <span className="text-white font-bold">{walkInCustomerQuota.dailyAllowanceHours}h</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[9px] uppercase">Used Today</span>
+                            <span className="text-slate-300 font-bold">{walkInCustomerQuota.usedTodayHours}h</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[9px] uppercase">Remaining</span>
+                            <span className={`font-bold ${walkInCustomerQuota.remainingHours > 0 ? 'text-[#D7FF00]' : 'text-slate-400'}`}>
+                              {walkInCustomerQuota.remainingHours}h free
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Option A vs Option B Quota & Payment Selection */}
+                    {walkInCustomerQuota?.isEligibleForFreeHours && walkInCustomerQuota?.remainingHours > 0 ? (
+                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                        <span className="text-xs font-semibold text-slate-200 block">
+                          Payment & Quota Mode:
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setWalkInUseMembershipFreeHours(false)}
+                            className={`p-2.5 rounded-xl text-left border transition-all ${
+                              !walkInUseMembershipFreeHours
+                                ? 'bg-emerald-500/15 border-emerald-500/60 text-emerald-200 shadow-md'
+                                : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                            }`}
+                          >
+                            <div className="font-bold text-xs flex items-center gap-1.5 text-emerald-300">
+                              💵 Option A: Full Cash / UPI
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-1">
+                              Pay full rate at counter. Customer keeps {walkInCustomerQuota.remainingHours}h daily free quota intact.
+                            </p>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setWalkInUseMembershipFreeHours(true)}
+                            className={`p-2.5 rounded-xl text-left border transition-all ${
+                              walkInUseMembershipFreeHours
+                                ? 'bg-[#851B2B]/35 border-[#D7FF00]/60 text-[#FFF4E8] shadow-md'
+                                : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                            }`}
+                          >
+                            <div className="font-bold text-xs flex items-center gap-1.5 text-[#D7FF00]">
+                              ★ Option B: Use Free Hours
+                            </div>
+                            <p className="text-[10px] text-slate-300 mt-1">
+                              Apply {Math.min(walkInDuration, walkInCustomerQuota.remainingHours)}h free quota. Charge balance if duration exceeds quota.
+                            </p>
+                          </button>
+                        </div>
+                      </div>
+                    ) : walkInCustomerQuota?.isMember && walkInCustomerQuota?.remainingHours <= 0 ? (
+                      <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400">
+                        Customer has used all daily membership free hours today ({walkInCustomerQuota.dailyAllowanceHours}h). Standard rates apply.
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="relative">

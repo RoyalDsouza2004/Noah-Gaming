@@ -25,9 +25,12 @@ export const ActiveSessionCountdown = ({ customerUser }) => {
         // Customer's first active session
         const session = res.data.sessions[0];
         setActiveSession(session);
-        setRemainingSeconds(session.remainingSeconds);
+        const endMs = new Date(session.scheduledEndAt).getTime();
+        setRemainingSeconds(Math.max(0, Math.floor((endMs - Date.now()) / 1000)));
       } else {
+        // Session ended, completed, or no active session
         setActiveSession(null);
+        setRemainingSeconds(0);
       }
     } catch (err) {
       console.warn('[ActiveSessionCountdown] poll error', err.message);
@@ -38,8 +41,19 @@ export const ActiveSessionCountdown = ({ customerUser }) => {
 
   useEffect(() => {
     fetchActiveSession();
-    const syncInterval = setInterval(fetchActiveSession, 10000); // 10s backend sync
-    return () => clearInterval(syncInterval);
+    // Fast 4-second polling interval for real-time synchronization
+    const syncInterval = setInterval(fetchActiveSession, 4000);
+
+    // Cross-tab and window event listener for immediate reactive synchronization
+    const handleSync = () => fetchActiveSession();
+    window.addEventListener('session_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    return () => {
+      clearInterval(syncInterval);
+      window.removeEventListener('session_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
   }, [customerUser]);
 
   // Local 1-second ticker using authoritative scheduledEndAt
@@ -54,11 +68,12 @@ export const ActiveSessionCountdown = ({ customerUser }) => {
 
       if (diffSec === 0 && activeSession.status === 'ACTIVE') {
         setActiveSession((prev) => (prev ? { ...prev, status: 'AWAITING_RECEPTIONIST' } : null));
+        fetchActiveSession();
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeSession]);
+  }, [activeSession?.scheduledEndAt, activeSession?.id || activeSession?._id, activeSession?.status]);
 
   if (loading || !activeSession) return null;
 
@@ -145,7 +160,7 @@ export const ActiveSessionCountdown = ({ customerUser }) => {
           <span className="text-[11px] text-slate-400 block mt-0.5">
             {isExpired
               ? 'Awaiting Receptionist Checkout'
-              : `${activeSession.booking?.duration || 1}h total session`}
+              : `${activeSession.booking?.duration || (activeSession.scheduledEndAt && activeSession.startedAt ? Math.round((new Date(activeSession.scheduledEndAt).getTime() - new Date(activeSession.startedAt).getTime()) / 3600000 * 10) / 10 : 1)}h total session`}
           </span>
         </div>
       </div>

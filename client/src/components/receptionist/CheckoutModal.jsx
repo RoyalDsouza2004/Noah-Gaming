@@ -37,6 +37,10 @@ export const CheckoutModal = ({ session, onClose, onSuccess }) => {
 
       if (res?.success) {
         toast.success(`Session for ${session.device?.name} completed! Station is now AVAILABLE.`);
+        try {
+          localStorage.setItem('noah_session_sync', Date.now().toString());
+          window.dispatchEvent(new Event('session_updated'));
+        } catch {}
         if (onSuccess) onSuccess(res.data);
         onClose();
       } else {

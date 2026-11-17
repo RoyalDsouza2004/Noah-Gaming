@@ -27,6 +27,7 @@ export async function calculateSessionPrice({
   bookingDate = null,
   startTime = null,
   bookingType = 'SHARED',
+  applyMembershipBenefit = true,
 }) {
   const device = await Device.findById(deviceId);
   if (!device) {
@@ -147,7 +148,7 @@ export async function calculateSessionPrice({
   let membershipCoverage = null;
   let payableAmountPaise = totalAmountPaise;
 
-  if (customerId && bookingDate && !game?.isExclusive) {
+  if (customerId && bookingDate && !game?.isExclusive && applyMembershipBenefit) {
     try {
       // Dynamic import to avoid circular dependency
       const { checkMembershipBookingCoverage } = await import('../services/membership.service.js');

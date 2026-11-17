@@ -15,6 +15,7 @@ router.get('/dashboard', receptionistController.getDashboardStats);
 router.get('/customers/search', receptionistController.searchCustomers);
 router.post('/customers', receptionistController.registerCustomer);
 router.get('/customers/:id', receptionistController.getCustomerDetails);
+router.get('/customers/:id/membership-quota', receptionistController.getCustomerMembershipQuotaHandler);
 
 // 3. Bookings & Walk-ins
 router.post('/bookings', receptionistController.createWalkIn);
