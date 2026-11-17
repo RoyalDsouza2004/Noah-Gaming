@@ -101,6 +101,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
   const [walkInCustomerQuery, setWalkInCustomerQuery] = useState('');
   const [walkInCustomerResults, setWalkInCustomerResults] = useState([]);
   const [walkInSearchingCustomer, setWalkInSearchingCustomer] = useState(false);
+  const [walkInHasSearched, setWalkInHasSearched] = useState(false);
   const [walkInSelectedCustomer, setWalkInSelectedCustomer] = useState(null);
   const [walkInSelectedDevice, setWalkInSelectedDevice] = useState(null);
   const [walkInSelectedGame, setWalkInSelectedGame] = useState(null);
@@ -193,21 +194,30 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
 
   // Walk-in Customer Search
   useEffect(() => {
-    if (!walkInCustomerQuery.trim() || walkInCustomerQuery.length < 2) {
+    const trimmed = walkInCustomerQuery.trim();
+    if (!trimmed || trimmed.length < 2) {
       setWalkInCustomerResults([]);
+      setWalkInSearchingCustomer(false);
+      setWalkInHasSearched(false);
       return;
     }
+    setWalkInSearchingCustomer(true);
     const debounce = setTimeout(async () => {
-      setWalkInSearchingCustomer(true);
       try {
-        const res = await receptionistApi.searchCustomers(walkInCustomerQuery);
-        if (res?.success) setWalkInCustomerResults(res.data || []);
+        const res = await receptionistApi.searchCustomers(trimmed);
+        if (res?.success && Array.isArray(res.data)) {
+          setWalkInCustomerResults(res.data);
+        } else {
+          setWalkInCustomerResults([]);
+        }
       } catch (err) {
-        // ignore
+        console.warn('Walk-in customer search failed:', err.message);
+        setWalkInCustomerResults([]);
       } finally {
         setWalkInSearchingCustomer(false);
+        setWalkInHasSearched(true);
       }
-    }, 300);
+    }, 250);
     return () => clearTimeout(debounce);
   }, [walkInCustomerQuery]);
 
@@ -1018,9 +1028,9 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
 
             <form onSubmit={handleCreateWalkIn} className="space-y-5">
               {/* Step 1: Customer Selection */}
-              <div>
+              <div className="relative z-30">
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  1. Customer (Search by Phone or Name) <span className="text-rose-400">*</span>
+                  1. Customer (Search by Phone, Name, or ID) <span className="text-rose-400">*</span>
                 </label>
                 {walkInSelectedCustomer ? (
                   <div className="p-3.5 rounded-xl bg-[#851B2B]/15 border border-[#49202C] flex items-center justify-between">
@@ -1035,6 +1045,11 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                             ★ Active Member
                           </span>
                         )}
+                        {walkInSelectedCustomer.accountType === 'GUEST' && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                            GUEST
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-slate-400 mt-0.5">
                         ID: {walkInSelectedCustomer.customerId || walkInSelectedCustomer._id} &bull; {walkInSelectedCustomer.email}
@@ -1042,8 +1057,14 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                     </div>
                     <button
                       type="button"
-                      onClick={() => setWalkInSelectedCustomer(null)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                      onClick={() => {
+                        setWalkInSelectedCustomer(null);
+                        setWalkInCustomerQuery('');
+                        setWalkInCustomerResults([]);
+                        setWalkInHasSearched(false);
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                      title="Change customer"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1055,13 +1076,45 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                       type="text"
                       value={walkInCustomerQuery}
                       onChange={(e) => setWalkInCustomerQuery(e.target.value)}
-                      placeholder="Type customer name, phone number, or customer ID..."
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault(); // Prevent accidental walk-in form submission on Enter
+                          if (walkInCustomerResults.length > 0) {
+                            setWalkInSelectedCustomer(walkInCustomerResults[0]);
+                            setWalkInCustomerResults([]);
+                            setWalkInCustomerQuery('');
+                            setWalkInHasSearched(false);
+                          }
+                        } else if (e.key === 'Escape') {
+                          setWalkInCustomerResults([]);
+                          setWalkInHasSearched(false);
+                        }
+                      }}
+                      placeholder="Type customer phone, name, email, or customer ID (e.g. 9876543210)..."
+                      className="w-full pl-9 pr-9 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
                     />
+
+                    {/* Loading Spinner / Clear Icon */}
+                    {walkInSearchingCustomer ? (
+                      <Loader2 className="absolute right-3 top-2.5 w-4 h-4 text-[#D7FF00] animate-spin" />
+                    ) : walkInCustomerQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWalkInCustomerQuery('');
+                          setWalkInCustomerResults([]);
+                          setWalkInHasSearched(false);
+                        }}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                        title="Clear search"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    ) : null}
 
                     {/* Autocomplete Dropdown */}
                     {walkInCustomerResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 z-20 max-h-48 overflow-y-auto rounded-xl bg-[#260D17] border border-slate-700 shadow-2xl divide-y divide-slate-800">
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-56 overflow-y-auto rounded-xl bg-[#171014] border border-[#49202C] shadow-2xl divide-y divide-slate-800">
                         {walkInCustomerResults.map((cust) => (
                           <button
                             type="button"
@@ -1070,16 +1123,50 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                               setWalkInSelectedCustomer(cust);
                               setWalkInCustomerResults([]);
                               setWalkInCustomerQuery('');
+                              setWalkInHasSearched(false);
                             }}
-                            className="w-full p-2.5 text-left text-xs hover:bg-[#851B2B]/15 transition-colors flex items-center justify-between"
+                            className="w-full p-2.5 text-left text-xs hover:bg-[#851B2B]/20 transition-colors flex items-center justify-between group"
                           >
                             <div>
-                              <span className="font-semibold text-white">{cust.name}</span>
-                              <span className="text-slate-400 ml-2 font-mono">({cust.phone})</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-white group-hover:text-[#D7FF00] transition-colors">{cust.name}</span>
+                                <span className="text-[#C7A5A8] font-mono">({cust.phone})</span>
+                                {cust.membership?.status === 'ACTIVE' && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                    ★ Member
+                                  </span>
+                                )}
+                                {cust.accountType === 'GUEST' && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-400">
+                                    Guest
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                {cust.customerId || cust._id} {cust.email ? `• ${cust.email}` : ''}
+                              </p>
                             </div>
-                            <span className="text-[11px] text-[#D7FF00] font-mono">Select &rarr;</span>
+                            <span className="text-[11px] text-[#D7FF00] font-mono font-bold group-hover:translate-x-0.5 transition-transform">
+                              Select &rarr;
+                            </span>
                           </button>
                         ))}
+                      </div>
+                    )}
+
+                    {/* No Results Fallback Dropdown with 1-click Quick Register */}
+                    {!walkInSearchingCustomer && walkInHasSearched && walkInCustomerResults.length === 0 && walkInCustomerQuery.trim().length >= 2 && (
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl bg-[#171014] border border-[#49202C] shadow-2xl p-3 text-center space-y-2">
+                        <p className="text-xs text-slate-300">
+                          No existing profile found for &ldquo;<span className="text-white font-semibold">{walkInCustomerQuery}</span>&rdquo;
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setQuickRegisterOpen(true)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#851B2B] hover:bg-[#a32235] text-white text-xs font-bold transition-all shadow-md"
+                        >
+                          <UserPlus className="w-3.5 h-3.5 text-[#D7FF00]" /> Register as New Walk-In Player
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1695,8 +1782,12 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
       {quickRegisterOpen && (
         <QuickRegisterModal
           onClose={() => setQuickRegisterOpen(false)}
+          initialQuery={walkInCustomerQuery}
           onSuccess={(newCustomer) => {
             setWalkInSelectedCustomer(newCustomer);
+            setWalkInCustomerQuery('');
+            setWalkInCustomerResults([]);
+            setWalkInHasSearched(false);
             toast.success(`Customer ${newCustomer.name} selected for walk-in booking!`);
           }}
         />

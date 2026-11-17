@@ -204,31 +204,62 @@ export async function getReceptionistDashboardStats() {
  * 2. Customer Search & Verification
  */
 export async function searchCustomersForReceptionist({ query = '' }) {
-  const cleanQ = query.trim();
+  const cleanQ = String(query || '').trim();
   if (!cleanQ) return [];
 
-  // Check if query is a booking ID
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const safeRegex = new RegExp(escapeRegex(cleanQ), 'i');
+
+  // 1. Check if query is a booking ID (e.g. BK-20261117-001)
   if (cleanQ.toUpperCase().startsWith('BK-') || cleanQ.toUpperCase().startsWith('BK')) {
     const booking = await Booking.findOne({
-      bookingId: cleanQ.toUpperCase(),
+      bookingId: new RegExp(`^${escapeRegex(cleanQ)}$`, 'i'),
     }).populate({
       path: 'customer',
       populate: { path: 'membership.planId' },
     });
     if (booking && booking.customer) {
-      return [booking.customer.toSafeObject()];
+      const custObj = typeof booking.customer.toSafeObject === 'function'
+        ? booking.customer.toSafeObject()
+        : booking.customer;
+      return [custObj];
     }
   }
 
-  const regex = new RegExp(cleanQ, 'i');
+  // 2. Build multi-field search conditions
+  const orConditions = [
+    { name: safeRegex },
+    { email: safeRegex },
+    { customerId: safeRegex },
+  ];
+
+  // 3. Digit extraction for phone numbers (handling spaces, dashes, +91 country codes, etc.)
+  const digitsOnly = cleanQ.replace(/\D/g, '');
+  if (digitsOnly.length >= 2) {
+    orConditions.push({ phone: new RegExp(escapeRegex(digitsOnly), 'i') });
+    // If country code 91 was prepended to a 10-digit number
+    if (digitsOnly.startsWith('91') && digitsOnly.length > 10) {
+      const national10 = digitsOnly.slice(-10);
+      orConditions.push({ phone: new RegExp(escapeRegex(national10), 'i') });
+    }
+  } else {
+    orConditions.push({ phone: safeRegex });
+  }
+
+  // 4. Exact ObjectId match if valid MongoDB ObjectId
+  if (mongoose.Types.ObjectId.isValid(cleanQ)) {
+    orConditions.push({ _id: cleanQ });
+  }
+
+  // Find matching users (registered customers and walk-in guests)
   const users = await User.find({
-    role: 'customer',
-    $or: [{ name: regex }, { phone: regex }, { email: regex }, { customerId: regex }],
+    $or: orConditions,
   })
     .populate('membership.planId')
-    .limit(20);
+    .limit(25)
+    .sort({ updatedAt: -1 });
 
-  return users.map((u) => u.toSafeObject());
+  return users.map((u) => (typeof u.toSafeObject === 'function' ? u.toSafeObject() : u));
 }
 
 /**

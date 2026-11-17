@@ -1,17 +1,28 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
 import { receptionistApi } from '../../api/receptionist.js';
 import { userManagementApi } from '../../api/userManagement.js';
 import { UserPlus, Phone, Mail, User, X, Loader2, AlertCircle, CheckCircle2, Sparkles, UserCheck } from 'lucide-react';
 
-export const QuickRegisterModal = ({ onClose, onSuccess }) => {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+export const QuickRegisterModal = ({ onClose, onSuccess, initialQuery = '' }) => {
+  const digits = (initialQuery || '').replace(/\D/g, '');
+  const [name, setName] = useState(!digits ? (initialQuery || '') : '');
+  const [phone, setPhone] = useState(digits);
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [existingUser, setExistingUser] = useState(null);
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
 
   // Live duplicate check when 10 digits are entered
   useEffect(() => {
@@ -91,9 +102,9 @@ export const QuickRegisterModal = ({ onClose, onSuccess }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-md bg-[#260D17] border border-[#49202C] rounded-2xl p-5 sm:p-6 shadow-2xl text-slate-100">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-md my-auto max-h-[92vh] overflow-y-auto bg-[#260D17] border border-[#49202C] rounded-2xl p-5 sm:p-6 shadow-2xl text-slate-100">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
@@ -231,6 +242,7 @@ export const QuickRegisterModal = ({ onClose, onSuccess }) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
