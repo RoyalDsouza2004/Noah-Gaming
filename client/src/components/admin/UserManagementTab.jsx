@@ -837,7 +837,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                     )}
                   </div>
                   <p className="text-xs text-[#C7A5A8] font-mono mt-0.5">
-                    📱 {selectedUserDetail?.user?.phone} | ✉ {selectedUserDetail?.user?.email} | ID: {selectedUserDetail?.user?.customerId || selectedUserDetail?.user?._id}
+                    📱 {selectedUserDetail?.user?.phone || 'No Phone'} | ✉ {selectedUserDetail?.user?.email || 'No Email'} | ID: {selectedUserDetail?.user?.customerId || selectedUserDetail?.user?._id}
                   </p>
                 </div>
               </div>
@@ -1081,7 +1081,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                               <span className="text-[#C7A5A8] text-[11px] font-mono">{p.paymentMethod}</span>
                             </td>
                             <td className="p-3 text-right font-mono font-bold text-[#D7FF00]">
-                              ₹{Math.round((p.amountPaise || 0) / 100)}
+                              ₹{Math.round((p.amount || p.amountPaise || 0) / 100)}
                             </td>
                             <td className="p-3 text-center">
                               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
@@ -1097,26 +1097,73 @@ export const UserManagementTab = ({ isAdmin = false }) => {
 
                 {/* TAB 5: MEMBERSHIPS */}
                 {detailActiveTab === 'memberships' && (
-                  <div className="p-4 rounded-xl bg-[#171014] border border-[#49202C] space-y-3">
-                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Crown className="w-4 h-4 text-amber-400" /> Active Membership Pass
-                    </h4>
-                    {selectedUserDetail.user?.membership?.status === 'ACTIVE' ? (
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-amber-950/40 to-[#260D17] border border-amber-500/40 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-base font-bold text-white">
-                            {selectedUserDetail.user?.membership?.planId?.name || 'Gaming Club Pass'}
-                          </span>
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50">
-                            ACTIVE
-                          </span>
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-[#171014] border border-[#49202C] space-y-3">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Crown className="w-4 h-4 text-amber-400" /> Active Membership Pass
+                      </h4>
+                      {selectedUserDetail.user?.membership?.status === 'ACTIVE' ? (
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-950/40 to-[#260D17] border border-amber-500/40 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-base font-bold text-white">
+                              {selectedUserDetail.user?.membership?.planId?.name || 'Gaming Club Pass'}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50">
+                              ACTIVE
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#C7A5A8]">
+                            Expires on: <span className="text-white font-mono">{selectedUserDetail.user?.membership?.expiresAt ? new Date(selectedUserDetail.user.membership.expiresAt).toLocaleDateString() : 'N/A'}</span>
+                          </p>
                         </div>
-                        <p className="text-xs text-[#C7A5A8]">
-                          Expires on: <span className="text-white font-mono">{selectedUserDetail.user?.membership?.expiresAt ? new Date(selectedUserDetail.user.membership.expiresAt).toLocaleDateString() : 'N/A'}</span>
-                        </p>
+                      ) : (
+                        <p className="text-xs text-[#C7A5A8] italic">No active monthly gaming membership on file for this customer.</p>
+                      )}
+                    </div>
+
+                    {/* All Subscriptions History */}
+                    {selectedUserDetail.subscriptions && selectedUserDetail.subscriptions.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#C7A5A8] font-mono">
+                          Subscription History ({selectedUserDetail.subscriptions.length})
+                        </h4>
+                        <div className="overflow-x-auto rounded-xl border border-[#49202C]">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-[#171014] text-[#C7A5A8] font-mono uppercase text-[10px]">
+                              <tr>
+                                <th className="p-3">Subscription ID</th>
+                                <th className="p-3">Plan</th>
+                                <th className="p-3">Validity</th>
+                                <th className="p-3 text-center">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#49202C]/60 text-slate-200">
+                              {selectedUserDetail.subscriptions.map((sub) => (
+                                <tr key={sub._id} className="hover:bg-[#851B2B]/10">
+                                  <td className="p-3 font-mono font-bold text-white">{sub.subscriptionId}</td>
+                                  <td className="p-3 font-semibold text-amber-300">
+                                    {sub.membershipPlan?.name || sub.plan?.name || 'Membership'}
+                                  </td>
+                                  <td className="p-3 font-mono text-[11px] text-[#C7A5A8]">
+                                    {new Date(sub.startDate).toLocaleDateString()} &rarr; {new Date(sub.expirationDate).toLocaleDateString()}
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                      sub.status === 'ACTIVE'
+                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                        : sub.status === 'EXPIRED'
+                                        ? 'bg-slate-800 text-slate-400'
+                                        : 'bg-rose-500/20 text-rose-300'
+                                    }`}>
+                                      {sub.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-xs text-[#C7A5A8] italic">No active monthly gaming membership on file for this customer.</p>
                     )}
                   </div>
                 )}

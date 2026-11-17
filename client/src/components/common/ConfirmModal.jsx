@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 
 export const ConfirmModal = ({
@@ -23,17 +24,28 @@ export const ConfirmModal = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isLoading, onClose]);
 
+  // Lock body scroll while modal is visible so background page does not scroll
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isLoading) onClose();
       }}
     >
       <div
-        className="m-auto w-full max-w-md bg-[#260D17] border border-[#49202C] rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 text-[#FFF4E8]"
+        className="relative w-full max-w-md my-auto bg-[#260D17] border border-[#49202C] rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 text-[#FFF4E8]"
         role="dialog"
         aria-modal="true"
       >
@@ -90,6 +102,7 @@ export const ConfirmModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

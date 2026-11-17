@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { paymentApi } from '../../api/payment.js';
 import { loadRazorpayScript, launchRazorpayCheckout } from '../../utils/razorpay.js';
 import { showToast } from '../../utils/toast.js';
@@ -32,6 +33,15 @@ export const RazorpayModal = ({
   useEffect(() => {
     // Pre-load official Razorpay checkout script on mount
     loadRazorpayScript().then((loaded) => setScriptLoaded(loaded));
+  }, []);
+
+  // Lock body scroll while modal is visible
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
   }, []);
 
   const handlePay = async () => {
@@ -130,9 +140,9 @@ export const RazorpayModal = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div className="w-full max-w-md bg-[#171014] border border-[#851B2B]/40 rounded-3xl shadow-2xl text-[#FFF4E8] overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-md my-auto max-h-[92vh] overflow-y-auto bg-[#171014] border border-[#851B2B]/40 rounded-3xl shadow-2xl text-[#FFF4E8]">
         {/* Top Header */}
         <div className="p-5 bg-gradient-to-r from-[#260D17] via-[#171014] to-[#260D17] border-b border-[#49202C] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -341,6 +351,7 @@ export const RazorpayModal = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

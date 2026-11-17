@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
 import { receptionistApi } from '../../api/receptionist.js';
 import { Banknote, IndianRupee, CreditCard, X, Loader2, AlertCircle, FileText, CheckCircle2 } from 'lucide-react';
@@ -11,6 +12,15 @@ export const CollectPaymentModal = ({ booking, onClose, onSuccess, onViewReceipt
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Lock body scroll while modal is visible
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
 
   if (!booking) return null;
 
@@ -62,9 +72,9 @@ export const CollectPaymentModal = ({ booking, onClose, onSuccess, onViewReceipt
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-md bg-[#260D17] border border-[#49202C] rounded-2xl p-5 sm:p-6 shadow-2xl text-slate-100">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-md my-auto max-h-[92vh] overflow-y-auto bg-[#260D17] border border-[#49202C] rounded-2xl p-5 sm:p-6 shadow-2xl text-slate-100">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
@@ -202,6 +212,7 @@ export const CollectPaymentModal = ({ booking, onClose, onSuccess, onViewReceipt
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

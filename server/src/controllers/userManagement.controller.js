@@ -7,6 +7,7 @@ import Payment from '../models/Payment.js';
 import GamingSession from '../models/GamingSession.js';
 import MembershipUsage from '../models/MembershipUsage.js';
 import MembershipSubscription from '../models/MembershipSubscription.js';
+import MembershipPlan from '../models/MembershipPlan.js';
 import ActivityLog from '../models/ActivityLog.js';
 import { ROLES } from '../config/constants.js';
 import {
@@ -236,7 +237,7 @@ export const getUserDetails = async (req, res) => {
         .limit(50)
         .lean(),
       MembershipSubscription.find({ customer: user._id })
-        .populate('plan')
+        .populate('membershipPlan')
         .sort({ createdAt: -1 })
         .lean(),
       ActivityLog.find({
@@ -257,7 +258,20 @@ export const getUserDetails = async (req, res) => {
 
     const totalPaidPaise = payments
       .filter((p) => p.paymentStatus === 'PAID')
-      .reduce((sum, p) => sum + (p.amountPaise || 0), 0);
+      .reduce((sum, p) => sum + (p.amount || p.amountPaise || 0), 0);
+
+    // Normalize payments and subscriptions for client convenience
+    const normalizedPayments = payments.map((p) => ({
+      ...p,
+      amountPaise: p.amount || p.amountPaise || 0,
+      amountRupees: Math.round((p.amount || p.amountPaise || 0) / 100),
+    }));
+
+    const normalizedSubscriptions = subscriptions.map((s) => ({
+      ...s,
+      plan: s.membershipPlan || s.plan,
+      membershipPlan: s.membershipPlan || s.plan,
+    }));
 
     res.status(200).json({
       success: true,
@@ -275,8 +289,8 @@ export const getUserDetails = async (req, res) => {
         },
         bookings,
         sessions,
-        payments,
-        subscriptions,
+        payments: normalizedPayments,
+        subscriptions: normalizedSubscriptions,
         activityLogs,
       },
     });

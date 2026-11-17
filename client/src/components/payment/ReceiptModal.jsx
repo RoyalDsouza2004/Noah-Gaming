@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { paymentApi } from '../../api/payment.js';
 import { showToast } from '../../utils/toast.js';
 import {
@@ -28,6 +29,15 @@ export const ReceiptModal = ({ paymentId, bookingId, onClose }) => {
   const [error, setError] = useState('');
   const [availableBookingPayments, setAvailableBookingPayments] = useState([]);
   const [selectedTxPaymentId, setSelectedTxPaymentId] = useState(paymentId || null);
+
+  // Lock body scroll while modal is visible
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
 
   // If bookingId provided, load all payments for this booking to allow switching transactions
   useEffect(() => {
@@ -144,9 +154,9 @@ export const ReceiptModal = ({ paymentId, bookingId, onClose }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div className="w-full max-w-xl m-auto bg-[#260D17] border border-[#49202C] rounded-3xl shadow-2xl text-[#FFF4E8] overflow-hidden max-h-[92vh] overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-xl my-auto bg-[#260D17] border border-[#49202C] rounded-3xl shadow-2xl text-[#FFF4E8] overflow-hidden max-h-[92vh] overflow-y-auto">
         {/* Receipt Header Banner */}
         <div className="p-6 bg-gradient-to-r from-[#851B2B]/25 via-[#260D17] to-[#851B2B]/25 border-b border-[#49202C] flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -436,6 +446,7 @@ export const ReceiptModal = ({ paymentId, bookingId, onClose }) => {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

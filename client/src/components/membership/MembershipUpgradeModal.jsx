@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { membershipApi } from '../../api/membership.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { showToast } from '../../utils/toast.js';
@@ -57,6 +58,15 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
 
   useEffect(() => {
     fetchEligibleUpgrades();
+  }, []);
+
+  // Lock body scroll while modal is visible
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
   }, []);
 
   // Fetch quote when user picks a plan
@@ -169,9 +179,9 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#171014] border border-[#49202C] rounded-2xl sm:rounded-3xl shadow-2xl text-[#FFF4E8] m-auto overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-fadeIn">
+      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#171014] border border-[#49202C] rounded-2xl sm:rounded-3xl shadow-2xl text-[#FFF4E8] my-auto overflow-hidden">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between p-4 sm:p-6 pb-4 border-b border-[#49202C] bg-[#260D17]">
           <div className="flex items-center gap-3">
@@ -447,6 +457,7 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

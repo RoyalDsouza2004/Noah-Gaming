@@ -76,8 +76,8 @@ export async function createOnlineOrder({ customerId, bookingId, paymentPurpose 
     throw err;
   }
 
-  if (booking.paymentStatus === 'PAID') {
-    const err = new Error('This booking is already fully paid');
+  if (booking.paymentStatus === 'PAID' || (booking.totalAmount === 0 && (booking.balanceRemaining || 0) === 0)) {
+    const err = new Error('This booking is already fully paid with zero balance remaining. No additional payment required.');
     err.status = 400;
     throw err;
   }

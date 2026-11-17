@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { membershipApi } from '../../api/membership.js';
 import { showToast } from '../../utils/toast.js';
 import { launchRazorpayCheckout } from '../../utils/razorpay.js';
@@ -24,6 +25,15 @@ export const MembershipRenewalModal = ({
   const [error, setError] = useState('');
   const [orderData, setOrderData] = useState(null);
   const [success, setSuccess] = useState(false);
+
+  // Lock body scroll while modal is visible
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
 
   if (!subscription) return null;
 
@@ -101,9 +111,9 @@ export const MembershipRenewalModal = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="w-full max-w-lg bg-[#260D17] border border-slate-800 rounded-3xl p-6 text-slate-100 shadow-2xl relative overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="w-full max-w-lg my-auto max-h-[92vh] overflow-y-auto bg-[#260D17] border border-slate-800 rounded-3xl p-6 text-slate-100 shadow-2xl relative">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
@@ -245,6 +255,7 @@ export const MembershipRenewalModal = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
