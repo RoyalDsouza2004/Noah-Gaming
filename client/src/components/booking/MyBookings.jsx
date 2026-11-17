@@ -27,6 +27,36 @@ import {
   Banknote,
 } from 'lucide-react';
 
+function formatBookingTimeRange(booking) {
+  if (!booking) return '';
+  const startStr = booking.startAt
+    ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(booking.startAt))
+    : (booking.startTime || '');
+
+  let endStr = '';
+  if (booking.endAt) {
+    endStr = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(booking.endAt));
+  } else if (booking.startTime && booking.duration) {
+    const [h, m] = booking.startTime.split(':').map(Number);
+    const totalM = h * 60 + m + Math.round(booking.duration * 60);
+    const endH = Math.floor(totalM / 60) % 24;
+    const endMin = totalM % 60;
+    endStr = `${String(endH).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+  } else {
+    endStr = booking.endTime || '';
+  }
+
+  if (booking.startAt && booking.endAt) {
+    const startDay = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit' }).format(new Date(booking.startAt));
+    const endDay = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit' }).format(new Date(booking.endAt));
+    if (startDay !== endDay) {
+      return `${startStr} – ${endStr} (+1 day)`;
+    }
+  }
+
+  return `${startStr} – ${endStr}`;
+}
+
 export const MyBookings = ({ onNewBooking, onClose }) => {
   const { user, isAuthenticated } = useAuth();
   const [bookings, setBookings] = useState([]);
@@ -242,7 +272,7 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
                     <Calendar className="w-3.5 h-3.5 text-[#D7FF00]" /> {booking.bookingDate}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-[#D7FF00]" /> {booking.startTime} - {booking.endTime} ({booking.duration}h)
+                    <Clock className="w-3.5 h-3.5 text-[#D7FF00]" /> {formatBookingTimeRange(booking)} ({booking.duration}h)
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5 text-[#D7FF00]" /> {booking.numberOfPlayers} Player(s)
@@ -367,7 +397,7 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400 font-sans">Time Interval (IST):</span>
                 <span className="text-white">
-                  {selectedBooking.startTime} – {selectedBooking.endTime} ({selectedBooking.duration}h)
+                  {formatBookingTimeRange(selectedBooking)} ({selectedBooking.duration}h)
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800">

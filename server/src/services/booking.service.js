@@ -22,10 +22,12 @@ import {
 import {
   parseISTDateTime,
   formatISTDate,
+  formatISTTime,
   generateDailySlots,
   generateBookingId,
   getOperatingHours,
 } from '../utils/timeSlots.js';
+import * as scheduleService from './schedule.service.js';
 
 /**
  * Checks real-time availability for a specific device and time interval
@@ -222,7 +224,27 @@ export async function getDeviceDailyAvailability(deviceId, dateStr, durationHour
     throw new Error('Device not found');
   }
 
-  const rawSlots = await generateDailySlots(dateStr, durationHours);
+  const effectiveSchedule = await scheduleService.getEffectiveDaySchedule(dateStr);
+  if (effectiveSchedule.isClosed) {
+    return {
+      device: {
+        id: device._id,
+        name: device.name,
+        deviceCode: device.deviceCode,
+        deviceType: device.deviceType,
+        capacity: device.capacity,
+        status: device.status,
+      },
+      date: dateStr,
+      durationHours,
+      isClosed: true,
+      closureReason: effectiveSchedule.reason || 'Lounge is closed on this date.',
+      scheduleType: effectiveSchedule.scheduleType,
+      slots: [],
+    };
+  }
+
+  const rawSlots = await generateDailySlots(dateStr, durationHours, effectiveSchedule);
   const slotsWithAvailability = [];
 
   for (const slot of rawSlots) {
@@ -437,22 +459,47 @@ export async function createBookingAtomic({
     throw err;
   }
 
-  // Validate within operating hours
-  const { openTime, closeTime } = await getOperatingHours();
-  const dayOpenAt = parseISTDateTime(bookingDate, openTime);
-  const dayCloseAt = parseISTDateTime(bookingDate, closeTime);
-
-  if (startAt.getTime() < dayOpenAt.getTime() || endAt.getTime() > dayCloseAt.getTime()) {
+  // Validate within operating hours & schedule priority
+  const effectiveSchedule = await scheduleService.getEffectiveDaySchedule(bookingDate);
+  if (effectiveSchedule.isClosed) {
     const err = new Error(
-      `Booking extends outside daily operating hours (${openTime} to ${closeTime} IST).`
+      effectiveSchedule.reason
+        ? `Gaming lounge is closed on ${bookingDate} (${effectiveSchedule.reason}).`
+        : `Gaming lounge is closed on ${bookingDate}.`
     );
     err.status = 400;
     throw err;
   }
 
-  const endHStr = String(endAt.getHours()).padStart(2, '0');
-  const endMStr = String(endAt.getMinutes()).padStart(2, '0');
-  const endTime = `${endHStr}:${endMStr}`;
+  const openTime = effectiveSchedule.openTime || '10:00';
+  const closeTime = effectiveSchedule.closeTime || '23:00';
+  const dayOpenAt = parseISTDateTime(bookingDate, openTime);
+  const dayCloseAt = parseISTDateTime(bookingDate, closeTime);
+
+  if (startAt.getTime() < dayOpenAt.getTime() || endAt.getTime() > dayCloseAt.getTime()) {
+    const err = new Error(
+      `Booking extends outside daily operating hours for this date (${openTime} to ${closeTime} IST).`
+    );
+    err.status = 400;
+    throw err;
+  }
+
+  // Validate not overlapping scheduled closed intervals
+  if (effectiveSchedule.closedIntervals && effectiveSchedule.closedIntervals.length > 0) {
+    for (const interval of effectiveSchedule.closedIntervals) {
+      const intervalStart = parseISTDateTime(bookingDate, interval.from);
+      const intervalEnd = parseISTDateTime(bookingDate, interval.to);
+      if (startAt.getTime() < intervalEnd.getTime() && endAt.getTime() > intervalStart.getTime()) {
+        const err = new Error(
+          `Selected booking time conflicts with a scheduled closure (${interval.from} - ${interval.to}${interval.reason ? ': ' + interval.reason : ''}).`
+        );
+        err.status = 400;
+        throw err;
+      }
+    }
+  }
+
+  const endTime = formatISTTime(endAt);
 
   // 4. Validate player count
   const players = parseInt(numberOfPlayers);

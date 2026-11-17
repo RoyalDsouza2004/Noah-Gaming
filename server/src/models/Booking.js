@@ -58,10 +58,40 @@ const bookingSchema = new mongoose.Schema(
     startTime: {
       type: String, // e.g. "14:00"
       required: [true, 'Start time is required'],
+      get: function (v) {
+        if (this.startAt) {
+          try {
+            return new Intl.DateTimeFormat('en-IN', {
+              timeZone: 'Asia/Kolkata',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            }).format(this.startAt);
+          } catch {
+            return v;
+          }
+        }
+        return v;
+      },
     },
     endTime: {
       type: String, // e.g. "16:00"
       required: [true, 'End time is required'],
+      get: function (v) {
+        if (this.endAt) {
+          try {
+            return new Intl.DateTimeFormat('en-IN', {
+              timeZone: 'Asia/Kolkata',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            }).format(this.endAt);
+          } catch {
+            return v;
+          }
+        }
+        return v;
+      },
     },
     startAt: {
       type: Date, // UTC timestamp corresponding to IST start time
@@ -279,8 +309,8 @@ const bookingSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    toJSON: { virtuals: true, getters: true },
+    toObject: { virtuals: true, getters: true },
   }
 );
 

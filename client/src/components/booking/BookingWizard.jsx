@@ -63,6 +63,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
   // Availability & Slots
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
+  const [dateClosureReason, setDateClosureReason] = useState(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
 
@@ -153,8 +154,13 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
         duration,
         isVenueSelection ? null : selectedGame?._id
       );
-      if (res.success && res.data?.slots) {
-        setAvailabilitySlots(res.data.slots);
+      if (res.success && res.data) {
+        setAvailabilitySlots(res.data.slots || []);
+        if (res.data.isClosed) {
+          setDateClosureReason(res.data.closureReason || 'Gaming lounge is closed on this date.');
+        } else {
+          setDateClosureReason(null);
+        }
       }
     } catch (err) {
       console.warn('Availability check failed:', err.message);
@@ -829,6 +835,17 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               <div className="py-12 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
                 <RefreshCw className="w-6 h-6 animate-spin text-[#D7FF00]" />
                 Calculating real-time slot occupancy from database...
+              </div>
+            ) : dateClosureReason ? (
+              <div className="p-6 rounded-2xl bg-[#851B2B]/20 border border-[#851B2B]/50 text-center space-y-2 animate-fadeIn">
+                <AlertTriangle className="w-8 h-8 text-[#F5B942] mx-auto" />
+                <div className="text-sm font-bold text-[#FFF4E8]">Gaming Lounge Closed on this Date</div>
+                <p className="text-xs text-[#C7A5A8] max-w-md mx-auto">{dateClosureReason}</p>
+                <p className="text-[11px] text-[#D7FF00] font-semibold">Please select a different date above to view available time slots.</p>
+              </div>
+            ) : availabilitySlots.length === 0 ? (
+              <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 text-center text-xs text-slate-400">
+                No operating time slots available for the selected duration and date.
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto pr-1">

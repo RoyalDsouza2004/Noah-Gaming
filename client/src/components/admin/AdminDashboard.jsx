@@ -11,6 +11,7 @@ import { AdminEmailTab } from './AdminEmailTab.jsx';
 import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
 import { ReportExportModal } from './analytics/ReportExportModal.jsx';
 import { AdminGameImportModal } from './AdminGameImportModal.jsx';
+import { AdminOperatingHoursTab } from './AdminOperatingHoursTab.jsx';
 import { cloudinaryApi } from '../../api/cloudinary.js';
 import {
   Tv,
@@ -38,6 +39,7 @@ import {
   ExternalLink,
   DollarSign,
   Calendar,
+  CalendarDays,
   Check,
   Crown,
   Bot,
@@ -651,6 +653,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
           { id: 'memberships', label: 'Memberships & Passes', icon: Crown },
           { id: 'bookings', label: 'Bookings & Walk-ins', icon: Calendar },
           { id: 'calendar', label: 'Timeline Calendar', icon: Clock },
+          { id: 'operating-hours', label: 'Operating Hours & Holidays', icon: CalendarDays },
           { id: 'devices', label: `Devices (${devices.length})`, icon: Tv },
           { id: 'games', label: `Games (${games.length})`, icon: Gamepad2 },
           { id: 'exclusive', label: `Exclusive Games (${exclusiveGames.length})`, icon: Flame },
@@ -1578,6 +1581,11 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
       {/* ---------------- TAB: VISUAL TIMELINE CALENDAR (Phase 3) ---------------- */}
       {activeTab === 'calendar' && (
         <AdminCalendarTab devices={devices} />
+      )}
+
+      {/* ---------------- TAB: OPERATING HOURS & HOLIDAYS ---------------- */}
+      {activeTab === 'operating-hours' && (
+        <AdminOperatingHoursTab />
       )}
 
       {/* ---------------- TAB: AUTOMATION & SCHEDULER TIMERS (Phase 8) ---------------- */}

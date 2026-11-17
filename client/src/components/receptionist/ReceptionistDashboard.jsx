@@ -5,6 +5,7 @@ import { receptionistApi } from '../../api/receptionist.js';
 import { equipmentApi } from '../../api/equipment.js';
 import { bookingApi } from '../../api/booking.js';
 import { reportsApi } from '../../api/reports.js';
+import { scheduleApi } from '../../api/schedule.js';
 import { ExtendSessionModal } from './ExtendSessionModal.jsx';
 import { CheckInModal } from './CheckInModal.jsx';
 import { CheckoutModal } from './CheckoutModal.jsx';
@@ -84,6 +85,9 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
   const [gamesList, setGamesList] = useState([]);
   const [pricingPlans, setPricingPlans] = useState([]);
 
+  // Operating hours & Lounge status
+  const [operatingStatus, setOperatingStatus] = useState(null);
+
   // Time ticker for live countdowns and clock
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -137,7 +141,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
   const refreshAllData = async () => {
     setLoadingStats(true);
     try {
-      const [statsRes, sessionsRes, bookingsRes, pendingRes, devicesRes, gamesRes, pricingRes] =
+      const [statsRes, sessionsRes, bookingsRes, pendingRes, devicesRes, gamesRes, pricingRes, statusRes] =
         await Promise.all([
           receptionistApi.getDashboardStats().catch(() => null),
           receptionistApi.getActiveSessions().catch(() => null),
@@ -146,6 +150,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
           equipmentApi.getDevices().catch(() => null),
           equipmentApi.getGames().catch(() => null),
           equipmentApi.getPricing().catch(() => null),
+          scheduleApi.getOperatingStatus().catch(() => null),
         ]);
 
       if (statsRes?.success) setStats(statsRes.data);
@@ -155,6 +160,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
       if (devicesRes?.success) setDevicesList(devicesRes.data?.devices || devicesRes.data || []);
       if (gamesRes?.success) setGamesList(gamesRes.data?.games || gamesRes.data || []);
       if (pricingRes?.success && pricingRes.data?.pricingPlans) setPricingPlans(pricingRes.data.pricingPlans);
+      if (statusRes?.success) setOperatingStatus(statusRes.data);
     } catch (err) {
       console.error('Error fetching receptionist data:', err);
     } finally {
@@ -408,6 +414,34 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
               })}{' '}
               IST
             </div>
+
+            {/* Live Lounge Operating Status */}
+            {operatingStatus && (
+              <div
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#171014] border border-[#49202C] text-xs font-mono"
+                title={operatingStatus.todaySchedule?.isClosed ? operatingStatus.todaySchedule?.reason : `Operating: ${operatingStatus.todaySchedule?.openTime || '10:00'} to ${operatingStatus.todaySchedule?.closeTime || '23:00'} IST`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    operatingStatus.isCurrentlyOpen
+                      ? 'bg-emerald-400 animate-pulse'
+                      : 'bg-rose-400'
+                  }`}
+                />
+                <span
+                  className={`font-bold ${
+                    operatingStatus.isCurrentlyOpen
+                      ? 'text-emerald-400'
+                      : 'text-rose-400'
+                  }`}
+                >
+                  {operatingStatus.isCurrentlyOpen ? 'OPEN' : 'CLOSED'}
+                </span>
+                <span className="text-[#C7A5A8] text-[11px]">
+                  ({operatingStatus.todaySchedule?.openTime || '10:00'}-{operatingStatus.todaySchedule?.closeTime || '23:00'})
+                </span>
+              </div>
+            )}
 
             {/* Quick Action: New Walk-in */}
             <button
@@ -743,7 +777,14 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                   { deviceCode: 'POOL-01', name: '8-Ball Pool Table', deviceType: 'POOL', capacity: 2, isAvailable: true },
                 ]).map((dev) => {
                   const currentSession = dev.currentSession;
-                  const timer = currentSession ? formatCountdown(currentSession.endTime ? new Date(`${new Date().toISOString().slice(0, 10)}T${currentSession.endTime}+05:30`) : null) : null;
+                  const timer = currentSession
+                    ? formatCountdown(
+                        currentSession.endAt ||
+                        (currentSession.endTime
+                          ? new Date(`${new Date().toISOString().slice(0, 10)}T${currentSession.endTime}+05:30`)
+                          : null)
+                      )
+                    : null;
                   const isGTA6 = currentSession?.gameName?.includes('GTA') || currentSession?.isExclusiveGame;
 
                   return (

@@ -1,0 +1,533 @@
+import Setting from '../models/Setting.js';
+import Holiday from '../models/Holiday.js';
+import Booking from '../models/Booking.js';
+import {
+  parseISTDateTime,
+  formatISTDate,
+  formatISTTime,
+  getOperatingHours as getLegacyOperatingHours,
+} from '../utils/timeSlots.js';
+
+// Default standard weekly operating schedule (Mon-Sun)
+export const DEFAULT_WEEKLY_SCHEDULE = [
+  { day: 'Monday', dayIndex: 1, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Tuesday', dayIndex: 2, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Wednesday', dayIndex: 3, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Thursday', dayIndex: 4, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Friday', dayIndex: 5, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Saturday', dayIndex: 6, isOpen: true, openTime: '09:00', closeTime: '23:00', slotDurationMinutes: 60 },
+  { day: 'Sunday', dayIndex: 0, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
+];
+
+/**
+ * 1. Get Weekly Operating Schedule
+ */
+export async function getWeeklyOperatingHours() {
+  const setting = await Setting.findOne({ key: 'operating_hours_weekly' });
+  if (setting && Array.isArray(setting.value) && setting.value.length === 7) {
+    return setting.value;
+  }
+
+  // Fallback to legacy single setting if present
+  const legacy = await getLegacyOperatingHours();
+  return DEFAULT_WEEKLY_SCHEDULE.map((d) => ({
+    ...d,
+    openTime: legacy.openTime || d.openTime,
+    closeTime: legacy.closeTime || d.closeTime,
+    slotDurationMinutes: legacy.slotDurationMinutes || 60,
+  }));
+}
+
+/**
+ * 2. Update Weekly Operating Schedule
+ */
+export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
+  if (!Array.isArray(schedule) || schedule.length !== 7) {
+    const err = new Error('Weekly schedule must contain exactly 7 days (Monday to Sunday).');
+    err.status = 400;
+    throw err;
+  }
+
+  // Validate time format (HH:mm)
+  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  for (const day of schedule) {
+    if (day.isOpen) {
+      if (!timeRegex.test(day.openTime) || !timeRegex.test(day.closeTime)) {
+        const err = new Error(`Invalid time format for ${day.day}. Must be HH:mm (24-hour).`);
+        err.status = 400;
+        throw err;
+      }
+      const [oH, oM] = day.openTime.split(':').map(Number);
+      const [cH, cM] = day.closeTime.split(':').map(Number);
+      if (cH * 60 + cM <= oH * 60 + oM) {
+        const err = new Error(`Closing time must be after opening time for ${day.day}.`);
+        err.status = 400;
+        throw err;
+      }
+    }
+  }
+
+  const updated = await Setting.findOneAndUpdate(
+    { key: 'operating_hours_weekly' },
+    {
+      key: 'operating_hours_weekly',
+      value: schedule,
+      category: 'HOURS',
+      description: 'Admin-configured weekly operating schedule for each weekday',
+      updatedBy: updatedBy || null,
+    },
+    { upsert: true, new: true }
+  );
+
+  return updated.value;
+}
+
+/**
+ * 3. Holiday Management CRUD
+ */
+export async function getHolidays({ status = 'ALL', search = '', limit = 50, page = 1 } = {}) {
+  const query = {};
+  if (status && status !== 'ALL') {
+    query.status = status;
+  }
+  if (search && search.trim()) {
+    query.name = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+  }
+
+  const skip = (Math.max(1, parseInt(page)) - 1) * Math.max(1, parseInt(limit));
+
+  const [holidays, total] = await Promise.all([
+    Holiday.find(query)
+      .populate('createdBy', 'name email role')
+      .populate('updatedBy', 'name email role')
+      .sort({ startDate: -1 })
+      .skip(skip)
+      .limit(parseInt(limit)),
+    Holiday.countDocuments(query),
+  ]);
+
+  return {
+    holidays,
+    pagination: {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil(total / parseInt(limit)) || 1,
+    },
+  };
+}
+
+export async function createHoliday(data) {
+  const {
+    name,
+    startDate,
+    endDate,
+    closureType = 'FULL_DAY',
+    description = '',
+    notifyCustomers = false,
+    partialClosure = {},
+    createdBy,
+  } = data;
+
+  if (!name || !name.trim()) {
+    const err = new Error('Holiday or closure name is required.');
+    err.status = 400;
+    throw err;
+  }
+  if (!startDate || !endDate) {
+    const err = new Error('Both start date and end date are required (YYYY-MM-DD).');
+    err.status = 400;
+    throw err;
+  }
+  if (startDate > endDate) {
+    const err = new Error('Start date cannot be after end date.');
+    err.status = 400;
+    throw err;
+  }
+
+  // If partial closure, validate opening/closing or closed intervals
+  if (closureType === 'PARTIAL') {
+    if (partialClosure.openTime && partialClosure.closeTime) {
+      const [oH, oM] = partialClosure.openTime.split(':').map(Number);
+      const [cH, cM] = partialClosure.closeTime.split(':').map(Number);
+      if (cH * 60 + cM <= oH * 60 + oM) {
+        const err = new Error('Special closing time must be after opening time.');
+        err.status = 400;
+        throw err;
+      }
+    }
+  }
+
+  const holiday = await Holiday.create({
+    name: name.trim(),
+    startDate,
+    endDate,
+    closureType,
+    description: description ? description.trim() : '',
+    notifyCustomers: Boolean(notifyCustomers),
+    partialClosure: closureType === 'PARTIAL' ? partialClosure : {},
+    createdBy: createdBy || null,
+    updatedBy: createdBy || null,
+  });
+
+  return holiday;
+}
+
+export async function updateHoliday(id, data) {
+  const holiday = await Holiday.findById(id);
+  if (!holiday) {
+    const err = new Error('Holiday record not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const {
+    name,
+    startDate,
+    endDate,
+    closureType,
+    description,
+    notifyCustomers,
+    partialClosure,
+    status,
+    updatedBy,
+  } = data;
+
+  if (name !== undefined) holiday.name = name.trim();
+  if (startDate !== undefined) holiday.startDate = startDate;
+  if (endDate !== undefined) holiday.endDate = endDate;
+  if (closureType !== undefined) holiday.closureType = closureType;
+  if (description !== undefined) holiday.description = description ? description.trim() : '';
+  if (notifyCustomers !== undefined) holiday.notifyCustomers = Boolean(notifyCustomers);
+  if (partialClosure !== undefined) holiday.partialClosure = partialClosure;
+  if (status !== undefined) holiday.status = status;
+  if (updatedBy) holiday.updatedBy = updatedBy;
+
+  if (holiday.startDate > holiday.endDate) {
+    const err = new Error('Start date cannot be after end date.');
+    err.status = 400;
+    throw err;
+  }
+
+  await holiday.save();
+  return holiday;
+}
+
+export async function deleteHoliday(id) {
+  const holiday = await Holiday.findById(id);
+  if (!holiday) {
+    const err = new Error('Holiday record not found.');
+    err.status = 404;
+    throw err;
+  }
+  await Holiday.findByIdAndDelete(id);
+  return { success: true, message: `Holiday '${holiday.name}' was removed successfully.` };
+}
+
+/**
+ * 4. Schedule Priority Calculator: getEffectiveDaySchedule(dateStr)
+ * Priority order:
+ * 1. Full-day holiday closure
+ * 2. Date-specific special operating hours (partial holiday / special closure)
+ * 3. Date-specific partial closed intervals
+ * 4. Regular weekly operating schedule
+ */
+export async function getEffectiveDaySchedule(dateStr) {
+  // 1. Check for Active Holidays overlapping this date
+  const holiday = await Holiday.findOne({
+    startDate: { $lte: dateStr },
+    endDate: { $gte: dateStr },
+    status: { $in: ['SCHEDULED', 'ACTIVE'] },
+  });
+
+  // Calculate day of week index in Asia/Kolkata (0 = Sunday, 1 = Monday, ... 6 = Saturday)
+  const dateObj = parseISTDateTime(dateStr, '12:00');
+  const dayIndex = dateObj.getDay();
+
+  const weeklySchedule = await getWeeklyOperatingHours();
+  const weeklyDay = weeklySchedule.find((d) => d.dayIndex === dayIndex) || weeklySchedule[0];
+
+  if (holiday) {
+    if (holiday.closureType === 'FULL_DAY') {
+      return {
+        date: dateStr,
+        dayName: weeklyDay.day,
+        isClosed: true,
+        reason: holiday.name,
+        type: 'HOLIDAY',
+        holiday: {
+          id: holiday._id,
+          name: holiday.name,
+          description: holiday.description,
+          closureType: holiday.closureType,
+          startDate: holiday.startDate,
+          endDate: holiday.endDate,
+        },
+        openTime: null,
+        closeTime: null,
+        closedIntervals: [],
+      };
+    }
+
+    if (holiday.closureType === 'PARTIAL') {
+      const openTime = holiday.partialClosure?.openTime || weeklyDay.openTime || '10:00';
+      const closeTime = holiday.partialClosure?.closeTime || weeklyDay.closeTime || '23:00';
+      const closedIntervals = holiday.partialClosure?.closedIntervals || [];
+
+      return {
+        date: dateStr,
+        dayName: weeklyDay.day,
+        isClosed: false,
+        reason: holiday.name,
+        type: 'SPECIAL',
+        holiday: {
+          id: holiday._id,
+          name: holiday.name,
+          description: holiday.description,
+          closureType: holiday.closureType,
+          startDate: holiday.startDate,
+          endDate: holiday.endDate,
+        },
+        openTime,
+        closeTime,
+        closedIntervals,
+      };
+    }
+  }
+
+  // Regular Weekly Schedule check
+  if (!weeklyDay.isOpen) {
+    return {
+      date: dateStr,
+      dayName: weeklyDay.day,
+      isClosed: true,
+      reason: `Closed on ${weeklyDay.day}s`,
+      type: 'WEEKLY_CLOSED',
+      holiday: null,
+      openTime: null,
+      closeTime: null,
+      closedIntervals: [],
+    };
+  }
+
+  return {
+    date: dateStr,
+    dayName: weeklyDay.day,
+    isClosed: false,
+    reason: null,
+    type: 'REGULAR',
+    holiday: null,
+    openTime: weeklyDay.openTime,
+    closeTime: weeklyDay.closeTime,
+    closedIntervals: [],
+  };
+}
+
+/**
+ * 5. Booking Conflict Detection
+ * Checks existing confirmed bookings against proposed schedule changes
+ */
+export async function checkScheduleConflicts({
+  type, // 'WEEKLY_DAY', 'HOLIDAY', 'PARTIAL_HOURS'
+  dayIndex, // for WEEKLY_DAY
+  isOpen, // for WEEKLY_DAY
+  openTime,
+  closeTime,
+  startDate, // for HOLIDAY
+  endDate, // for HOLIDAY
+  closureType = 'FULL_DAY',
+  closedIntervals = [],
+}) {
+  const now = new Date();
+  const todayIST = formatISTDate(now);
+
+  const query = {
+    bookingStatus: 'CONFIRMED',
+    bookingDate: { $gte: todayIST },
+  };
+
+  if (type === 'HOLIDAY') {
+    query.bookingDate = { $gte: startDate, $lte: endDate };
+  } else if (type === 'WEEKLY_DAY' && typeof dayIndex === 'number') {
+    // We will filter by weekday on the retrieved future bookings
+  }
+
+  const futureBookings = await Booking.find(query)
+    .populate('customer', 'name phone email')
+    .populate('device', 'name deviceCode')
+    .populate('game', 'name')
+    .sort({ bookingDate: 1, startTime: 1 });
+
+  const conflicts = [];
+
+  for (const b of futureBookings) {
+    // If weekly day change
+    if (type === 'WEEKLY_DAY' && typeof dayIndex === 'number') {
+      const bDate = parseISTDateTime(b.bookingDate, '12:00');
+      if (bDate.getDay() !== dayIndex) continue;
+
+      if (!isOpen) {
+        conflicts.push({
+          bookingId: b.bookingId,
+          customerName: b.customer?.name || 'Customer',
+          customerPhone: b.customer?.phone || '',
+          deviceName: b.device?.name || 'Station',
+          bookingDate: b.bookingDate,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          totalAmountRupees: (b.totalAmount || 0) / 100,
+          paymentStatus: b.paymentStatus,
+          conflictReason: `Station closed on ${b.bookingDate} (${b.startTime} - ${b.endTime}) due to permanent weekday closure.`,
+        });
+        continue;
+      }
+    }
+
+    // Check open and close times
+    if (openTime && closeTime) {
+      const bStartAt = parseISTDateTime(b.bookingDate, b.startTime);
+      const bEndAt = parseISTDateTime(b.bookingDate, b.endTime);
+      const dayOpenAt = parseISTDateTime(b.bookingDate, openTime);
+      const dayCloseAt = parseISTDateTime(b.bookingDate, closeTime);
+
+      if (bStartAt.getTime() < dayOpenAt.getTime() || bEndAt.getTime() > dayCloseAt.getTime()) {
+        conflicts.push({
+          bookingId: b.bookingId,
+          customerName: b.customer?.name || 'Customer',
+          customerPhone: b.customer?.phone || '',
+          deviceName: b.device?.name || 'Station',
+          bookingDate: b.bookingDate,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          totalAmountRupees: (b.totalAmount || 0) / 100,
+          paymentStatus: b.paymentStatus,
+          conflictReason: `Reservation falls outside new operating hours (${openTime} to ${closeTime} IST).`,
+        });
+        continue;
+      }
+    }
+
+    // Check holiday full day closure
+    if (type === 'HOLIDAY' && closureType === 'FULL_DAY') {
+      conflicts.push({
+        bookingId: b.bookingId,
+        customerName: b.customer?.name || 'Customer',
+        customerPhone: b.customer?.phone || '',
+        deviceName: b.device?.name || 'Station',
+        bookingDate: b.bookingDate,
+        startTime: b.startTime,
+        endTime: b.endTime,
+        totalAmountRupees: (b.totalAmount || 0) / 100,
+        paymentStatus: b.paymentStatus,
+        conflictReason: `Lounge closed on ${b.bookingDate} for holiday closure.`,
+      });
+      continue;
+    }
+
+    // Check closed intervals
+    if (Array.isArray(closedIntervals) && closedIntervals.length > 0) {
+      const bStartAt = parseISTDateTime(b.bookingDate, b.startTime);
+      const bEndAt = parseISTDateTime(b.bookingDate, b.endTime);
+
+      for (const interval of closedIntervals) {
+        const intStart = parseISTDateTime(b.bookingDate, interval.startTime);
+        const intEnd = parseISTDateTime(b.bookingDate, interval.endTime);
+
+        // Check overlap: bStart < intEnd && bEnd > intStart
+        if (bStartAt.getTime() < intEnd.getTime() && bEndAt.getTime() > intStart.getTime()) {
+          conflicts.push({
+            bookingId: b.bookingId,
+            customerName: b.customer?.name || 'Customer',
+            customerPhone: b.customer?.phone || '',
+            deviceName: b.device?.name || 'Station',
+            bookingDate: b.bookingDate,
+            startTime: b.startTime,
+            endTime: b.endTime,
+            totalAmountRupees: (b.totalAmount || 0) / 100,
+            paymentStatus: b.paymentStatus,
+            conflictReason: `Reservation overlaps temporary closure interval (${interval.startTime} - ${interval.endTime}).`,
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  return {
+    hasConflicts: conflicts.length > 0,
+    conflictCount: conflicts.length,
+    affectedBookings: conflicts,
+  };
+}
+
+/**
+ * 6. Public/Front-Desk Lounge Operating Status
+ */
+export async function getLoungeOperatingStatus() {
+  const now = new Date();
+  const todayIST = formatISTDate(now);
+  const currentTimeIST = formatISTTime(now);
+
+  const todaySchedule = await getEffectiveDaySchedule(todayIST);
+  const weeklySchedule = await getWeeklyOperatingHours();
+
+  // Next upcoming holiday
+  const upcomingHolidays = await Holiday.find({
+    endDate: { $gte: todayIST },
+    status: { $in: ['SCHEDULED', 'ACTIVE'] },
+  })
+    .sort({ startDate: 1 })
+    .limit(5);
+
+  let currentStatus = 'CLOSED';
+  let statusMessage = '';
+
+  if (todaySchedule.isClosed) {
+    currentStatus = 'CLOSED';
+    statusMessage = todaySchedule.reason || 'Lounge is closed today';
+  } else {
+    const [nowH, nowM] = currentTimeIST.split(':').map(Number);
+    const nowMinutes = nowH * 60 + nowM;
+
+    const [openH, openM] = todaySchedule.openTime.split(':').map(Number);
+    const [closeH, closeM] = todaySchedule.closeTime.split(':').map(Number);
+    const openMinutes = openH * 60 + openM;
+    const closeMinutes = closeH * 60 + closeM;
+
+    // Check if inside closed intervals
+    let inClosedInterval = false;
+    for (const interval of todaySchedule.closedIntervals) {
+      const [iSH, iSM] = interval.startTime.split(':').map(Number);
+      const [iEH, iEM] = interval.endTime.split(':').map(Number);
+      if (nowMinutes >= iSH * 60 + iSM && nowMinutes < iEH * 60 + iEM) {
+        inClosedInterval = true;
+        statusMessage = `Temporary Closure (${interval.startTime} - ${interval.endTime}): ${interval.reason || 'Maintenance'}`;
+        break;
+      }
+    }
+
+    if (inClosedInterval) {
+      currentStatus = 'CLOSED';
+    } else if (nowMinutes >= openMinutes && nowMinutes < closeMinutes) {
+      currentStatus = 'OPEN';
+      statusMessage = `Open until ${todaySchedule.closeTime} IST`;
+    } else if (nowMinutes < openMinutes) {
+      currentStatus = 'CLOSED';
+      statusMessage = `Opens today at ${todaySchedule.openTime} IST`;
+    } else {
+      currentStatus = 'CLOSED';
+      statusMessage = `Closed for today at ${todaySchedule.closeTime} IST`;
+    }
+  }
+
+  return {
+    today: {
+      ...todaySchedule,
+      currentTime: currentTimeIST,
+      currentStatus,
+      statusMessage,
+    },
+    weeklySchedule,
+    upcomingHolidays,
+  };
+}

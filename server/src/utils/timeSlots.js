@@ -89,9 +89,24 @@ export async function getOperatingHours() {
  * Generates available daily slot intervals given operating hours and duration
  * @param {string} dateStr - 'YYYY-MM-DD'
  * @param {number} [durationHours=1]
+ * @param {Object} [effectiveSchedule=null] - Optional schedule override from scheduleService
  */
-export async function generateDailySlots(dateStr, durationHours = 1) {
-  const { openTime, closeTime } = await getOperatingHours();
+export async function generateDailySlots(dateStr, durationHours = 1, effectiveSchedule = null) {
+  if (effectiveSchedule && effectiveSchedule.isClosed) {
+    return [];
+  }
+
+  let openTime = '10:00';
+  let closeTime = '23:00';
+
+  if (effectiveSchedule && effectiveSchedule.openTime && effectiveSchedule.closeTime) {
+    openTime = effectiveSchedule.openTime;
+    closeTime = effectiveSchedule.closeTime;
+  } else {
+    const hours = await getOperatingHours();
+    openTime = hours.openTime;
+    closeTime = hours.closeTime;
+  }
 
   const [openH, openM] = openTime.split(':').map(Number);
   const [closeH, closeM] = closeTime.split(':').map(Number);
@@ -102,6 +117,13 @@ export async function generateDailySlots(dateStr, durationHours = 1) {
 
   const slots = [];
   const now = new Date();
+
+  // Closed intervals parsed for this date if present
+  const intervals = (effectiveSchedule?.closedIntervals || []).map((ci) => ({
+    startAt: parseISTDateTime(dateStr, ci.from),
+    endAt: parseISTDateTime(dateStr, ci.to),
+    reason: ci.reason || 'Closed interval',
+  }));
 
   // Iterate in 1-hour increments
   for (let startM = openMinutes; startM + durationMinutes <= closeMinutes; startM += 60) {
@@ -117,6 +139,14 @@ export async function generateDailySlots(dateStr, durationHours = 1) {
 
     const startAt = parseISTDateTime(dateStr, startTimeStr);
     const endAt = parseISTDateTime(dateStr, endTimeStr);
+
+    // If slot overlaps with any scheduled closed interval, skip it
+    const overlapsClosedInterval = intervals.some(
+      (ci) => startAt.getTime() < ci.endAt.getTime() && endAt.getTime() > ci.startAt.getTime()
+    );
+    if (overlapsClosedInterval) {
+      continue;
+    }
 
     const isPast = startAt.getTime() <= now.getTime();
 

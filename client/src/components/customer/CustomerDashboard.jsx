@@ -48,6 +48,38 @@ import {
   RotateCcw,
 } from 'lucide-react';
 
+function formatBookingTimeRange(booking) {
+  if (!booking) return '';
+  const startStr = booking.startAt
+    ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(booking.startAt))
+    : (booking.startTime || '');
+
+  // Calculate authoritative end time from endAt, or calculate from startTime + duration
+  let endStr = '';
+  if (booking.endAt) {
+    endStr = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(booking.endAt));
+  } else if (booking.startTime && booking.duration) {
+    const [h, m] = booking.startTime.split(':').map(Number);
+    const totalM = h * 60 + m + Math.round(booking.duration * 60);
+    const endH = Math.floor(totalM / 60) % 24;
+    const endMin = totalM % 60;
+    endStr = `${String(endH).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+  } else {
+    endStr = booking.endTime || '';
+  }
+
+  // Check if session crosses midnight (end day != start day in IST)
+  if (booking.startAt && booking.endAt) {
+    const startDay = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit' }).format(new Date(booking.startAt));
+    const endDay = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit' }).format(new Date(booking.endAt));
+    if (startDay !== endDay) {
+      return `${startStr} – ${endStr} (+1 day)`;
+    }
+  }
+
+  return `${startStr} – ${endStr}`;
+}
+
 export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, initialTab = 'overview' }) => {
   const { user, refreshUser, updateUser, logout } = useAuth();
 
@@ -588,7 +620,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
                     <span>{dashboardData.upcomingBookings[0].bookingDate}</span>
                     <Clock className="w-3.5 h-3.5 text-[#D7FF00] ml-2" />
                     <span>
-                      {dashboardData.upcomingBookings[0].startTime} – {dashboardData.upcomingBookings[0].endTime}
+                      {formatBookingTimeRange(dashboardData.upcomingBookings[0])}
                     </span>
                   </div>
                   <div className="text-slate-400 flex justify-between pt-1 border-t border-slate-800">
@@ -624,7 +656,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
                   <div className="space-y-0.5">
                     <span className="font-bold text-white block">{b.device?.name}</span>
                     <span className="text-slate-400 text-[11px] font-mono">
-                      {b.bookingDate} ({b.startTime} - {b.endTime}) • {b.bookingType}
+                      {b.bookingDate} ({formatBookingTimeRange(b)}) • {b.bookingType}
                     </span>
                   </div>
 
@@ -765,7 +797,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
                       <Calendar className="w-3.5 h-3.5 text-[#D7FF00]" /> {b.bookingDate}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-[#D7FF00]" /> {b.startTime} - {b.endTime} ({b.duration}h)
+                      <Clock className="w-3.5 h-3.5 text-[#D7FF00]" /> {formatBookingTimeRange(b)} ({b.duration}h)
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="w-3.5 h-3.5 text-[#D7FF00]" /> {b.numberOfPlayers || 1} Player(s)
