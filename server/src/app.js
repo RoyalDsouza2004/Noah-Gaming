@@ -35,6 +35,8 @@ import { sanitizeInput } from './middlewares/sanitize.js';
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // Security headers with cross-origin resource policy
 app.use(
   helmet({
