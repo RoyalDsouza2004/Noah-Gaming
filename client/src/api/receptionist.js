@@ -49,6 +49,8 @@ export const receptionistApi = {
     apiRequest(`/receptionist/sessions/${id}/start`, {
       method: 'POST',
     }),
+  previewExtension: (id, durationHours = 1) =>
+    apiRequest(`/receptionist/sessions/${id}/preview-extension?durationHours=${durationHours}`),
   extendSession: (id, data) =>
     apiRequest(`/receptionist/sessions/${id}/extend`, {
       method: 'POST',

@@ -107,7 +107,7 @@ export async function calculateSessionPrice({
     };
   }
 
-  const hours = Math.max(1, durationMinutes / 60);
+  const hours = Math.max(0.25, durationMinutes / 60);
   const players = Math.max(1, playersCount);
   let totalAmountPaise = 0;
 

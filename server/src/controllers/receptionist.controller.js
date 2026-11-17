@@ -180,6 +180,22 @@ export const startSessionHandler = async (req, res, next) => {
   }
 };
 
+export const previewExtensionHandler = async (req, res, next) => {
+  try {
+    const { durationHours } = req.query;
+    const preview = await receptionistService.previewSessionExtension({
+      bookingId: req.params.id,
+      extendedDurationHours: parseFloat(durationHours) || 1,
+    });
+    res.status(200).json({
+      success: true,
+      data: preview,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const extendSessionHandler = async (req, res, next) => {
   try {
     const {

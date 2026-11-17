@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Booking from '../models/Booking.js';
 import Device from '../models/Device.js';
 import Game from '../models/Game.js';
@@ -162,9 +163,13 @@ export async function getReceptionistDashboardStats() {
         ? {
             bookingId: primarySession.bookingId,
             customerName: primarySession.customer?.name || 'Walk-In Player',
-            gameName: primarySession.game?.name || 'Open Title',
-            isExclusiveGame: primarySession.game?.isExclusive || false,
+            gameName: primarySession.isVenueSelection
+              ? 'Select Game at Venue'
+              : (primarySession.game?.name || primarySession.gameTitle || 'Game Not Selected'),
+            isExclusiveGame: Boolean(primarySession.game?.isExclusive || primarySession.gameClassification === 'EXCLUSIVE' || (primarySession.game?.name && /GTA/i.test(primarySession.game.name))),
+            isGTA6: Boolean((primarySession.game?.name && /GTA/i.test(primarySession.game.name)) || (primarySession.gameTitle && /GTA/i.test(primarySession.gameTitle))),
             bookingType: primarySession.bookingType,
+            bookingModeDisplay: primarySession.bookingType === 'PRIVATE' ? 'Private Session' : 'Shared Session',
             numberOfPlayers: primarySession.numberOfPlayers,
             startTime: primarySession.startAt ? formatISTTime(primarySession.startAt) : primarySession.startTime,
             endTime: primarySession.endAt ? formatISTTime(primarySession.endAt) : primarySession.endTime,
@@ -235,14 +240,16 @@ export async function searchCustomersForReceptionist({ query = '' }) {
     { customerId: safeRegex },
   ];
 
-  // 3. Digit extraction for phone numbers (handling spaces, dashes, +91 country codes, etc.)
+  // 3. Flexible digit extraction for phone numbers (handling spaces, dashes, +91 country codes, etc.)
   const digitsOnly = cleanQ.replace(/\D/g, '');
   if (digitsOnly.length >= 2) {
-    orConditions.push({ phone: new RegExp(escapeRegex(digitsOnly), 'i') });
+    const flexibleDigitPattern = digitsOnly.split('').map((d) => escapeRegex(d)).join('[\\s\\-]?');
+    orConditions.push({ phone: new RegExp(flexibleDigitPattern, 'i') });
     // If country code 91 was prepended to a 10-digit number
     if (digitsOnly.startsWith('91') && digitsOnly.length > 10) {
       const national10 = digitsOnly.slice(-10);
-      orConditions.push({ phone: new RegExp(escapeRegex(national10), 'i') });
+      const flexibleNational = national10.split('').map((d) => escapeRegex(d)).join('[\\s\\-]?');
+      orConditions.push({ phone: new RegExp(flexibleNational, 'i') });
     }
   } else {
     orConditions.push({ phone: safeRegex });
@@ -757,13 +764,25 @@ export async function getActiveSessions() {
     );
     const isOverdue = now > new Date(s.endAt);
 
+    const gameDisplayName = s.isVenueSelection
+      ? 'Select Game at Venue'
+      : (s.game?.name || s.gameTitle || 'Game Not Selected');
+    const isExclusiveGame = Boolean(s.game?.isExclusive || s.gameClassification === 'EXCLUSIVE' || (s.game?.name && /GTA/i.test(s.game.name)));
+    const isGTA6 = Boolean((s.game?.name && /GTA/i.test(s.game.name)) || (s.gameTitle && /GTA/i.test(s.gameTitle)));
+
     return {
       _id: s._id,
       bookingId: s.bookingId,
       customer: s.customer,
       device: s.device,
       game: s.game,
+      isVenueSelection: s.isVenueSelection,
+      gameTitle: s.gameTitle,
+      gameName: gameDisplayName,
+      isExclusiveGame,
+      isGTA6,
       bookingType: s.bookingType,
+      bookingModeDisplay: s.bookingType === 'PRIVATE' ? 'Private Session' : 'Shared Session',
       numberOfPlayers: s.numberOfPlayers,
       startTime: s.startTime,
       endTime: s.endTime,
@@ -844,6 +863,136 @@ export async function startSession({ bookingId, staffUser }) {
 }
 
 /**
+ * Preview Session Extension with Authoritative Dynamic Pricing Breakdown
+ */
+export async function previewSessionExtension({ bookingId, extendedDurationHours = 1 }) {
+  const booking = await Booking.findById(bookingId).populate('customer device game');
+  if (!booking) {
+    const err = new Error('Booking not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const parsedDuration = Number(extendedDurationHours);
+  if (!parsedDuration || parsedDuration <= 0) {
+    const err = new Error('Invalid extension duration. Must be greater than 0.');
+    err.status = 400;
+    throw err;
+  }
+
+  const previousEndAt = new Date(booking.endAt || new Date());
+  const previousEndTime = booking.endTime || formatISTTime(previousEndAt);
+  const newEndAt = new Date(previousEndAt.getTime() + parsedDuration * 3600 * 1000);
+  const newEndTime = formatISTTime(newEndAt);
+
+  // Check closing hours (Lounge closes at 23:00 IST)
+  let exceedsClosingHours = false;
+  let closingHoursWarning = null;
+  const [endHour, endMin] = newEndTime.split(':').map(Number);
+  if (endHour > 23 || (endHour === 23 && endMin > 0)) {
+    exceedsClosingHours = true;
+    closingHoursWarning = 'Cannot extend session beyond lounge operating hours (Closes at 23:00 IST).';
+  }
+
+  // Check physical device conflict during extension window
+  const conflictingBookings = await Booking.find({
+    device: booking.device._id,
+    bookingStatus: { $in: ['CONFIRMED', 'COMPLETED'] },
+    _id: { $ne: booking._id },
+    startAt: { $lt: newEndAt },
+    endAt: { $gt: previousEndAt },
+  }).populate('game');
+
+  let hasConflict = false;
+  let conflictWarning = null;
+
+  const isExclusiveSession = Boolean(
+    booking.game?.isExclusive ||
+    booking.gameClassification === 'EXCLUSIVE' ||
+    (booking.game?.name && /GTA/i.test(booking.game.name))
+  );
+  const isPrivateBooking = booking.bookingType === 'PRIVATE';
+
+  if ((isPrivateBooking || isExclusiveSession) && conflictingBookings.length > 0) {
+    hasConflict = true;
+    const nextB = conflictingBookings[0];
+    conflictWarning = `Station reserved by upcoming booking ${nextB.bookingId} starting at ${nextB.startTime}.`;
+  } else if (!isPrivateBooking && !isExclusiveSession) {
+    for (const conflict of conflictingBookings) {
+      if (conflict.bookingType === 'PRIVATE' || (conflict.game && conflict.game.isExclusive)) {
+        hasConflict = true;
+        conflictWarning = `Station reserved by upcoming private booking ${conflict.bookingId} at ${conflict.startTime}.`;
+        break;
+      }
+      const totalPlayers = (conflict.numberOfPlayers || 1) + booking.numberOfPlayers;
+      if (totalPlayers > booking.device.capacity) {
+        hasConflict = true;
+        conflictWarning = `Capacity of ${booking.device.name} (${booking.device.capacity} players) would be exceeded during extension.`;
+        break;
+      }
+    }
+  }
+
+  // Calculate extension pricing using centralized pricing engine
+  const pricingResult = await calculateSessionPrice({
+    deviceId: booking.device._id,
+    gameId: booking.isVenueSelection ? null : (booking.game?._id || null),
+    isVenueSelection: booking.isVenueSelection,
+    durationMinutes: parsedDuration * 60,
+    playersCount: booking.numberOfPlayers,
+    customerId: booking.customer?._id,
+    bookingDate: booking.bookingDate,
+    startTime: previousEndTime,
+    bookingType: booking.bookingType,
+  });
+
+  const rate = pricingResult.pricingRule.ratePerUnitRupees;
+  const billingType = pricingResult.pricingRule.billingType;
+  let calculationFormula = '';
+
+  if (billingType === 'PER_DEVICE_HOURLY') {
+    calculationFormula = `₹${rate}/hr × ${parsedDuration}h = ₹${pricingResult.totalAmountRupees}`;
+  } else {
+    calculationFormula = `₹${rate}/hr × ${parsedDuration}h × ${booking.numberOfPlayers} player${booking.numberOfPlayers > 1 ? 's' : ''} = ₹${pricingResult.totalAmountRupees}`;
+  }
+
+  const gameDisplayName = booking.isVenueSelection
+    ? 'Select Game at Venue'
+    : (booking.game?.name || booking.gameTitle || 'Game Not Selected');
+
+  return {
+    bookingId: booking.bookingId,
+    sessionId: booking._id,
+    customerName: booking.customer?.name || 'Walk-In Player',
+    deviceName: booking.device.name,
+    deviceCode: booking.device.deviceCode,
+    deviceType: booking.device.deviceType,
+    gameName: gameDisplayName,
+    isExclusiveGame: isExclusiveSession,
+    isGTA6: Boolean((booking.game?.name && /GTA/i.test(booking.game.name)) || (booking.gameTitle && /GTA/i.test(booking.gameTitle))),
+    bookingType: booking.bookingType,
+    bookingModeDisplay: booking.bookingType === 'PRIVATE' ? 'Private Session' : 'Shared Session',
+    numberOfPlayers: booking.numberOfPlayers,
+    billableUnits: billingType === 'PER_DEVICE_HOURLY' ? 1 : booking.numberOfPlayers,
+    previousEndTime,
+    previousEndAt,
+    newEndTime,
+    newEndAt,
+    extendedDurationHours: parsedDuration,
+    hourlyRateRupees: rate,
+    billingType,
+    pricingRuleName: pricingResult.pricingRule.name,
+    calculationFormula,
+    additionalAmountPaise: pricingResult.totalAmountPaise,
+    additionalAmountRupees: pricingResult.totalAmountRupees,
+    membershipApplied: pricingResult.membershipBenefit?.applied || false,
+    membershipDiscountRupees: pricingResult.membershipBenefit?.discountRupees || 0,
+    canExtend: !exceedsClosingHours && !hasConflict,
+    warning: exceedsClosingHours ? closingHoursWarning : conflictWarning,
+  };
+}
+
+/**
  * 10. Session Extension
  */
 export async function extendSession({
@@ -862,8 +1011,8 @@ export async function extendSession({
     throw err;
   }
 
-  if (!['ACTIVE', 'EXTENDED'].includes(booking.sessionStatus)) {
-    const err = new Error(`Cannot extend session with status '${booking.sessionStatus}'. Session must be ACTIVE or EXTENDED.`);
+  if (!['ACTIVE', 'EXTENDED', 'TIME_EXPIRED', 'AWAITING_RECEPTIONIST'].includes(booking.sessionStatus)) {
+    const err = new Error(`Cannot extend session with status '${booking.sessionStatus}'. Session must be active or awaiting extension.`);
     err.status = 400;
     throw err;
   }
@@ -897,9 +1046,14 @@ export async function extendSession({
     endAt: { $gt: previousEndAt },
   }).populate('game');
 
-  const isExclusiveSession = booking.bookingType === 'PRIVATE' || (booking.game && booking.game.isExclusive);
+  const isExclusiveSession = Boolean(
+    booking.game?.isExclusive ||
+    booking.gameClassification === 'EXCLUSIVE' ||
+    (booking.game?.name && /GTA/i.test(booking.game.name))
+  );
+  const isPrivateBooking = booking.bookingType === 'PRIVATE';
 
-  if (isExclusiveSession && conflictingBookings.length > 0) {
+  if ((isPrivateBooking || isExclusiveSession) && conflictingBookings.length > 0) {
     const nextB = conflictingBookings[0];
     const err = new Error(
       `Cannot extend ${booking.device.name}: Reserved by upcoming booking ${nextB.bookingId} starting at ${nextB.startTime}.`
@@ -908,7 +1062,7 @@ export async function extendSession({
     throw err;
   }
 
-  if (!isExclusiveSession) {
+  if (!isPrivateBooking && !isExclusiveSession) {
     for (const conflict of conflictingBookings) {
       if (conflict.bookingType === 'PRIVATE' || (conflict.game && conflict.game.isExclusive)) {
         const err = new Error(
@@ -928,12 +1082,17 @@ export async function extendSession({
     }
   }
 
-  // Calculate extension pricing using existing pricing engine
+  // Calculate extension pricing using centralized pricing engine
   const pricingResult = await calculateSessionPrice({
     deviceId: booking.device._id,
-    gameId: booking.game?._id,
+    gameId: booking.isVenueSelection ? null : (booking.game?._id || null),
+    isVenueSelection: booking.isVenueSelection,
     durationMinutes: parsedDuration * 60,
     playersCount: booking.numberOfPlayers,
+    customerId: booking.customer?._id,
+    bookingDate: booking.bookingDate,
+    startTime: previousEndTime,
+    bookingType: booking.bookingType,
   });
 
   const additionalAmountPaise = pricingResult.totalAmountPaise;

@@ -27,6 +27,7 @@ router.post('/bookings/:id/no-show', receptionistController.markNoShow);
 // 4. Live Sessions
 router.get('/sessions/active', receptionistController.getActiveSessionsHandler);
 router.post('/sessions/:id/start', receptionistController.startSessionHandler);
+router.get('/sessions/:id/preview-extension', receptionistController.previewExtensionHandler);
 router.post('/sessions/:id/extend', receptionistController.extendSessionHandler);
 router.post('/sessions/:id/complete', receptionistController.completeSessionHandler);
 

@@ -265,7 +265,6 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
   const calculateWalkInPrice = () => {
     if (!walkInSelectedDevice) return 0;
     const isExclusiveGame = walkInSelectedGame?.isExclusive || walkInSelectedGame?.name === 'GTA 6';
-    const isPrivate = walkInBookingType === 'PRIVATE' || isExclusiveGame;
     const isPool = walkInSelectedDevice.deviceType === 'POOL';
 
     let rate = 70;
@@ -280,8 +279,8 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
       rate = ps5Pricing ? ps5Pricing.amount / 100 : 70;
     }
 
-    const players = isPrivate || isExclusiveGame ? 1 : walkInPlayersCount;
-    return rate * walkInDuration * (isExclusiveGame || isPrivate ? 1 : players);
+    const billablePlayers = isPool ? 1 : (walkInPlayersCount || 1);
+    return rate * walkInDuration * billablePlayers;
   };
 
   const walkInTotalPrice = calculateWalkInPrice();
@@ -327,7 +326,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
         bookingType,
         startTime: walkInStartTime,
         duration: walkInDuration,
-        numberOfPlayers: isExclusiveGame || bookingType === 'PRIVATE' ? 1 : walkInPlayersCount,
+        numberOfPlayers: walkInSelectedDevice?.deviceType === 'POOL' ? 1 : (walkInPlayersCount || 1),
         paymentMethod: walkInPaymentMethod,
         paymentAmountPaise,
         transactionReference: 'Walk-in Counter POS',
@@ -789,7 +788,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                           : null)
                       )
                     : null;
-                  const isGTA6 = currentSession?.gameName?.includes('GTA') || currentSession?.isExclusiveGame;
+                  const isGTA6 = currentSession?.isGTA6 || (currentSession?.isExclusiveGame && currentSession?.gameName?.includes('GTA'));
 
                   return (
                     <div
@@ -854,6 +853,12 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                             <div className="flex items-center justify-between">
                               <span className="text-slate-400">Game:</span>
                               <span className="font-semibold text-[#FFF4E8]">{currentSession.gameName}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">Booking Mode:</span>
+                              <span className="font-semibold text-[#D7FF00]">
+                                {currentSession.bookingModeDisplay || (currentSession.bookingType === 'PRIVATE' ? 'Private Session' : 'Shared Session')} ({currentSession.numberOfPlayers || 1}p)
+                              </span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-slate-400">Slot:</span>
@@ -961,7 +966,10 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                     <tbody className="divide-y divide-slate-800 text-slate-300">
                       {activeSessions.slice((activeSessionsPage - 1) * 8, activeSessionsPage * 8).map((session) => {
                         const countdown = formatCountdown(session.endAt);
-                        const isExclusive = session.game?.isExclusive || session.bookingType === 'PRIVATE';
+                        const isGTA6 = session.isGTA6 || (session.game?.name && /GTA/i.test(session.game.name));
+                        const isExclusive = session.isExclusiveGame || session.game?.isExclusive;
+                        const gameTitle = session.gameName || (session.isVenueSelection ? 'Select Game at Venue' : session.game?.name || session.gameTitle || 'Game Not Selected');
+                        const bookingMode = session.bookingModeDisplay || (session.bookingType === 'PRIVATE' ? 'Private Session' : 'Shared Session');
                         return (
                           <tr key={session._id} className="hover:bg-slate-850/50 transition-colors">
                             <td className="p-3.5 font-mono font-bold text-[#D7FF00]">
@@ -974,17 +982,27 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                             <td className="p-3.5">
                               <span className="font-medium text-slate-200">{session.device?.name}</span>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-slate-400">{session.game?.name || 'Open Title'}</span>
-                                {isExclusive && (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                                <span className="text-slate-400">{gameTitle}</span>
+                                {isGTA6 ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
                                     GTA 6
                                   </span>
-                                )}
+                                ) : isExclusive ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                    Exclusive
+                                  </span>
+                                ) : null}
                               </div>
                             </td>
                             <td className="p-3.5">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300">
-                                {session.bookingType} ({session.numberOfPlayers}p)
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                  session.bookingType === 'PRIVATE'
+                                    ? 'bg-[#851B2B]/25 text-[#FFF4E8] border border-[#851B2B]/50'
+                                    : 'bg-slate-800 text-slate-300'
+                                }`}
+                              >
+                                {bookingMode} ({session.numberOfPlayers || 1}p)
                               </span>
                             </td>
                             <td className="p-3.5 font-mono">
@@ -1253,7 +1271,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                             {(() => {
                               const devPricing = pricingPlans.find((p) => p.deviceType === dev.deviceType && !p.game);
                               const rate = devPricing ? devPricing.amount / 100 : (dev.deviceType === 'POOL' ? 150 : 70);
-                              return `₹${rate}/p/hr`;
+                              return dev.deviceType === 'POOL' ? `₹${rate}/table/hr` : `₹${rate}/p/hr`;
                             })()}
                           </span>
                         </div>
