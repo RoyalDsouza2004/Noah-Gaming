@@ -44,43 +44,45 @@
 
 html.light,
 [data-theme="light"] {
-  /* LIGHT THEME TOKENS (Warm White, Cream & Orange) */
-  --color-noah-charcoal: #FFF8F0;
+  /* LIGHT THEME TOKENS (Noah Gaming Warm Light Theme Specification) */
+  --color-noah-charcoal: #F5F6FA;
   --color-noah-dark-burgundy: #FFFFFF;
   --color-noah-card: #FFFFFF;
-  --color-noah-elevated: #FFF1E6;
+  --color-noah-elevated: #F8F9FC;
   --color-noah-input: #FFFFFF;
-  --color-noah-burgundy: #E87524;
-  --color-noah-crimson: #D46317;
-  --color-noah-lime: #E87524;
-  --color-noah-gold: #F5A623;
-  --color-noah-warm-white: #382019;
-  --color-noah-muted-rose: #936D5B;
-  --color-noah-muted-text: #936D5B;
-  --color-noah-disabled-text: #B59585;
-  --color-noah-wine: #F0DCCB;
-  --color-noah-green: #16A34A;
-  --color-noah-error: #DC2626;
+  --color-noah-burgundy: #851B2B;
+  --color-noah-crimson: #A51F35;
+  --color-noah-lime: #851B2B;
+  --color-noah-gold: #A51F35;
+  --color-noah-warm-white: #171923;
+  --color-noah-muted-rose: #414858;
+  --color-noah-muted-text: #626B7A;
+  --color-noah-disabled-text: #747B8C;
+  --color-noah-wine: #E2E5EC;
+  --color-noah-green: #176B3A;
+  --color-noah-error: #A51F2B;
 
   /* Semantic Light Tokens */
-  --bg-primary: #FFF8F0;          /* Main warm cream background */
-  --bg-secondary: #FFFFFF;        /* Secondary pure white surface */
-  --bg-card: #FFFFFF;             /* Pure white card */
-  --bg-elevated: #FFF1E6;         /* Elevated surface */
-  --bg-card-hover: #FFF1E6;       /* Soft warm cream card hover */
-  --bg-input: #FFFFFF;
-  --text-primary: #382019;        /* Main dark chocolate/espresso text */
-  --text-secondary: #936D5B;      /* Secondary warm brown text */
-  --text-muted: #936D5B;          /* Muted text */
-  --text-disabled: #B59585;       /* Disabled text */
-  --border-primary: #F0DCCB;      /* Soft warm cream border */
-  --accent-primary: #E87524;      /* Primary accent orange */
-  --accent-secondary: #F5A623;    /* Secondary accent golden orange */
-  --accent-highlight: #E87524;    /* Primary highlight orange */
-  --accent-gold: #F5A623;         /* Golden orange */
-  --accent-soft: #FFE8D4;         /* Soft orange background */
-  --status-success: #16A34A;      /* Accessible green */
-  --status-error: #DC2626;        /* Accessible red */
+  --bg-primary: #F5F6FA;          /* Main application background */
+  --bg-secondary: #F8F9FC;        /* Secondary background */
+  --bg-card: #FFFFFF;             /* Cards & panels */
+  --bg-elevated: #F0F2F6;         /* Light grey surface */
+  --bg-card-hover: #F1F3F7;       /* Soft light hover */
+  --bg-input: #FFFFFF;            /* Input & dropdown surface */
+  --text-primary: #171923;        /* Primary text & headings */
+  --text-secondary: #414858;      /* Secondary text */
+  --text-muted: #626B7A;          /* Muted text */
+  --text-disabled: #747B8C;       /* Disabled text */
+  --border-primary: #E2E5EC;      /* Standard border */
+  --border-strong: #CDD2DC;       /* Strong border */
+  --border-divider: #ECEEF3;      /* Divider */
+  --accent-primary: #851B2B;      /* Primary accent burgundy */
+  --accent-secondary: #A51F35;    /* Secondary accent crimson */
+  --accent-highlight: #851B2B;    /* Primary highlight burgundy */
+  --accent-gold: #A51F35;         /* Deep accent */
+  --accent-soft: #FCECEF;         /* Soft brand rose background */
+  --status-success: #176B3A;      /* Accessible green */
+  --status-error: #A51F2B;        /* Accessible red */
 }
 
 @layer base {
@@ -248,90 +250,208 @@ html:not(.light) svg text[fill="#94a3b8"] {
 }
 
 /* ========================================================================= */
-/* COMPLETE LIGHT MODE SPECIFICATION (Warm White, Cream & Orange)            */
+/* CRITICAL: MOBILE BOTTOM NAVIGATION PRESERVATION SHIELD                   */
+/* Untouched in both light and dark mode: preserves exact original styling   */
+/* ========================================================================= */
+html.light #mobile-bottom-nav {
+  background-color: rgba(23, 16, 20, 0.9) !important;
+  border-color: rgba(133, 27, 43, 0.4) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), 0 1px 2px rgba(255, 255, 255, 0.06) inset !important;
+  color: #FFF4E8 !important;
+}
+html.light #mobile-bottom-nav nav {
+  background: transparent !important;
+}
+html.light #mobile-bottom-nav button {
+  background: transparent !important;
+}
+html.light #mobile-bottom-nav .bg-\[\#851B2B\]\/55 {
+  background-color: rgba(133, 27, 43, 0.55) !important;
+  border-color: rgba(133, 27, 43, 0.7) !important;
+  box-shadow: 0 0 14px rgba(133, 27, 43, 0.45) !important;
+}
+html.light #mobile-bottom-nav .text-white\/75 {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+html.light #mobile-bottom-nav .text-white\/80 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+html.light #mobile-bottom-nav .text-\[\#D7FF00\] {
+  color: #D7FF00 !important;
+}
+html.light #mobile-bottom-nav .text-\[\#FFF4E8\] {
+  color: #FFF4E8 !important;
+}
+html.light #mobile-bottom-nav .border-\[\#D7FF00\] {
+  border-color: #D7FF00 !important;
+}
+html.light #mobile-bottom-nav .border-\[\#FFF4E8\]\/50 {
+  border-color: rgba(255, 244, 232, 0.5) !important;
+}
+html.light #mobile-bottom-nav .bg-gradient-to-br {
+  background: linear-gradient(to bottom right, #851B2B, #A51F35) !important;
+}
+
+/* ========================================================================= */
+/* COMPLETE APPLICATION-WIDE LIGHT THEME SPECIFICATION                       */
+/* Palette:                                                                  */
+/* Main BG: #F5F6FA | Secondary BG: #F8F9FC | Light Surface: #F0F2F6          */
+/* Cards/Panels/Modals: #FFFFFF | Input BG: #FFFFFF                          */
+/* Hover: #F1F3F7 | Selected: #FCECEF | Disabled: #F1F2F5                    */
+/* Primary Text: #171923 | Secondary Text: #414858 | Muted Text: #626B7A     */
+/* Disabled Text: #747B8C                                                    */
+/* Standard Border: #E2E5EC | Strong Border: #CDD2DC | Divider: #ECEEF3      */
+/* Brand Primary: #851B2B | Brand Secondary: #A51F35                         */
 /* ========================================================================= */
 
 html.light body {
-  background-color: #FFF8F0 !important;
-  color: #382019 !important;
+  background-color: #F5F6FA !important;
+  color: #171923 !important;
 }
 
 html.light ::selection {
-  background-color: #E87524 !important;
+  background-color: #851B2B !important;
   color: #FFFFFF !important;
 }
 
-/* 1. Main Backgrounds & Layout Containers */
-html.light .bg-\[\#171014\],
-html.light .bg-\[\#111726\],
-html.light .bg-\[\#0b0f19\],
-html.light .bg-slate-950,
-html.light .bg-slate-900 {
-  background-color: #FFF8F0 !important;
+/* 1. Main Backgrounds, Views & Layout Containers */
+html.light main,
+html.light div.min-h-screen {
+  background-color: #F5F6FA !important;
 }
 
-html.light header.bg-\[\#171014\]\/95,
-html.light header {
+html.light header,
+html.light header.bg-\[\#171014\]\/95 {
   background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #F0DCCB !important;
-  box-shadow: 0 1px 3px 0 rgba(56, 32, 25, 0.05) !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px 0 rgba(23, 25, 35, 0.05) !important;
 }
 
 html.light aside {
   background-color: #FFFFFF !important;
-  border-color: #F0DCCB !important;
-  box-shadow: 2px 0 8px 0 rgba(56, 32, 25, 0.04) !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 2px 0 8px 0 rgba(23, 25, 35, 0.04) !important;
 }
 
-/* 2. Secondary Surfaces, Cards & Panels */
-html.light .bg-\[\#260D17\],
-html.light .bg-\[\#1D141A\],
-html.light .bg-\[\#341220\],
-html.light .bg-slate-800,
+html.light footer {
+  background-color: #F8F9FC !important;
+  border-color: #E2E5EC !important;
+}
+
+/* 2. Comprehensive Container & Card Surface Overrides */
+html.light #customer-dashboard-container,
+html.light #my-bookings-container,
+html.light #admin-dashboard-container,
+html.light #notifications-container {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 4px 20px -2px rgba(23, 25, 35, 0.06) !important;
+}
+
+/* All dark container classes convert to clean white cards */
+html.light .bg-\[\#171014\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .bg-\[\#111726\],
+html.light .bg-\[\#0b0f19\],
+html.light .bg-\[\#0d121d\],
+html.light .bg-\[\#0d121e\],
+html.light .bg-\[\#121724\],
+html.light .bg-\[\#131a2c\],
+html.light .bg-\[\#140b11\],
+html.light .bg-\[\#171421\],
+html.light .bg-\[\#1e1319\],
+html.light .bg-\[\#1a1217\],
+html.light [class*="bg-[#260D17]"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="bg-[#1D141A]"],
+html.light [class*="bg-[#30121E]"],
+html.light [class*="bg-[#341220]"],
+html.light [class*="bg-[#381322]"],
+html.light [class*="bg-[#3d1525]"],
+html.light [class*="bg-[#331521]"],
+html.light [class*="bg-slate-900"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="bg-slate-800"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
 html.light .gaming-card {
   background-color: #FFFFFF !important;
-  border-color: #F0DCCB !important;
-  box-shadow: 0 2px 8px -1px rgba(56, 32, 25, 0.06), 0 1px 3px -1px rgba(56, 32, 25, 0.04) !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 2px 8px -1px rgba(23, 25, 35, 0.05), 0 1px 3px -1px rgba(23, 25, 35, 0.03) !important;
 }
 
 html.light .gaming-card:hover {
-  border-color: #E87524 !important;
+  border-color: #CDD2DC !important;
+  box-shadow: 0 4px 12px -2px rgba(23, 25, 35, 0.08) !important;
 }
 
-html.light .bg-\[\#260D17\]\/40,
-html.light .bg-\[\#260D17\]\/30,
-html.light .bg-\[\#260D17\]\/20,
-html.light .bg-\[\#260D17\]\/50 {
-  background-color: #FFE8D4 !important;
-  border-color: #F0DCCB !important;
+/* Sub-containers, nested boxes, and utility panels (slate-950, inner chips) */
+html.light [class*="bg-slate-950"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="bg-white/[0.03]"],
+html.light [class*="bg-white/5"] {
+  background-color: #F0F2F6 !important;
+  border-color: #E2E5EC !important;
 }
 
-/* 3. Text Colours */
-html.light .text-\[\#FFF4E8\],
-html.light .text-white,
-html.light .text-slate-100,
-html.light .text-slate-200 {
-  color: #382019 !important;
+/* Gradients that need to be clean white in Light Mode */
+html.light [class*="from-slate-900"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="from-[#1a1217]"],
+html.light [class*="from-rose-950"] {
+  background: #FFFFFF !important;
+  border-color: #E2E5EC !important;
 }
 
-html.light .text-\[\#C7A5A8\],
-html.light .text-slate-400,
-html.light .text-slate-300,
-html.light .text-slate-500 {
-  color: #936D5B !important;
+/* Soft accent / selected surfaces */
+html.light [class*="from-[#851B2B]/20"][class*="to-[#260D17]"],
+html.light [class*="from-[#851B2B]/25"][class*="to-[#260D17]"] {
+  background: #FCECEF !important;
+  border-color: #CDD2DC !important;
 }
 
-/* 4. Brand Accent, Highlights & Glows */
-html.light .text-\[\#D7FF00\] {
-  color: #E87524 !important;
+/* Selected station / option card */
+html.light [class*="border-[#851B2B]"][class*="shadow-lg"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *) {
+  background-color: #FCECEF !important;
+  border-color: #851B2B !important;
 }
 
-html.light .text-\[\#F5B942\] {
-  color: #C27803 !important;
+/* Hero background glow attenuation */
+html.light section .bg-\[radial-gradient\(ellipse_80\%_80\%_at_50\%_-20\%_rgba\(133\,27\,43\,0\.35\)\,rgba\(23\,16\,20\,0\)\)\],
+html.light section .blur-\[140px\] {
+  opacity: 0.12 !important;
+}
+
+/* 3. Global Typography & Readability (Excluding Mobile Bottom Nav) */
+html.light .text-white:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-\[\#FFF4E8\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-slate-100:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-slate-200:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-gray-100,
+html.light .text-gray-200 {
+  color: #171923 !important;
+}
+
+html.light .text-\[\#C7A5A8\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-slate-300:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-slate-400:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-gray-300,
+html.light .text-gray-400 {
+  color: #414858 !important;
+}
+
+html.light .text-\[\#D0B9BC\],
+html.light .text-\[\#BCA3A7\],
+html.light .text-slate-500:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-slate-600:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light .text-gray-500 {
+  color: #626B7A !important;
+}
+
+/* High-contrast brand typography */
+html.light .text-\[\#D7FF00\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *) {
+  color: #851B2B !important;
+}
+
+html.light .text-\[\#F5B942\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *) {
+  color: #855000 !important;
 }
 
 html.light .gaming-gradient-text {
-  background: linear-gradient(135deg, #E87524 0%, #D46317 50%, #382019 100%) !important;
+  background: linear-gradient(135deg, #851B2B 0%, #A51F35 60%, #171923 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
@@ -339,209 +459,294 @@ html.light .gaming-gradient-text {
 html.light .gaming-gradient-brand,
 html.light .bg-gradient-to-r.from-\[\#851B2B\].to-\[\#a32235\],
 html.light .bg-gradient-to-br.from-\[\#851B2B\].to-\[\#A51F35\] {
-  background: linear-gradient(135deg, #E87524 0%, #F5A623 100%) !important;
+  background: linear-gradient(135deg, #851B2B 0%, #A51F35 100%) !important;
   color: #FFFFFF !important;
 }
 
 html.light .gaming-glow,
 html.light .gaming-glow-crimson,
 html.light .gaming-glow-burgundy {
-  box-shadow: 0 0 20px -3px rgba(232, 117, 36, 0.25) !important;
+  box-shadow: 0 0 20px -3px rgba(133, 27, 43, 0.2) !important;
 }
 
-/* 5. Buttons & Primary Controls */
-html.light button.bg-\[\#D7FF00\],
+/* 4. Buttons & Primary Controls */
+/* Primary Brand CTA buttons */
+html.light button.bg-\[\#D7FF00\]:not(#mobile-bottom-nav),
 html.light a.bg-\[\#D7FF00\],
-html.light .bg-\[\#D7FF00\] {
-  background-color: #E87524 !important;
+html.light .bg-\[\#D7FF00\]:not(#mobile-bottom-nav) {
+  background-color: #851B2B !important;
   color: #FFFFFF !important;
+  border-color: #851B2B !important;
 }
-html.light button.bg-\[\#D7FF00\] *,
-html.light a.bg-\[\#D7FF00\] * {
-  color: #FFFFFF !important;
-}
+
 html.light button.bg-\[\#D7FF00\]:hover,
 html.light a.bg-\[\#D7FF00\]:hover {
-  background-color: #D46317 !important;
+  background-color: #A51F35 !important;
 }
 
 html.light button.bg-\[\#851B2B\],
 html.light a.bg-\[\#851B2B\],
 html.light .bg-\[\#851B2B\] {
-  background-color: #E87524 !important;
+  background-color: #851B2B !important;
   color: #FFFFFF !important;
 }
-html.light button.bg-\[\#851B2B\] *,
-html.light a.bg-\[\#851B2B\] * {
-  color: #FFFFFF !important;
-}
+
 html.light button.bg-\[\#851B2B\]:hover,
 html.light a.bg-\[\#851B2B\]:hover {
-  background-color: #D46317 !important;
+  background-color: #A51F35 !important;
 }
 
-/* Soft Accent / Pills */
+/* Always keep white text inside brand buttons */
+html.light button.bg-\[\#D7FF00\] *:not(#mobile-bottom-nav *),
+html.light a.bg-\[\#D7FF00\] *,
+html.light button.bg-\[\#851B2B\] *,
+html.light a.bg-\[\#851B2B\] *,
+html.light button[class*="from-[#851B2B]"] *,
+html.light a[class*="from-[#851B2B]"] *,
+html.light [class*="bg-gradient-to-r from-[#851B2B]"] * {
+  color: #FFFFFF !important;
+}
+
+/* Secondary / Neutral button surfaces */
+html.light button.bg-slate-900:not(#mobile-bottom-nav),
+html.light a.bg-slate-900,
+html.light button.bg-\[\#171014\]:not(#mobile-bottom-nav),
+html.light a.bg-\[\#171014\] {
+  background-color: #F0F2F6 !important;
+  color: #171923 !important;
+  border-color: #E2E5EC !important;
+}
+
+html.light button.bg-slate-900:hover,
+html.light a.bg-slate-900:hover,
+html.light button.bg-\[\#171014\]:hover,
+html.light a.bg-\[\#171014\]:hover {
+  background-color: #F1F3F7 !important;
+  border-color: #CDD2DC !important;
+  color: #171923 !important;
+}
+
+/* Soft accent pills & badges */
+html.light .bg-\[\#D7FF00\]\/10,
 html.light .bg-\[\#D7FF00\]\/15,
 html.light .bg-\[\#D7FF00\]\/20,
-html.light .bg-\[\#D7FF00\]\/10 {
-  background-color: #FFE8D4 !important;
-  color: #E87524 !important;
-  border-color: #F0DCCB !important;
-}
-
+html.light .bg-\[\#851B2B\]\/10,
 html.light .bg-\[\#851B2B\]\/15,
 html.light .bg-\[\#851B2B\]\/20,
+html.light .bg-\[\#851B2B\]\/25,
 html.light .bg-\[\#851B2B\]\/30,
 html.light .bg-\[\#851B2B\]\/40 {
-  background-color: #FFE8D4 !important;
-  color: #E87524 !important;
-  border-color: #F0DCCB !important;
+  background-color: #FCECEF !important;
+  color: #851B2B !important;
+  border-color: #E2E5EC !important;
 }
 
+html.light .bg-\[\#F5B942\]\/10,
 html.light .bg-\[\#F5B942\]\/15,
-html.light .bg-\[\#F5B942\]\/20,
-html.light .bg-\[\#F5B942\]\/10 {
-  background-color: #FEF3C7 !important;
-  color: #B45309 !important;
-  border-color: #FDE68A !important;
+html.light .bg-\[\#F5B942\]\/20 {
+  background-color: #FFF4DF !important;
+  color: #855000 !important;
+  border-color: #F5D499 !important;
 }
 
-/* 6. Borders & Dividers */
-html.light .border-\[\#49202C\],
-html.light .border-slate-800,
-html.light .border-slate-700,
-html.light .divide-\[\#49202C\] > *,
-html.light .divide-slate-800 > * {
-  border-color: #F0DCCB !important;
+/* 5. Borders & Dividers */
+html.light .border-\[\#49202C\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="border-slate-800"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="border-slate-700"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="border-slate-600"],
+html.light .border-white\/10,
+html.light .border-white\/5 {
+  border-color: #E2E5EC !important;
 }
 
-html.light .border-\[\#851B2B\],
+html.light [class*="divide-\[\#49202C\]"] > *,
+html.light [class*="divide-slate-800"] > * {
+  border-color: #ECEEF3 !important;
+}
+
+html.light .border-\[\#851B2B\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
 html.light .border-\[\#851B2B\]\/60,
 html.light .border-\[\#851B2B\]\/40 {
-  border-color: #F5A623 !important;
+  border-color: #CDD2DC !important;
 }
 
-/* 7. Inputs, Textareas, Selects & Forms */
-html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+/* 6. Inputs, Textareas, Selects & Forms */
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(#mobile-bottom-nav *),
 html.light textarea,
 html.light select {
   background-color: #FFFFFF !important;
-  border-color: #F0DCCB !important;
-  color: #382019 !important;
+  border-color: #E2E5EC !important;
+  color: #171923 !important;
 }
+
 html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"])::placeholder,
 html.light textarea::placeholder {
-  color: #B59585 !important;
+  color: #747B8C !important;
 }
+
 html.light input:focus,
 html.light textarea:focus,
 html.light select:focus {
-  border-color: #E87524 !important;
-  box-shadow: 0 0 0 2px rgba(232, 117, 36, 0.2) !important;
+  border-color: #851B2B !important;
+  box-shadow: 0 0 0 2px rgba(133, 27, 43, 0.15) !important;
 }
+
 html.light select option {
   background-color: #FFFFFF !important;
-  color: #382019 !important;
+  color: #171923 !important;
 }
+
 html.light select option:checked,
 html.light select option:hover {
-  background-color: #FFE8D4 !important;
-  color: #E87524 !important;
+  background-color: #FCECEF !important;
+  color: #851B2B !important;
 }
+
 html.light select option:disabled {
-  color: #B59585 !important;
+  color: #747B8C !important;
 }
 
-/* 8. Tables & Lists */
-html.light table thead tr {
-  background-color: #FFE8D4 !important;
-  border-color: #F0DCCB !important;
+/* 7. Tables & Data Lists */
+html.light table thead tr,
+html.light table thead {
+  background-color: #F0F2F6 !important;
+  border-color: #E2E5EC !important;
 }
+
 html.light table thead th {
-  color: #382019 !important;
-}
-html.light table tbody tr:hover {
-  background-color: #FFF8F0 !important;
+  color: #414858 !important;
+  font-weight: 700 !important;
 }
 
-/* 9. Modals & Overlays */
+html.light table tbody tr {
+  border-color: #ECEEF3 !important;
+}
+
+html.light table tbody tr:hover {
+  background-color: #F8F9FC !important;
+}
+
+html.light table tbody td {
+  color: #171923 !important;
+}
+
+/* 8. Modals & Overlays */
 html.light .fixed.inset-0.bg-black\/80,
 html.light .fixed.inset-0.bg-black\/85,
 html.light .fixed.inset-0.bg-black\/90 {
-  background-color: rgba(56, 32, 25, 0.5) !important;
+  background-color: rgba(23, 25, 35, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
 }
 
 html.light div[role="dialog"],
-html.light .modal-container,
-html.light #my-bookings-container,
-html.light #customer-dashboard-container,
-html.light #admin-dashboard-container {
-  background-color: #FFF8F0 !important;
+html.light .modal-container {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  color: #171923 !important;
+  box-shadow: 0 20px 25px -5px rgba(23, 25, 35, 0.1), 0 8px 10px -6px rgba(23, 25, 35, 0.05) !important;
 }
 
-/* 10. Mobile Bottom Navigation in Light Mode */
-html.light nav.bg-\[\#171014\]\/95,
-html.light .mobile-bottom-nav-bg {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #F0DCCB !important;
-  box-shadow: 0 -4px 16px -2px rgba(56, 32, 25, 0.08) !important;
-}
-html.light nav.bg-\[\#171014\]\/95 button .text-white\/75,
-html.light nav.bg-\[\#171014\]\/95 button .text-white\/80 {
-  color: #936D5B !important;
-}
-html.light nav.bg-\[\#171014\]\/95 button .text-\[\#D7FF00\] {
-  color: #E87524 !important;
-}
-
-/* 11. SVG Chart Elements in Light Mode */
+/* 9. SVG Chart Elements in Light Mode */
 html.light svg line[stroke="#1e293b"] {
-  stroke: #F0DCCB !important;
-}
-html.light svg text[fill="#64748b"] {
-  fill: #936D5B !important;
+  stroke: #E2E5EC !important;
 }
 
-/* 12. Toast Notification Theme Support */
+html.light svg text[fill="#64748b"] {
+  fill: #626B7A !important;
+}
+
+/* 10. Toast Notification Theme Support */
 html.light .react-hot-toast > div {
   background-color: #FFFFFF !important;
-  color: #382019 !important;
-  border: 1px solid #F0DCCB !important;
-  box-shadow: 0 10px 25px -5px rgba(56, 32, 25, 0.1) !important;
+  color: #171923 !important;
+  border: 1px solid #E2E5EC !important;
+  box-shadow: 0 10px 25px -5px rgba(23, 25, 35, 0.1) !important;
 }
 
-/* 13. Status Indicators */
+/* 11. Status Indicators */
+/* Success (Green) */
 html.light .text-emerald-400,
+html.light .text-emerald-300,
 html.light .text-\[\#45C987\] {
-  color: #16A34A !important;
+  color: #176B3A !important;
 }
+
+html.light .bg-emerald-500\/10,
 html.light .bg-emerald-500\/15,
 html.light .bg-emerald-500\/20,
+html.light .bg-\[\#45C987\]\/15,
 html.light .bg-\[\#45C987\]\/20 {
-  background-color: #DCFCE7 !important;
-  color: #16A34A !important;
-  border-color: #BBF7D0 !important;
+  background-color: #EAF5EE !important;
+  color: #176B3A !important;
+  border-color: #BDE3CA !important;
 }
 
-html.light .text-rose-400,
-html.light .text-\[\#F06A76\] {
-  color: #DC2626 !important;
+/* Warning (Amber / Gold) */
+html.light .text-amber-400,
+html.light .text-amber-300 {
+  color: #855000 !important;
 }
+
+html.light .bg-amber-500\/10,
+html.light .bg-amber-500\/15,
+html.light .bg-amber-500\/20 {
+  background-color: #FFF4DF !important;
+  color: #855000 !important;
+  border-color: #F5D499 !important;
+}
+
+/* Error (Red / Crimson) */
+html.light .text-rose-400,
+html.light .text-rose-300,
+html.light .text-red-400,
+html.light .text-red-300,
+html.light .text-\[\#F06A76\] {
+  color: #A51F2B !important;
+}
+
+html.light .bg-rose-500\/10,
 html.light .bg-rose-500\/15,
 html.light .bg-rose-500\/20,
+html.light .bg-red-500\/10,
+html.light .bg-red-500\/20,
 html.light .bg-\[\#F06A76\]\/20 {
-  background-color: #FEE2E2 !important;
-  color: #DC2626 !important;
-  border-color: #FECACA !important;
+  background-color: #FCEBEC !important;
+  color: #A51F2B !important;
+  border-color: #F5B8BC !important;
 }
 
-/* 14. Scrollbars in Light Mode */
+/* Info & Accents (Blue / Purple) */
+html.light .text-purple-400,
+html.light .text-purple-300,
+html.light .text-sky-400,
+html.light .text-sky-300 {
+  color: #214F86 !important;
+}
+
+html.light .bg-purple-500\/10,
+html.light .bg-purple-500\/15,
+html.light .bg-purple-500\/20,
+html.light .bg-sky-500\/10,
+html.light .bg-sky-500\/20 {
+  background-color: #EAF1FB !important;
+  color: #214F86 !important;
+  border-color: #BAD2F5 !important;
+}
+
+/* 12. Scrollbars in Light Mode */
 html.light .table-scrollbar {
-  scrollbar-color: #E87524 #FFF8F0 !important;
+  scrollbar-color: #CDD2DC #F0F2F6 !important;
 }
+
 html.light .table-scrollbar::-webkit-scrollbar-track {
-  background: #FFF8F0 !important;
+  background: #F0F2F6 !important;
 }
+
 html.light .table-scrollbar::-webkit-scrollbar-thumb {
-  background: #E87524 !important;
+  background: #CDD2DC !important;
+  border-radius: 6px !important;
+}
+
+html.light .table-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #851B2B !important;
 }

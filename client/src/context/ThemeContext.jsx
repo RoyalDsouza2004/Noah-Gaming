@@ -36,7 +36,7 @@ export const ThemeProvider = ({ children }) => {
     // Update mobile browser status bar theme color
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', newTheme === 'light' ? '#E87524' : '#851B2B');
+      metaThemeColor.setAttribute('content', newTheme === 'light' ? '#F5F6FA' : '#851B2B');
     }
 
     if (withTransition) {

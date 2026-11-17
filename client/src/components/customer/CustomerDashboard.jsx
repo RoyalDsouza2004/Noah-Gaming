@@ -280,7 +280,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
   const isMember = customer?.membership?.status === 'ACTIVE';
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 bg-[#0d121d] border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-100 space-y-6 animate-fadeIn">
+    <div id="customer-dashboard-container" className="w-full max-w-6xl mx-auto p-4 sm:p-6 bg-[#0d121d] border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-100 space-y-6 animate-fadeIn">
       {/* ---------------- TOP NAVIGATION BAR WITH BACK BUTTON (Phase 5.1 Fix) ---------------- */}
       <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <button
