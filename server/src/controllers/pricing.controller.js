@@ -14,7 +14,7 @@ export const getAllPricing = async (req, res) => {
     const pricingPlans = await Pricing.find(filter)
       .populate('device', 'name deviceCode deviceType')
       .populate('game', 'name category isExclusive')
-      .sort({ createdAt: -1 });
+      .sort({ game: 1, createdAt: 1 });
 
     res.status(200).json({
       success: true,

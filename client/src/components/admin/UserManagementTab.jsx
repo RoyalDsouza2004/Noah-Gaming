@@ -423,7 +423,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
     <div className="space-y-6 animate-fadeIn text-[#FFF4E8]">
       {/* Header & KPI Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
+        <div className="user-management-kpi p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-[#C7A5A8]">Total Users</span>
             <h3 className="text-xl sm:text-2xl font-black font-heading text-white mt-0.5">{kpis.totalUsersCount}</h3>
@@ -433,7 +433,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
+        <div className="user-management-kpi p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400">Guest Accounts</span>
             <h3 className="text-xl sm:text-2xl font-black font-heading text-amber-300 mt-0.5">{kpis.totalGuestsCount}</h3>
@@ -443,7 +443,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
+        <div className="user-management-kpi p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400">Registered</span>
             <h3 className="text-xl sm:text-2xl font-black font-heading text-emerald-300 mt-0.5">{kpis.totalRegisteredCount}</h3>
@@ -453,7 +453,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
+        <div className="user-management-kpi p-4 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-lg flex items-center justify-between">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-purple-400">Active Passes</span>
             <h3 className="text-xl sm:text-2xl font-black font-heading text-purple-300 mt-0.5">{kpis.activeMembersCount}</h3>

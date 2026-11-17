@@ -3,6 +3,7 @@ import Device from '../models/Device.js';
 import DeviceMaintenance from '../models/DeviceMaintenance.js';
 import User from '../models/User.js';
 import { createBookingAtomic, cancelBookingService } from '../services/booking.service.js';
+import { scheduleService } from '../services/schedule.service.js';
 import { parseISTDateTime, formatISTDate } from '../utils/timeSlots.js';
 
 // GET /api/admin/bookings
@@ -286,6 +287,32 @@ export const getCalendarBookings = async (req, res) => {
       };
     });
 
+    // Fetch effective schedule and calculate operating slots for this date
+    let effectiveSchedule = null;
+    let operatingSlots = [];
+    let conflictingBookings = [];
+    try {
+      effectiveSchedule = await scheduleService.getEffectiveDaySchedule(queryDateStr);
+      if (!effectiveSchedule.isClosed && effectiveSchedule.openTime && effectiveSchedule.closeTime) {
+        const [openH] = effectiveSchedule.openTime.split(':').map(Number);
+        const [closeH, closeM] = effectiveSchedule.closeTime.split(':').map(Number);
+        const effectiveLastHour = closeM > 0 ? closeH : closeH - 1;
+        for (let h = openH; h <= effectiveLastHour; h++) {
+          operatingSlots.push(`${String(h).padStart(2, '0')}:00`);
+        }
+      }
+
+      if (effectiveSchedule.isClosed) {
+        conflictingBookings = bookings;
+      } else if (effectiveSchedule.closeTime) {
+        const closeTimeStr = effectiveSchedule.closeTime;
+        conflictingBookings = bookings.filter((b) => b.endTime && b.endTime > closeTimeStr);
+      }
+    } catch (e) {
+      // Fallback
+      operatingSlots = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
+    }
+
     res.status(200).json({
       success: true,
       data: {
@@ -293,6 +320,9 @@ export const getCalendarBookings = async (req, res) => {
         date: queryDateStr,
         timeline,
         totalBookingsInRange: bookings.length,
+        effectiveSchedule,
+        operatingSlots,
+        conflictingBookings,
       },
     });
   } catch (err) {

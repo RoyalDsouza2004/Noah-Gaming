@@ -8,6 +8,17 @@ import {
   getOperatingHours as getLegacyOperatingHours,
 } from '../utils/timeSlots.js';
 
+// Canonical weekdays definition (Mon-Sun)
+export const CANONICAL_WEEKDAYS = [
+  { day: 'Monday', dayIndex: 1, key: 'monday' },
+  { day: 'Tuesday', dayIndex: 2, key: 'tuesday' },
+  { day: 'Wednesday', dayIndex: 3, key: 'wednesday' },
+  { day: 'Thursday', dayIndex: 4, key: 'thursday' },
+  { day: 'Friday', dayIndex: 5, key: 'friday' },
+  { day: 'Saturday', dayIndex: 6, key: 'saturday' },
+  { day: 'Sunday', dayIndex: 0, key: 'sunday' },
+];
+
 // Default standard weekly operating schedule (Mon-Sun)
 export const DEFAULT_WEEKLY_SCHEDULE = [
   { day: 'Monday', dayIndex: 1, isOpen: true, openTime: '10:00', closeTime: '23:00', slotDurationMinutes: 60 },
@@ -42,7 +53,68 @@ export async function getWeeklyOperatingHours() {
  * 2. Update Weekly Operating Schedule
  */
 export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
-  if (!Array.isArray(schedule) || schedule.length !== 7) {
+  if (!schedule) {
+    const err = new Error('Weekly schedule payload is required.');
+    err.status = 400;
+    throw err;
+  }
+
+  // Handle various payload structures: raw array, { schedule: [...] }, or object with day keys
+  let rawItems = schedule;
+  if (schedule && typeof schedule === 'object' && !Array.isArray(schedule)) {
+    if (Array.isArray(schedule.schedule)) {
+      rawItems = schedule.schedule;
+    } else if (schedule.weeklySchedule && Array.isArray(schedule.weeklySchedule)) {
+      rawItems = schedule.weeklySchedule;
+    } else if (schedule.schedule && typeof schedule.schedule === 'object') {
+      rawItems = schedule.schedule;
+    }
+  }
+
+  const normalizedSchedule = [];
+
+  for (const canonical of CANONICAL_WEEKDAYS) {
+    let dayData = null;
+
+    if (Array.isArray(rawItems)) {
+      dayData = rawItems.find(
+        (d) =>
+          d &&
+          (d.dayIndex === canonical.dayIndex ||
+            (d.day && d.day.toLowerCase() === canonical.key) ||
+            (d.name && d.name.toLowerCase() === canonical.key))
+      );
+    } else if (rawItems && typeof rawItems === 'object') {
+      dayData =
+        rawItems[canonical.key] ||
+        rawItems[canonical.day] ||
+        rawItems[canonical.key.toUpperCase()];
+    }
+
+    if (!dayData) {
+      const err = new Error(
+        `Weekly schedule must contain exactly 7 days (Monday to Sunday). Missing entry for ${canonical.day}.`
+      );
+      err.status = 400;
+      throw err;
+    }
+
+    const isOpen = typeof dayData.isOpen === 'boolean' ? dayData.isOpen : Boolean(dayData.isOpen);
+    const openTime = (dayData.openTime || '10:00').trim();
+    const closeTime = (dayData.closeTime || '23:00').trim();
+    const slotDurationMinutes = parseInt(dayData.slotDurationMinutes, 10) || 60;
+
+    normalizedSchedule.push({
+      day: canonical.day,
+      dayIndex: canonical.dayIndex,
+      isOpen,
+      openTime,
+      closeTime,
+      slotDurationMinutes,
+    });
+  }
+
+  if (normalizedSchedule.length !== 7) {
     const err = new Error('Weekly schedule must contain exactly 7 days (Monday to Sunday).');
     err.status = 400;
     throw err;
@@ -50,7 +122,7 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
 
   // Validate time format (HH:mm)
   const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-  for (const day of schedule) {
+  for (const day of normalizedSchedule) {
     if (day.isOpen) {
       if (!timeRegex.test(day.openTime) || !timeRegex.test(day.closeTime)) {
         const err = new Error(`Invalid time format for ${day.day}. Must be HH:mm (24-hour).`);
@@ -60,7 +132,7 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
       const [oH, oM] = day.openTime.split(':').map(Number);
       const [cH, cM] = day.closeTime.split(':').map(Number);
       if (cH * 60 + cM <= oH * 60 + oM) {
-        const err = new Error(`Closing time must be after opening time for ${day.day}.`);
+        const err = new Error(`Closing time must be after opening time for ${day.day} (${day.openTime} to ${day.closeTime}).`);
         err.status = 400;
         throw err;
       }
@@ -71,9 +143,28 @@ export async function updateWeeklyOperatingHours({ schedule, updatedBy }) {
     { key: 'operating_hours_weekly' },
     {
       key: 'operating_hours_weekly',
-      value: schedule,
+      value: normalizedSchedule,
       category: 'HOURS',
       description: 'Admin-configured weekly operating schedule for each weekday',
+      updatedBy: updatedBy || null,
+    },
+    { upsert: true, new: true }
+  );
+
+  // Synchronize legacy operating_hours setting as well
+  const mondayEntry = normalizedSchedule.find((d) => d.dayIndex === 1) || normalizedSchedule[0];
+  await Setting.findOneAndUpdate(
+    { key: 'operating_hours' },
+    {
+      key: 'operating_hours',
+      value: {
+        openTime: mondayEntry.openTime || '10:00',
+        closeTime: mondayEntry.closeTime || '23:00',
+        slotDurationMinutes: mondayEntry.slotDurationMinutes || 60,
+        allowCustomDuration: true,
+      },
+      category: 'HOURS',
+      description: 'Default operating hours',
       updatedBy: updatedBy || null,
     },
     { upsert: true, new: true }

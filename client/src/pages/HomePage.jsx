@@ -241,9 +241,15 @@ export const HomePage = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {devices.map((device) => {
-            const devicePricing = pricingRules.find(
-              (p) => p.deviceType === device.deviceType || p.device === device._id
-            );
+            // Find authoritative standard rate for this device (excluding game-specific/exclusive rates like GTA 6)
+            const devicePricing =
+              pricingRules.find(
+                (p) =>
+                  (p.device === device._id || p.deviceType === device.deviceType) &&
+                  !p.game &&
+                  p.billingType === (device.deviceType === 'POOL' ? 'PER_DEVICE_HOURLY' : 'PER_PLAYER_HOURLY')
+              ) ||
+              pricingRules.find((p) => (p.device === device._id || p.deviceType === device.deviceType) && !p.game);
             const rateRupees = devicePricing ? devicePricing.amount / 100 : device.deviceType === 'POOL' ? 150 : 70;
 
             return (

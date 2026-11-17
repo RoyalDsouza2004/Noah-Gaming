@@ -38,7 +38,7 @@ export const PushNotificationSettings = ({ compact = false }) => {
 
   return (
     <div
-      className={`rounded-2xl border border-white/10 bg-gradient-to-br from-[#1a1217] via-[#140e13] to-[#0d090c] p-5 sm:p-6 shadow-xl ${
+      className={`push-settings-card rounded-2xl border border-white/10 bg-gradient-to-br from-[#1a1217] via-[#140e13] to-[#0d090c] p-5 sm:p-6 shadow-xl ${
         compact ? 'text-sm' : ''
       }`}
     >
@@ -125,7 +125,7 @@ export const PushNotificationSettings = ({ compact = false }) => {
 
       {/* Device Info & Active Counts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-        <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
+        <div className="push-device-card p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-300">
             <Laptop className="w-4 h-4" />
           </div>
@@ -137,7 +137,7 @@ export const PushNotificationSettings = ({ compact = false }) => {
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
+        <div className="push-device-card p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-300">
             <Smartphone className="w-4 h-4" />
           </div>

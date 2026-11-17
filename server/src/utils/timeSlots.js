@@ -68,20 +68,41 @@ export function formatISTDate(date) {
 
 /**
  * Retrieves configured operating hours
+ * Checks weekly schedule first, then legacy operating_hours setting, then default
  */
-export async function getOperatingHours() {
+export async function getOperatingHours(dateStr = null) {
+  try {
+    const weeklySetting = await Setting.findOne({ key: 'operating_hours_weekly' });
+    if (weeklySetting && Array.isArray(weeklySetting.value) && weeklySetting.value.length === 7) {
+      const targetDate = dateStr ? new Date(`${dateStr}T12:00:00+05:30`) : new Date();
+      const dayIndex = targetDate.getDay(); // 0 is Sunday, 1 is Monday...
+      const canonicalIndex = dayIndex === 0 ? 6 : dayIndex - 1; // 0=Mon, 1=Tue, ..., 6=Sun
+      const dayData = weeklySetting.value[canonicalIndex];
+      if (dayData) {
+        return {
+          openTime: dayData.openTime || '10:00',
+          closeTime: dayData.closeTime || '23:00',
+          slotDurationMinutes: 60,
+          isOpen: dayData.isOpen !== false,
+        };
+      }
+    }
+  } catch (e) {}
+
   const setting = await Setting.findOne({ key: 'operating_hours' });
   if (setting && setting.value) {
     return {
       openTime: setting.value.openTime || '10:00',
       closeTime: setting.value.closeTime || '23:00',
       slotDurationMinutes: setting.value.slotDurationMinutes || 60,
+      isOpen: setting.value.isOpen !== false,
     };
   }
   return {
     openTime: '10:00',
     closeTime: '23:00',
     slotDurationMinutes: 60,
+    isOpen: true,
   };
 }
 
@@ -103,7 +124,10 @@ export async function generateDailySlots(dateStr, durationHours = 1, effectiveSc
     openTime = effectiveSchedule.openTime;
     closeTime = effectiveSchedule.closeTime;
   } else {
-    const hours = await getOperatingHours();
+    const hours = await getOperatingHours(dateStr);
+    if (hours.isOpen === false) {
+      return [];
+    }
     openTime = hours.openTime;
     closeTime = hours.closeTime;
   }

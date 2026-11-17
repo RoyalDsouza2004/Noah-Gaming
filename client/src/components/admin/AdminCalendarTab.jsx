@@ -30,6 +30,9 @@ export const AdminCalendarTab = ({ devices }) => {
   const [viewMode, setViewMode] = useState('daily'); // 'daily' or 'weekly'
   const [loading, setLoading] = useState(false);
   const [timelineData, setTimelineData] = useState([]);
+  const [operatingSlots, setOperatingSlots] = useState(OPERATING_HOURS);
+  const [effectiveSchedule, setEffectiveSchedule] = useState(null);
+  const [conflictingBookings, setConflictingBookings] = useState([]);
   const [error, setError] = useState('');
   const [selectedSlotDetails, setSelectedSlotDetails] = useState(null);
 
@@ -41,6 +44,11 @@ export const AdminCalendarTab = ({ devices }) => {
       const res = await bookingApi.getCalendarTimeline(`date=${selectedDate}&view=${viewMode}`);
       if (res.success && res.data) {
         setTimelineData(res.data.timeline || []);
+        if (Array.isArray(res.data.operatingSlots)) {
+          setOperatingSlots(res.data.operatingSlots);
+        }
+        setEffectiveSchedule(res.data.effectiveSchedule || null);
+        setConflictingBookings(res.data.conflictingBookings || []);
       }
     } catch (err) {
       setError(err.message || 'Failed to fetch timeline data');
@@ -217,88 +225,115 @@ export const AdminCalendarTab = ({ devices }) => {
         </div>
       )}
 
-      {/* Timeline Grid (Devices columns, Hours rows) */}
-      <div className="rounded-xl border border-slate-800 bg-[#171014] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                <th className="py-3 px-4 w-28 border-r border-slate-800">Time (IST)</th>
-                {timelineData.map((t) => (
-                  <th key={t.device.id} className="py-3 px-4 min-w-[200px]">
-                    <div className="flex items-center gap-2">
-                      {t.device.deviceType === 'POOL' ? (
-                        <CircleDot className="w-4 h-4 text-purple-400" />
-                      ) : (
-                        <Gamepad2 className="w-4 h-4 text-[#D7FF00]" />
-                      )}
-                      <div>
-                        <div className="font-bold text-white text-xs">{t.device.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono font-normal">
-                          Max {t.device.capacity} Players • {t.bookingsCount} booking(s)
+      {/* Conflicting Bookings Warning */}
+      {conflictingBookings.length > 0 && (
+        <div className="p-4 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+            <div>
+              <span className="font-bold block text-sm">Operating Hours Conflict Detected</span>
+              <span>{conflictingBookings.length} booking(s) on this date extend past closing time ({effectiveSchedule?.closeTime || 'Closing'}).</span>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-rose-500/20 text-rose-200 uppercase">
+            Action Required
+          </span>
+        </div>
+      )}
+
+      {/* Closed Day Notice */}
+      {effectiveSchedule?.isClosed ? (
+        <div className="p-8 text-center bg-amber-950/20 border border-amber-500/40 rounded-xl text-amber-300 space-y-2">
+          <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
+          <h3 className="font-bold text-base font-heading">NOAH GAMING Lounge Closed on {selectedDate}</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            {effectiveSchedule.reason || 'Closed as per weekly operating hours or holiday schedule.'}
+          </p>
+        </div>
+      ) : (
+        /* Timeline Grid (Devices columns, Hours rows) */
+        <div className="rounded-xl border border-slate-800 bg-[#171014] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                  <th className="py-3 px-4 w-28 border-r border-slate-800">Time (IST)</th>
+                  {timelineData.map((t) => (
+                    <th key={t.device.id} className="py-3 px-4 min-w-[200px]">
+                      <div className="flex items-center gap-2">
+                        {t.device.deviceType === 'POOL' ? (
+                          <CircleDot className="w-4 h-4 text-purple-400" />
+                        ) : (
+                          <Gamepad2 className="w-4 h-4 text-[#D7FF00]" />
+                        )}
+                        <div>
+                          <div className="font-bold text-white text-xs">{t.device.name}</div>
+                          <div className="text-[10px] text-slate-400 font-mono font-normal">
+                            Max {t.device.capacity} Players • {t.bookingsCount} booking(s)
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800 font-mono">
-              {OPERATING_HOURS.map((hourStr) => {
-                const hourNum = parseInt(hourStr.split(':')[0], 10);
-                const nextHourStr = `${hourNum + 1 < 10 ? '0' : ''}${hourNum + 1}:00`;
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 font-mono">
+                {operatingSlots.map((hourStr) => {
+                  const hourNum = parseInt(hourStr.split(':')[0], 10);
+                  const nextHourStr = `${hourNum + 1 < 10 ? '0' : ''}${hourNum + 1}:00`;
 
-                return (
-                  <tr key={hourStr} className="hover:bg-slate-900/30 transition-colors">
-                    <td className="py-2.5 px-4 text-slate-400 font-semibold border-r border-slate-800 whitespace-nowrap bg-slate-950/40 text-[11px]">
-                      {hourStr} - {nextHourStr}
-                    </td>
+                  return (
+                    <tr key={hourStr} className="hover:bg-slate-900/30 transition-colors">
+                      <td className="py-2.5 px-4 text-slate-400 font-semibold border-r border-slate-800 whitespace-nowrap bg-slate-950/40 text-[11px]">
+                        {hourStr} - {nextHourStr}
+                      </td>
 
-                    {timelineData.map((devTimeline) => {
-                      const slotState = getSlotStateForDevice(devTimeline, hourStr);
+                      {timelineData.map((devTimeline) => {
+                        const slotState = getSlotStateForDevice(devTimeline, hourStr);
 
-                      return (
-                        <td key={devTimeline.device.id} className="p-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedSlotDetails({
-                                device: devTimeline.device,
-                                timeSlot: `${hourStr} - ${nextHourStr}`,
-                                date: selectedDate,
-                                slotState,
-                              });
-                            }}
-                            className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all flex flex-col justify-between min-h-[56px] ${slotState.color}`}
-                          >
-                            <div className="flex items-center justify-between gap-1 w-full">
-                              <span className="font-bold font-sans text-[11px] truncate">{slotState.label}</span>
-                              {slotState.status === 'AVAILABLE' && (
-                                <span className="text-[9px] text-emerald-400 font-mono">Open</span>
-                              )}
-                            </div>
-
-                            {/* Bookings snippet */}
-                            {slotState.bookings.length > 0 && (
-                              <div className="text-[10px] font-sans truncate text-slate-300 mt-1">
-                                {slotState.bookings.map((b, i) => (
-                                  <span key={b._id || i} className="block truncate">
-                                    • {b.customer?.name || 'Guest'} ({b.numberOfPlayers}p)
-                                  </span>
-                                ))}
+                        return (
+                          <td key={devTimeline.device.id} className="p-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedSlotDetails({
+                                  device: devTimeline.device,
+                                  timeSlot: `${hourStr} - ${nextHourStr}`,
+                                  date: selectedDate,
+                                  slotState,
+                                });
+                              }}
+                              className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all flex flex-col justify-between min-h-[56px] ${slotState.color}`}
+                            >
+                              <div className="flex items-center justify-between gap-1 w-full">
+                                <span className="font-bold font-sans text-[11px] truncate">{slotState.label}</span>
+                                {slotState.status === 'AVAILABLE' && (
+                                  <span className="text-[9px] text-emerald-400 font-mono">Open</span>
+                                )}
                               </div>
-                            )}
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+
+                              {/* Bookings snippet */}
+                              {slotState.bookings.length > 0 && (
+                                <div className="text-[10px] font-sans truncate text-slate-300 mt-1">
+                                  {slotState.bookings.map((b, i) => (
+                                    <span key={b._id || i} className="block truncate">
+                                      • {b.customer?.name || 'Guest'} ({b.numberOfPlayers}p)
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ---------------- MODAL: SLOT INSPECTOR ---------------- */}
       {selectedSlotDetails && (

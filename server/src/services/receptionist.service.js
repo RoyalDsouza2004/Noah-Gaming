@@ -16,6 +16,7 @@ import { formatISTDate, formatISTTime } from '../utils/timeSlots.js';
 import { calculateRevenueMetrics } from './revenue.service.js';
 import { sendPaymentSuccessEmail } from './email.service.js';
 import { getCustomerMembershipQuota } from './membership.service.js';
+import { scheduleService } from './schedule.service.js';
 export { getCustomerMembershipQuota };
 
 /**
@@ -919,13 +920,30 @@ export async function previewSessionExtension({
   const newEndAt = new Date(previousEndAt.getTime() + parsedDuration * 3600 * 1000);
   const newEndTime = formatISTTime(newEndAt);
 
-  // Check closing hours (Lounge closes at 23:00 IST)
+  // Check closing hours dynamically from schedule service
   let exceedsClosingHours = false;
   let closingHoursWarning = null;
-  const [endHour, endMin] = newEndTime.split(':').map(Number);
-  if (endHour > 23 || (endHour === 23 && endMin > 0)) {
-    exceedsClosingHours = true;
-    closingHoursWarning = 'Cannot extend session beyond lounge operating hours (Closes at 23:00 IST).';
+  const bookingDateStr = booking.bookingDate || formatISTDate(newEndAt);
+  let effectiveCloseTime = '23:00';
+  try {
+    const effectiveDay = await scheduleService.getEffectiveDaySchedule(bookingDateStr);
+    if (effectiveDay.isClosed) {
+      exceedsClosingHours = true;
+      closingHoursWarning = `Cannot extend session: Lounge is closed on ${bookingDateStr} (${effectiveDay.reason || 'Closed'}).`;
+    } else if (effectiveDay.closeTime) {
+      effectiveCloseTime = effectiveDay.closeTime;
+    }
+  } catch (e) {
+    effectiveCloseTime = '23:00';
+  }
+
+  if (!exceedsClosingHours) {
+    const [closeH, closeM] = effectiveCloseTime.split(':').map(Number);
+    const [endHour, endMin] = newEndTime.split(':').map(Number);
+    if (endHour > closeH || (endHour === closeH && endMin > closeM)) {
+      exceedsClosingHours = true;
+      closingHoursWarning = `Cannot extend session beyond lounge operating hours (Closes at ${effectiveCloseTime} IST).`;
+    }
   }
 
   // Check physical device conflict during extension window
@@ -1112,10 +1130,27 @@ export async function extendSession({
   const newEndAt = new Date(previousEndAt.getTime() + parsedDuration * 3600 * 1000);
   const newEndTime = formatISTTime(newEndAt);
 
-  // Check closing hours (Lounge closes at 23:00 IST)
+  // Check closing hours dynamically from schedule service
+  const bookingDateStr = booking.bookingDate || formatISTDate(newEndAt);
+  let effectiveCloseTime = '23:00';
+  try {
+    const effectiveDay = await scheduleService.getEffectiveDaySchedule(bookingDateStr);
+    if (effectiveDay.isClosed) {
+      const err = new Error(`Cannot extend session: Lounge is closed on ${bookingDateStr} (${effectiveDay.reason || 'Closed'}).`);
+      err.status = 400;
+      throw err;
+    } else if (effectiveDay.closeTime) {
+      effectiveCloseTime = effectiveDay.closeTime;
+    }
+  } catch (e) {
+    if (e.status) throw e;
+    effectiveCloseTime = '23:00';
+  }
+
+  const [closeH, closeM] = effectiveCloseTime.split(':').map(Number);
   const [endHour, endMin] = newEndTime.split(':').map(Number);
-  if (endHour > 23 || (endHour === 23 && endMin > 0)) {
-    const err = new Error('Cannot extend session beyond lounge operating hours (Closes at 23:00 IST).');
+  if (endHour > closeH || (endHour === closeH && endMin > closeM)) {
+    const err = new Error(`Cannot extend session beyond lounge operating hours (Closes at ${effectiveCloseTime} IST).`);
     err.status = 400;
     throw err;
   }

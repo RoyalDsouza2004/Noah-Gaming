@@ -540,6 +540,30 @@ html.light .profile-session-card p {
   color: #414858 !important;
 }
 
+/* Push Notification Card in Profile */
+html.light .push-settings-card {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 2px 10px -2px rgba(23, 25, 35, 0.05) !important;
+}
+html.light .push-settings-card h3 {
+  color: #171923 !important;
+}
+html.light .push-settings-card p {
+  color: #414858 !important;
+}
+html.light .push-device-card {
+  background-color: #F8F9FC !important;
+  border-color: #E2E5EC !important;
+}
+html.light .push-device-card div[class*="text-white"] {
+  color: #171923 !important;
+}
+html.light .push-device-card div[class*="text-gray-400"] {
+  color: #626B7A !important;
+}
+
 /* Booking Station Selection Cards (Unselected & Selected) */
 html.light .booking-station-card {
   background-color: #FFFFFF !important;
@@ -555,6 +579,11 @@ html.light .booking-station-card h4 {
 }
 html.light .booking-station-card p {
   color: #414858 !important;
+}
+html.light .booking-station-card .bg-slate-800 {
+  background-color: #F0F2F6 !important;
+  color: #414858 !important;
+  border: 1px solid #E2E5EC !important;
 }
 html.light .booking-station-card.bg-\[\#171014\],
 html.light .booking-station-card[class*="border-[#851B2B]"] {
@@ -579,8 +608,23 @@ html.light .booking-quote-summary span.text-white,
 html.light .booking-quote-summary span.font-semibold {
   color: #171923 !important;
 }
+html.light .booking-quote-summary div[class*="bg-slate-950"] {
+  background-color: #F8F9FC !important;
+  border-color: #CDD2DC !important;
+}
 
 /* User Management Filter Card & Main Table */
+html.light .user-management-kpi {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px rgba(23, 25, 35, 0.04) !important;
+}
+html.light .user-management-kpi h3 {
+  color: #171923 !important;
+}
+html.light .user-management-kpi span {
+  color: #414858 !important;
+}
 html.light .user-management-card,
 html.light .user-management-table {
   background-color: #FFFFFF !important;
@@ -613,6 +657,11 @@ html.light .walkin-fee-card span,
 html.light .walkin-fee-card p {
   color: #171923 !important;
 }
+html.light .walkin-fee-card input {
+  background-color: #FFFFFF !important;
+  color: #171923 !important;
+  border-color: #E2E5EC !important;
+}
 
 /* Front Desk Station Status Cards & Sessions Table */
 html.light .station-status-card {
@@ -626,10 +675,18 @@ html.light .station-status-card h4 {
 html.light .station-status-card p {
   color: #414858 !important;
 }
+html.light .station-status-card .bg-slate-800 {
+  background-color: #F0F2F6 !important;
+  color: #171923 !important;
+  border-color: #E2E5EC !important;
+}
 html.light .active-sessions-table-card {
   background-color: #FFFFFF !important;
   border-color: #E2E5EC !important;
   box-shadow: 0 1px 3px rgba(23, 25, 35, 0.04) !important;
+}
+html.light .active-sessions-table-card p {
+  color: #414858 !important;
 }
 
 /* Membership Plans Modal & Header */

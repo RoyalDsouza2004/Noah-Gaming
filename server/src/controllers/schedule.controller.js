@@ -43,9 +43,25 @@ export const getEffectiveDay = async (req, res, next) => {
 export const getAdminWeeklyHours = async (req, res, next) => {
   try {
     const weeklySchedule = await scheduleService.getWeeklyOperatingHours();
+    const scheduleMap = {};
+    for (const d of weeklySchedule) {
+      scheduleMap[d.day.toLowerCase()] = {
+        day: d.day,
+        dayIndex: d.dayIndex,
+        isOpen: d.isOpen,
+        openTime: d.openTime,
+        closeTime: d.closeTime,
+        slotDurationMinutes: d.slotDurationMinutes || 60,
+      };
+    }
     res.status(200).json({
       success: true,
-      data: weeklySchedule,
+      data: {
+        schedule: scheduleMap,
+        weeklySchedule,
+      },
+      schedule: scheduleMap,
+      weeklySchedule,
     });
   } catch (err) {
     next(err);
@@ -60,12 +76,28 @@ export const updateAdminWeeklyHours = async (req, res, next) => {
   try {
     const { schedule } = req.body;
     const updated = await scheduleService.updateWeeklyOperatingHours({
-      schedule,
+      schedule: schedule !== undefined ? schedule : req.body,
       updatedBy: req.user?._id,
     });
+    const scheduleMap = {};
+    for (const d of updated) {
+      scheduleMap[d.day.toLowerCase()] = {
+        day: d.day,
+        dayIndex: d.dayIndex,
+        isOpen: d.isOpen,
+        openTime: d.openTime,
+        closeTime: d.closeTime,
+        slotDurationMinutes: d.slotDurationMinutes || 60,
+      };
+    }
     res.status(200).json({
       success: true,
-      data: updated,
+      data: {
+        schedule: scheduleMap,
+        weeklySchedule: updated,
+      },
+      schedule: scheduleMap,
+      weeklySchedule: updated,
       message: 'Weekly operating hours updated successfully.',
     });
   } catch (err) {

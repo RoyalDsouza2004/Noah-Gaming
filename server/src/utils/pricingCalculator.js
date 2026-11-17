@@ -77,17 +77,27 @@ export async function calculateSessionPrice({
     });
   }
 
-  // 3. For non-exclusive games or Select at Venue on PS5, use the normal PS5 pricing rule
+  // 3. For non-exclusive games or Select at Venue on PS5, use the standard PS5 pricing rule (not game-specific/exclusive)
   if (!pricingRule && device.deviceType === 'PS5') {
-    pricingRule = await Pricing.findOne({ deviceType: 'PS5', status: 'ACTIVE' });
+    pricingRule = await Pricing.findOne({
+      deviceType: 'PS5',
+      game: null,
+      billingType: 'PER_PLAYER_HOURLY',
+      status: 'ACTIVE',
+    }) || await Pricing.findOne({ deviceType: 'PS5', game: null, status: 'ACTIVE' });
   }
 
   // 4. Check device direct match
   if (!pricingRule) {
-    pricingRule = await Pricing.findOne({ device: device._id, status: 'ACTIVE' });
+    pricingRule = await Pricing.findOne({ device: device._id, game: null, status: 'ACTIVE' });
   }
 
-  // 5. Check deviceType match
+  // 5. Check deviceType standard match (excluding game-specific rules)
+  if (!pricingRule) {
+    pricingRule = await Pricing.findOne({ deviceType: device.deviceType, game: null, status: 'ACTIVE' });
+  }
+
+  // 6. Check general deviceType active pricing rule
   if (!pricingRule) {
     pricingRule = await Pricing.findOne({ deviceType: device.deviceType, status: 'ACTIVE' });
   }

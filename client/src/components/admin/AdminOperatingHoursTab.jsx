@@ -96,8 +96,20 @@ export const AdminOperatingHoursTab = () => {
       if (statusRes.success) {
         setOperatingStatus(statusRes.data);
       }
-      if (weeklyRes.success && weeklyRes.data?.schedule) {
-        setWeeklySchedule(weeklyRes.data.schedule);
+      if (weeklyRes.success) {
+        if (weeklyRes.data?.schedule) {
+          setWeeklySchedule(weeklyRes.data.schedule);
+        } else if (Array.isArray(weeklyRes.data?.weeklySchedule)) {
+          const map = {};
+          weeklyRes.data.weeklySchedule.forEach((d) => {
+            map[d.dayOfWeek.toLowerCase()] = {
+              isOpen: d.isOpen !== false,
+              openTime: d.openTime || '10:00',
+              closeTime: d.closeTime || '23:00',
+            };
+          });
+          setWeeklySchedule(map);
+        }
       }
       if (holidaysRes.success && holidaysRes.data?.holidays) {
         setHolidays(holidaysRes.data.holidays);
@@ -163,11 +175,23 @@ export const AdminOperatingHoursTab = () => {
 
     setSavingSchedule(true);
     try {
-      const res = await scheduleApi.updateWeeklyHours(weeklySchedule);
+      // Build canonical array for backend
+      const canonicalSchedule = DAYS_OF_WEEK.map((day) => ({
+        dayOfWeek: day,
+        isOpen: weeklySchedule[day]?.isOpen !== false,
+        openTime: weeklySchedule[day]?.openTime || '10:00',
+        closeTime: weeklySchedule[day]?.closeTime || '23:00',
+      }));
+
+      const res = await scheduleApi.updateWeeklyHours(canonicalSchedule);
       if (res.success) {
         showToast.success('Weekly operating hours updated successfully!');
         setConflictModalOpen(false);
-        loadData();
+        if (res.data?.schedule) {
+          setWeeklySchedule(res.data.schedule);
+        } else {
+          loadData();
+        }
       }
     } catch (err) {
       showToast.error(err.message || 'Failed to update weekly hours.');
