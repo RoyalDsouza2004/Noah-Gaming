@@ -631,8 +631,8 @@ export const HomePage = ({
             <h3 className="text-lg font-bold font-heading text-[#FFF4E8]">Lounge Location</h3>
             <div className="text-xs text-[#C7A5A8] space-y-1">
               <p className="text-[#FFF4E8] font-medium">NOAH GAMING Lounge</p>
-              <p>Mansarovar / Raja Park, Jaipur, Rajasthan</p>
-              <p>Near Metro Station • Ample Parking Available</p>
+              <p>Near Noah Gym, Bailur, karkala</p>
+              <p>Near Miyar town • Parking Available</p>
             </div>
           </div>
 
