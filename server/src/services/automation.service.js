@@ -4,7 +4,7 @@ import GamingSession from '../models/GamingSession.js';
 import Booking from '../models/Booking.js';
 import MembershipSubscription from '../models/MembershipSubscription.js';
 import User from '../models/User.js';
-import { createNotification } from './notification.service.js';
+import { createNotification, cleanupExpiredReadNotifications } from './notification.service.js';
 
 /**
  * Retrieves the global singleton automation configuration from MongoDB
@@ -308,14 +308,15 @@ export async function executeMasterAutomationCycle() {
   }
 
   try {
-    const [timerResults, bookingResults, membershipResults] = await Promise.all([
+    const [timerResults, bookingResults, membershipResults, cleanupResults] = await Promise.all([
       runSessionTimerChecks(settings),
       runBookingReminderChecks(settings),
       runMembershipAlertChecks(settings),
+      cleanupExpiredReadNotifications(72),
     ]);
 
     const durationMs = Date.now() - startTime;
-    const summary = `Timers: ${timerResults.remindersSent} reminders, ${timerResults.expiredSessionsCount} expired; Bookings: ${bookingResults.remindersSent} reminders; Memberships: ${membershipResults.remindersSent} alerts (${durationMs}ms)`;
+    const summary = `Timers: ${timerResults.remindersSent} reminders, ${timerResults.expiredSessionsCount} expired; Bookings: ${bookingResults.remindersSent} reminders; Memberships: ${membershipResults.remindersSent} alerts; Cleanup: ${cleanupResults.deletedCount || 0} expired read notifs (${durationMs}ms)`;
 
     // Log automation execution
     await AutomationLog.create({
@@ -326,6 +327,7 @@ export async function executeMasterAutomationCycle() {
         timerResults,
         bookingResults,
         membershipResults,
+        cleanupResults,
       },
       durationMs,
     });
@@ -336,6 +338,7 @@ export async function executeMasterAutomationCycle() {
       timerResults,
       bookingResults,
       membershipResults,
+      cleanupResults,
     };
   } catch (err) {
     console.error('[Automation Scheduler Error]', err);

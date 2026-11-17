@@ -41,6 +41,15 @@ export async function createNotification({
 }) {
   const resolvedCategory = category || type || 'SYSTEM_ALERT';
 
+  // PART 3 SPECIFIC: Disallow creating "WhatsApp Verified" notifications
+  if (
+    title === 'WhatsApp Verified' ||
+    resolvedCategory === 'WHATSAPP_VERIFIED' ||
+    metadata?.type === 'WHATSAPP_VERIFIED'
+  ) {
+    return { duplicate: false, notification: null, disabled: true };
+  }
+
   // If idempotencyKey provided, prevent sending duplicate notifications
   if (idempotencyKey) {
     const existing = await Notification.findOne({ idempotencyKey });
@@ -114,11 +123,52 @@ export async function createNotification({
 }
 
 /**
+ * Automatically deletes read notifications 3 days (72 hours) after they are marked as read.
+ * Unread notifications (isRead === false or readAt === null) are NEVER deleted.
+ * The retention period begins strictly when the notification was marked as read (readAt), NOT createdAt.
+ */
+export async function cleanupExpiredReadNotifications(retentionHours = 72) {
+  try {
+    const retentionMs = retentionHours * 60 * 60 * 1000;
+    const cutoff = new Date(Date.now() - retentionMs);
+
+    // Find all read notifications whose readAt timestamp is older than or equal to cutoff
+    const filter = {
+      isRead: true,
+      readAt: { $ne: null, $lte: cutoff },
+    };
+
+    const expired = await Notification.find(filter).select('_id').lean();
+    if (!expired || expired.length === 0) {
+      return { deletedCount: 0 };
+    }
+
+    const expiredIds = expired.map((doc) => doc._id);
+
+    // Delete notifications and associated delivery logs atomically
+    const [deleteResult] = await Promise.all([
+      Notification.deleteMany({ _id: { $in: expiredIds } }),
+      NotificationDelivery.deleteMany({ notification: { $in: expiredIds } }),
+    ]);
+
+    return { deletedCount: deleteResult.deletedCount || expiredIds.length };
+  } catch (err) {
+    console.error('[Notification Cleanup Error]', err.message);
+    return { deletedCount: 0, error: err.message };
+  }
+}
+
+/**
  * Fetches notifications for a user (Customer, Receptionist, or Admin)
  */
 export async function getUserNotifications(user, { category, isRead, page = 1, limit = 20 }) {
+  // Automatically trigger read notification cleanup before returning results
+  await cleanupExpiredReadNotifications(72);
+
   const query = {
     $or: [{ recipient: user._id }],
+    // Ensure "WhatsApp Verified" notification is not returned
+    title: { $ne: 'WhatsApp Verified' },
   };
 
   // Receptionist/Admin can also see staff-wide notifications
@@ -132,7 +182,15 @@ export async function getUserNotifications(user, { category, isRead, page = 1, l
   }
 
   if (category && category !== 'ALL') {
+    if (category === 'WHATSAPP_VERIFIED') {
+      return {
+        notifications: [],
+        pagination: { total: 0, unread: 0, page: 1, pages: 0, limit: parseInt(limit, 10) },
+      };
+    }
     query.category = category;
+  } else {
+    query.category = { $ne: 'WHATSAPP_VERIFIED' };
   }
 
   if (isRead !== undefined && isRead !== '' && isRead !== 'all') {
@@ -170,8 +228,13 @@ export async function getUserNotifications(user, { category, isRead, page = 1, l
  * Returns unread count for current user
  */
 export async function getUnreadCount(user) {
+  // Automatically trigger read notification cleanup
+  await cleanupExpiredReadNotifications(72);
+
   const query = {
     isRead: false,
+    title: { $ne: 'WhatsApp Verified' },
+    category: { $ne: 'WHATSAPP_VERIFIED' },
     $or: [{ recipient: user._id }],
   };
 
@@ -189,6 +252,7 @@ export async function getUnreadCount(user) {
 
 /**
  * Marks a notification as read
+ * Prevents repeated read actions from incorrectly resetting the original read timestamp.
  */
 export async function markAsRead(notificationId, user) {
   const query = { _id: notificationId };
@@ -207,15 +271,19 @@ export async function markAsRead(notificationId, user) {
     throw err;
   }
 
-  notification.isRead = true;
-  notification.readAt = new Date();
-  await notification.save();
+  // If already read, do NOT reset readAt (preserve original read timestamp)
+  if (!notification.isRead || !notification.readAt) {
+    notification.isRead = true;
+    notification.readAt = new Date();
+    await notification.save();
+  }
 
   return notification;
 }
 
 /**
  * Marks all notifications as read for current user
+ * Only unread notifications are updated to preserve original read timestamps of already-read notifications.
  */
 export async function markAllAsRead(user) {
   const query = {
@@ -232,8 +300,9 @@ export async function markAllAsRead(user) {
     query.$or.push({ recipientRole: 'admin' });
   }
 
+  const now = new Date();
   const result = await Notification.updateMany(query, {
-    $set: { isRead: true, readAt: new Date() },
+    $set: { isRead: true, readAt: now },
   });
 
   return { modifiedCount: result.modifiedCount };
