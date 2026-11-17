@@ -394,16 +394,242 @@ html.light [class*="bg-white/5"] {
 html.light [class*="from-slate-900"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
 html.light [class*="from-[#1a1217]"],
 html.light [class*="from-rose-950"],
-html.light [class*="from-[#260D17]"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light [class*="via-[#260D17]"],
-html.light [class*="via-[#171014]"],
-html.light [class*="to-[#171014]"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
 html.light [class*="from-[#851B2B]/30"][class*="via-"],
 html.light [class*="from-[#851B2B]/20"][class*="via-"],
 html.light .membership-plan-card {
   background: #FFFFFF !important;
   background-image: none !important;
   border-color: #E2E5EC !important;
+}
+
+/* ------------------------------------------------------------- */
+/* GAME CARDS & GAME DETAILS MODAL (LIGHT THEME ARTWORK FIXES)   */
+/* ------------------------------------------------------------- */
+/* Popular Titles / Game Catalog Cards */
+html.light .game-card-item {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 2px 10px -2px rgba(23, 25, 35, 0.05) !important;
+}
+
+html.light .game-card-item:hover {
+  border-color: #851B2B !important;
+  box-shadow: 0 8px 24px -4px rgba(133, 27, 43, 0.12) !important;
+}
+
+html.light .game-card-item h4 {
+  color: #171923 !important;
+}
+
+html.light .game-card-item p {
+  color: #414858 !important;
+}
+
+/* Ensure Game Artwork is completely visible with rich, non-destructive gradient */
+html.light .game-card-overlay,
+html.light [class*="game-card-overlay"] {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.45) 0%, transparent 45%, rgba(0, 0, 0, 0.15) 100%) !important;
+  background-image: linear-gradient(to top, rgba(0, 0, 0, 0.45) 0%, transparent 45%, rgba(0, 0, 0, 0.15) 100%) !important;
+}
+
+/* Game Details Modal & Hero Banner Artwork */
+html.light #game-details-modal {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 10px 40px -4px rgba(23, 25, 35, 0.15) !important;
+  color: #171923 !important;
+}
+
+html.light .game-details-banner-img {
+  opacity: 0.82 !important;
+  filter: none !important;
+}
+
+html.light .game-details-banner-overlay,
+html.light [class*="game-details-banner-overlay"] {
+  background: linear-gradient(to top, #FFFFFF 0%, rgba(255, 255, 255, 0.45) 50%, rgba(0, 0, 0, 0.2) 100%) !important;
+  background-image: linear-gradient(to top, #FFFFFF 0%, rgba(255, 255, 255, 0.45) 50%, rgba(0, 0, 0, 0.2) 100%) !important;
+}
+
+html.light #game-details-modal h2 {
+  color: #171923 !important;
+}
+
+html.light #game-details-tabs {
+  background-color: #F8F9FC !important;
+  border-color: #E2E5EC !important;
+}
+
+html.light #game-details-tabs button {
+  color: #626B7A !important;
+}
+
+html.light #game-details-tabs button.border-\[\#D7FF00\],
+html.light #game-details-tabs button[class*="border-\[\#D7FF00\]"] {
+  color: #851B2B !important;
+  border-color: #851B2B !important;
+}
+
+html.light #game-details-modal .grid > div {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px rgba(23, 25, 35, 0.04) !important;
+}
+
+html.light #game-details-footer {
+  background-color: #F8F9FC !important;
+  border-color: #E2E5EC !important;
+}
+
+/* GTA 6 Exclusive Suite Showcase Banner */
+html.light #gta6-showcase-banner {
+  background: #FFFDF8 !important;
+  background-image: none !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 4px 20px -2px rgba(23, 25, 35, 0.06) !important;
+}
+html.light #gta6-showcase-banner h3 {
+  color: #171923 !important;
+}
+html.light #gta6-showcase-banner p {
+  color: #414858 !important;
+}
+html.light #gta6-showcase-banner span[class*="bg-[#171014]"] {
+  background-color: #F0F2F6 !important;
+  border-color: #CDD2DC !important;
+  color: #171923 !important;
+}
+
+/* ------------------------------------------------------------- */
+/* CUSTOMER PROFILE, BOOKING & DESK LIGHT MODE COMPONENT STYLES  */
+/* ------------------------------------------------------------- */
+/* Customer Profile Card & Container */
+html.light #customer-profile-card,
+html.light .customer-profile-card {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  color: #171923 !important;
+  box-shadow: 0 4px 24px -2px rgba(23, 25, 35, 0.06) !important;
+}
+
+/* Metric Cards in Customer Profile */
+html.light .profile-metric-card {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px rgba(23, 25, 35, 0.05) !important;
+}
+html.light .profile-metric-card div[class*="text-white"] {
+  color: #171923 !important;
+}
+html.light .profile-metric-card span[class*="font-mono"] {
+  color: #626B7A !important;
+}
+
+/* Account Session & Logout Card in Profile */
+html.light .profile-session-card {
+  background-color: #FFFDF8 !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 2px 8px rgba(23, 25, 35, 0.04) !important;
+}
+html.light .profile-session-card h3 {
+  color: #171923 !important;
+}
+html.light .profile-session-card p {
+  color: #414858 !important;
+}
+
+/* Booking Station Selection Cards (Unselected & Selected) */
+html.light .booking-station-card {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px rgba(23, 25, 35, 0.04) !important;
+}
+html.light .booking-station-card:hover {
+  border-color: #851B2B !important;
+  box-shadow: 0 4px 16px -2px rgba(133, 27, 43, 0.1) !important;
+}
+html.light .booking-station-card h4 {
+  color: #171923 !important;
+}
+html.light .booking-station-card p {
+  color: #414858 !important;
+}
+html.light .booking-station-card.bg-\[\#171014\],
+html.light .booking-station-card[class*="border-[#851B2B]"] {
+  background-color: #FCECEF !important;
+  border-color: #851B2B !important;
+}
+
+/* Booking Summary & Official Quote (Step 4) */
+html.light .booking-quote-summary {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 2px 10px -2px rgba(23, 25, 35, 0.05) !important;
+}
+html.light .booking-quote-summary h4 {
+  color: #171923 !important;
+}
+html.light .booking-quote-summary span {
+  color: #414858 !important;
+}
+html.light .booking-quote-summary span.text-white,
+html.light .booking-quote-summary span.font-semibold {
+  color: #171923 !important;
+}
+
+/* User Management Filter Card & Main Table */
+html.light .user-management-card,
+html.light .user-management-table {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 2px 10px -2px rgba(23, 25, 35, 0.05) !important;
+}
+html.light .user-management-table table thead {
+  background-color: #F8F9FC !important;
+  border-color: #E2E5EC !important;
+  color: #414858 !important;
+}
+html.light .user-management-table table tbody tr {
+  border-color: #E2E5EC !important;
+  background-color: #FFFFFF !important;
+}
+html.light .user-management-table table tbody tr:hover {
+  background-color: #F8F9FC !important;
+}
+html.light .user-management-table table tbody tr td {
+  color: #171923 !important;
+}
+
+/* Front Desk Walk-In Fee Card */
+html.light .walkin-fee-card {
+  background: #FFFDF8 !important;
+  background-image: none !important;
+  border-color: #E2E5EC !important;
+}
+html.light .walkin-fee-card span,
+html.light .walkin-fee-card p {
+  color: #171923 !important;
+}
+
+/* Front Desk Station Status Cards & Sessions Table */
+html.light .station-status-card {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px rgba(23, 25, 35, 0.04) !important;
+}
+html.light .station-status-card h4 {
+  color: #171923 !important;
+}
+html.light .station-status-card p {
+  color: #414858 !important;
+}
+html.light .active-sessions-table-card {
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px rgba(23, 25, 35, 0.04) !important;
 }
 
 /* Membership Plans Modal & Header */

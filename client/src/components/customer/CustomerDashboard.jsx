@@ -280,7 +280,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
   const isMember = customer?.membership?.status === 'ACTIVE';
 
   return (
-    <div id="customer-dashboard-container" className="w-full max-w-6xl mx-auto p-4 sm:p-6 bg-[#0d121d] border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-100 space-y-6 animate-fadeIn">
+    <div id="customer-profile-card" className="customer-profile-card w-full max-w-6xl mx-auto p-4 sm:p-6 bg-[#0d121d] border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-100 space-y-6 animate-fadeIn">
       {/* ---------------- TOP NAVIGATION BAR WITH BACK BUTTON (Phase 5.1 Fix) ---------------- */}
       <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <button
@@ -435,7 +435,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
 
       {/* ---------------- METRICS OVERVIEW CARDS ---------------- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="profile-metric-card p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[11px] uppercase font-mono tracking-wider">Total Gaming Sessions</span>
             <Gamepad2 className="w-4 h-4 text-[#D7FF00]" />
@@ -446,7 +446,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
           <div className="text-[10px] text-slate-500 font-mono">Completed & upcoming</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="profile-metric-card p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[11px] uppercase font-mono tracking-wider">Upcoming Bookings</span>
             <Calendar className="w-4 h-4 text-purple-400" />
@@ -457,7 +457,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
           <div className="text-[10px] text-[#D7FF00] font-mono">Ready to play</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="profile-metric-card p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[11px] uppercase font-mono tracking-wider">Daily Gaming Allowance</span>
             <Clock className="w-4 h-4 text-amber-400" />
@@ -470,7 +470,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="profile-metric-card p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[11px] uppercase font-mono tracking-wider">Total Spent</span>
             <Coins className="w-4 h-4 text-emerald-400" />
@@ -1266,7 +1266,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
           <PushNotificationSettings />
 
           {/* Dedicated Account Session & Logout Section */}
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#260D17]/85 border border-[#851B2B]/50 shadow-xl space-y-4">
+          <div className="profile-session-card p-5 sm:p-6 rounded-2xl bg-[#260D17]/85 border border-[#851B2B]/50 shadow-xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2.5">

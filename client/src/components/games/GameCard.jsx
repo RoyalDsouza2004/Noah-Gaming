@@ -11,7 +11,7 @@ export const GameCard = ({ game, onViewDetails, onBook }) => {
   const metacriticScore = game.ratings?.metacritic?.score;
 
   return (
-    <div className="group relative rounded-2xl bg-[#260D17]/90 border border-[#49202C] hover:border-[#851B2B] transition-all duration-300 hover:shadow-xl hover:shadow-[#851B2B]/20 flex flex-col justify-between overflow-hidden">
+    <div className="game-card-item group relative rounded-2xl bg-[#260D17]/90 border border-[#49202C] hover:border-[#851B2B] transition-all duration-300 hover:shadow-xl hover:shadow-[#851B2B]/20 flex flex-col justify-between overflow-hidden">
       {/* Top Media / Artwork Container */}
       <div className="relative aspect-[16/10] sm:aspect-[4/3] w-full overflow-hidden bg-slate-950">
         {coverUrl ? (
@@ -32,7 +32,7 @@ export const GameCard = ({ game, onViewDetails, onBook }) => {
         )}
 
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#260D17] via-transparent to-black/40" />
+        <div className="game-card-overlay absolute inset-0 bg-gradient-to-t from-[#260D17] via-transparent to-black/40 pointer-events-none" />
 
         {/* Badges in Artwork */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">

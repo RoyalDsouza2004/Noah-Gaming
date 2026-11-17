@@ -415,7 +415,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 <div
                   key={device._id}
                   onClick={() => setSelectedDevice(device)}
-                  className={`p-5 rounded-2xl cursor-pointer transition-all border flex flex-col justify-between ${
+                  className={`booking-station-card p-5 rounded-2xl cursor-pointer transition-all border flex flex-col justify-between ${
                     isSelected
                       ? 'bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/20'
                       : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
@@ -1038,7 +1038,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
             </div>
 
             {/* Price calculation summary */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 space-y-4 flex flex-col justify-between">
+            <div className="booking-quote-summary p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 space-y-4 flex flex-col justify-between">
               <div className="space-y-3">
                 <h4 className="text-sm font-bold text-white font-heading uppercase tracking-wider flex items-center gap-2">
                   <Coins className="w-4 h-4 text-emerald-400" />

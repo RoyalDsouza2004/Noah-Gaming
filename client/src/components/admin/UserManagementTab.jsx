@@ -465,7 +465,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
       </div>
 
       {/* Control Panel: Search & Filters */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-xl space-y-4">
+      <div className="user-management-card p-4 sm:p-5 rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Search Bar */}
           <form onSubmit={handleSearchSubmit} className="relative flex-1">
@@ -584,7 +584,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
       </div>
 
       {/* Main Users Table */}
-      <div className="rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-2xl overflow-hidden">
+      <div className="user-management-table rounded-2xl bg-[#260D17]/80 border border-[#49202C] shadow-2xl overflow-hidden">
         {loading ? (
           <div className="p-16 text-center text-[#C7A5A8]">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#D7FF00] mb-3" />

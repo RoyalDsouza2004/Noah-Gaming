@@ -59,6 +59,7 @@ export const GameDetailsModal = ({ game, isOpen, onClose, onBookGame }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto bg-black/80 backdrop-blur-md animate-fadeIn">
       <div
+        id="game-details-modal"
         className="relative w-full max-w-4xl my-auto rounded-3xl bg-[#171014] border border-[#49202C] shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -68,10 +69,10 @@ export const GameDetailsModal = ({ game, isOpen, onClose, onBookGame }) => {
             <img
               src={backgroundUrl}
               alt={game.name}
-              className="w-full h-full object-cover opacity-45 scale-105 filter blur-[1px]"
+              className="game-details-banner-img w-full h-full object-cover opacity-45 scale-105 filter blur-[1px]"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#171014] via-[#171014]/60 to-transparent" />
+          <div className="game-details-banner-overlay absolute inset-0 bg-gradient-to-t from-[#171014] via-[#171014]/60 to-transparent pointer-events-none" />
 
           {/* Close button */}
           <button
@@ -128,7 +129,7 @@ export const GameDetailsModal = ({ game, isOpen, onClose, onBookGame }) => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-4 sm:px-6 pt-3 border-b border-[#49202C] flex items-center gap-4 bg-[#1e1319] shrink-0">
+        <div id="game-details-tabs" className="px-4 sm:px-6 pt-3 border-b border-[#49202C] flex items-center gap-4 bg-[#1e1319] shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
@@ -380,7 +381,7 @@ export const GameDetailsModal = ({ game, isOpen, onClose, onBookGame }) => {
         </div>
 
         {/* Action Footer */}
-        <div className="p-4 sm:p-5 border-t border-[#49202C] bg-[#1e1319] flex items-center justify-between gap-3 shrink-0">
+        <div id="game-details-footer" className="p-4 sm:p-5 border-t border-[#49202C] bg-[#1e1319] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}

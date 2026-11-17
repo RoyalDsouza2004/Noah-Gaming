@@ -845,7 +845,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                   return (
                     <div
                       key={dev.deviceId || dev.deviceCode}
-                      className={`relative p-5 rounded-2xl border transition-all ${
+                      className={`station-status-card relative p-5 rounded-2xl border transition-all ${
                         dev.status === 'MAINTENANCE'
                           ? 'bg-amber-950/20 border-amber-500/40'
                           : currentSession
@@ -994,14 +994,14 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
               </div>
 
               {activeSessions.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center">
+                <div className="active-sessions-table-card p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center">
                   <Tv className="w-10 h-10 text-slate-600 mx-auto mb-2" />
                   <p className="text-sm font-semibold text-slate-300">No active gaming sessions right now</p>
                   <p className="text-xs text-slate-500 mt-1">Walk-in customers or checked-in reservations will show up here</p>
                 </div>
               ) : (
                 <>
-                  <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
+                  <div className="active-sessions-table-card overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
                     <table className="w-full text-left text-xs">
                     <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
                       <tr>
@@ -1559,7 +1559,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
               </div>
 
               {/* Step 5: Price Summary & Payment Collection */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-[#851B2B]/20 to-[#260D17] border border-[#49202C] space-y-4">
+              <div className="walkin-fee-card p-4 rounded-xl bg-gradient-to-r from-[#851B2B]/20 to-[#260D17] border border-[#49202C] space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs text-slate-300">Total Calculated Booking Fee</span>

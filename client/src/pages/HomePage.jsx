@@ -325,7 +325,7 @@ export const HomePage = ({
       {/* 4. EXCLUSIVE GTA 6 PRIVATE SUITE SHOWCASE                 */}
       {/* ========================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#260D17] via-[#171014] to-[#260D17] border border-[#851B2B]/60 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        <div id="gta6-showcase-banner" className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#260D17] via-[#171014] to-[#260D17] border border-[#851B2B]/60 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-[#851B2B]/15 blur-3xl pointer-events-none rounded-full" />
 
           <div className="space-y-3 relative z-10">
