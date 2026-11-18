@@ -1250,7 +1250,6 @@ export async function extendSession({
       const paidAmountRupees = Math.round(paidDurationHours * standardUnitCostRupees * 100) / 100;
       additionalAmountPaise = Math.round(paidAmountRupees * 100);
     }
-  }
 
     // Record MembershipUsage for the free hours consumed
     if (freeHoursApplied > 0) {
