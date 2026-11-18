@@ -33,6 +33,33 @@ import {
   Crown,
 } from 'lucide-react';
 
+export const isGameMultiplayer = (game) => {
+  if (!game) return false;
+  if (game.isExclusive) return false; // Exclusive titles like GTA 6 have their own private console lock
+  if (game.bookingMode === 'PRIVATE_ONLY') return false;
+  if (game.bookingMode === 'SHARED') return true;
+
+  // Single player check: if maximum supported players is 1, it is strictly single player
+  const maxP = game.maxPlayers || 1;
+  const localP = game.localPlayersSupported || 1;
+  if (maxP <= 1 && localP <= 1) {
+    return false;
+  }
+
+  // If game supports multiple local/couch or shared players
+  if (maxP > 1 || localP > 1) {
+    return true;
+  }
+
+  if (game.multiplayer) {
+    if (game.multiplayer.localCoop || game.multiplayer.splitScreen) return true;
+    if (game.multiplayer.maxOfflineMultiplayerPlayers && game.multiplayer.maxOfflineMultiplayerPlayers > 1) return true;
+    if (game.multiplayer.maxOnlinePlayers && game.multiplayer.maxOnlinePlayers > 1) return true;
+  }
+
+  return false;
+};
+
 export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, onClose }) => {
   const { user, isAuthenticated, openLoginModal } = useAuth();
 
@@ -228,7 +255,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     if (selectedGame && !isVenueSelection) {
       if (selectedGame.bookingMode === 'PRIVATE_ONLY' || selectedGame.isExclusive) {
         setBookingType('PRIVATE');
-      } else if (selectedGame.bookingMode === 'SHARED') {
+      } else if (isGameMultiplayer(selectedGame) || selectedGame.bookingMode === 'SHARED') {
         setBookingType('SHARED');
       }
     }
@@ -652,15 +679,15 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                         className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
                           isExclusive || game.bookingMode === 'PRIVATE_ONLY'
                             ? 'bg-amber-500/20 text-amber-300'
-                            : game.bookingMode === 'SHARED'
+                            : isGameMultiplayer(game) || game.bookingMode === 'SHARED'
                             ? 'bg-blue-500/20 text-blue-300'
                             : 'bg-emerald-500/20 text-emerald-300'
                         }`}
                       >
                         {isExclusive || game.bookingMode === 'PRIVATE_ONLY'
                           ? 'Private Only'
-                          : game.bookingMode === 'SHARED'
-                          ? 'Shared Only'
+                          : isGameMultiplayer(game) || game.bookingMode === 'SHARED'
+                          ? 'Shared Seats'
                           : 'Shared/Private'}
                       </span>
                     </div>
@@ -778,11 +805,11 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     Console Lock
                   </span>
                 </div>
-              ) : selectedGame?.bookingMode === 'SHARED' ? (
+              ) : isGameMultiplayer(selectedGame) || selectedGame?.bookingMode === 'SHARED' ? (
                 <div className="py-2.5 px-3 rounded-lg bg-blue-950/50 border border-blue-500/40 text-[11px] text-blue-300 font-bold flex items-center justify-between">
-                  <span>Shared Session Only</span>
+                  <span>Shared Session (Reserve Seats)</span>
                   <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">
-                    Shared Slots
+                    Multiplayer Seats
                   </span>
                 </div>
               ) : (
@@ -894,7 +921,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           )}
                           {slot.status === 'FULL' && (
                             <span className="text-[10px] font-semibold text-rose-400">
-                              {slot.hasPrivateBooking ? 'Private Session' : 'Full (4/4)'}
+                              {slot.hasPrivateBooking ? 'Private Session' : 'Full Capacity'}
                             </span>
                           )}
                           {slot.status === 'MAINTENANCE' && (
@@ -1118,6 +1145,36 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           <span>Standard Amount:</span>
                           <span className="line-through text-slate-400 dark:text-slate-500">₹{pricingQuote.standardAmountRupees}</span>
                         </div>
+                        {numberOfPlayers > 1 && pricingQuote.pricingRule?.billingType === 'PER_PLAYER_HOURLY' ? (
+                          <div className="p-2 my-1 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-[11px] space-y-1 text-slate-700 dark:text-amber-200">
+                            <div className="flex justify-between font-medium">
+                              <span>• Member (Player 1):</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                ₹{pricingQuote.memberBreakdown?.memberAmountRupees ?? 0} ({membershipBenefit.freeHoursApplied || 1}h free)
+                              </span>
+                            </div>
+                            <div className="flex justify-between font-medium">
+                              <span>• {numberOfPlayers - 1} Extra Player(s):</span>
+                              <span className="font-bold">
+                                ₹{pricingQuote.memberBreakdown?.additionalPlayersAmountRupees ?? ((numberOfPlayers - 1) * (pricingQuote.pricingRule?.ratePerUnitRupees || 70) * duration)}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-slate-500 dark:text-amber-300/70 pt-0.5">
+                              *Membership benefit covers 1 eligible player only.
+                            </div>
+                          </div>
+                        ) : duration > 1 ? (
+                          <div className="p-2 my-1 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-[11px] space-y-1 text-slate-700 dark:text-amber-200">
+                            <div className="flex justify-between font-medium">
+                              <span>• First Qualifying Hour:</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹0 (Free)</span>
+                            </div>
+                            <div className="flex justify-between font-medium">
+                              <span>• Additional {duration - 1} Hour(s):</span>
+                              <span className="font-bold">₹{pricingQuote.totalAmountRupees}</span>
+                            </div>
+                          </div>
+                        ) : null}
                         <div className="flex justify-between text-emerald-700 dark:text-emerald-400 text-[11px]">
                           <span>Membership Benefit ({membershipBenefit.planName}):</span>
                           <span>-₹{membershipBenefit.discountRupees}</span>

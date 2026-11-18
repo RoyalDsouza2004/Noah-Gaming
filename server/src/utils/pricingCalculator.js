@@ -176,31 +176,39 @@ export async function calculateSessionPrice({
 
       if (membershipCoverage && membershipCoverage.covered) {
         const discountPct = membershipCoverage.plan.discountPercentage || 100;
+        const isPerPlayer = pricingRule.billingType === 'PER_PLAYER_HOURLY';
 
         if (membershipCoverage.freeHourAvailable) {
           // Apply free hours: plan dailyUsageLimit defines free minutes
-          const freeLimitMins = membershipCoverage.plan.dailyUsageLimit || 60;
+          const freeLimitMins = membershipCoverage.freeMinutesAvailable !== undefined
+            ? membershipCoverage.freeMinutesAvailable
+            : (membershipCoverage.plan.dailyUsageLimit || 60);
           freeHoursApplied = Math.min(hours, freeLimitMins / 60);
 
-          // Calculate discount: free hours * rate
-          if (pricingRule.billingType === 'PER_PLAYER_HOURLY') {
-            membershipDiscountPaise = Math.round(pricingRule.amount * freeHoursApplied * players);
+          // BUSINESS RULE: Free-hour entitlement applies to ONE eligible player only (1 player), NOT all players!
+          if (isPerPlayer) {
+            // Free hour benefit strictly applies to the single membership holder (1 player)
+            membershipDiscountPaise = Math.round(pricingRule.amount * freeHoursApplied * 1);
           } else {
+            // PER_DEVICE_HOURLY (e.g. Pool Table) or FIXED_SESSION applies to station
             membershipDiscountPaise = Math.round(pricingRule.amount * freeHoursApplied);
           }
 
-          // Apply percentage discount on top of free hour discount
-          if (discountPct < 100) {
-            const remainingPaise = Math.max(0, totalAmountPaise - membershipDiscountPaise);
-            membershipDiscountPaise += Math.round(remainingPaise * (discountPct / 100));
+          // Apply percentage discount on top of free hour discount if plan provides partial coverage (discountPct < 100)
+          // Any additional percentage discount only applies to the member's remaining portion
+          if (discountPct < 100 && discountPct > 0) {
+            const memberBaseSharePaise = isPerPlayer ? Math.round(pricingRule.amount * hours) : totalAmountPaise;
+            const remainingMemberPaise = Math.max(0, memberBaseSharePaise - membershipDiscountPaise);
+            membershipDiscountPaise += Math.round(remainingMemberPaise * (discountPct / 100));
           }
 
           payableAmountPaise = Math.max(0, totalAmountPaise - membershipDiscountPaise);
-          membershipApplied = true;
+          membershipApplied = membershipDiscountPaise > 0;
         } else {
-          // No free hours but percentage discount may still apply
+          // No free hours but percentage discount may still apply to the member's share
           if (discountPct > 0) {
-            membershipDiscountPaise = Math.round(totalAmountPaise * (discountPct / 100));
+            const memberBaseSharePaise = isPerPlayer ? Math.round(pricingRule.amount * hours) : totalAmountPaise;
+            membershipDiscountPaise = Math.round(memberBaseSharePaise * (discountPct / 100));
             payableAmountPaise = Math.max(0, totalAmountPaise - membershipDiscountPaise);
             membershipApplied = discountPct > 0;
           }
@@ -219,6 +227,14 @@ export async function calculateSessionPrice({
       console.warn('[Membership Pricing Check Error]:', membershipErr.message);
     }
   }
+
+  const isPerPlayerPricing = pricingRule.billingType === 'PER_PLAYER_HOURLY';
+  const memberCostPaise = isPerPlayerPricing
+    ? Math.max(0, Math.round(pricingRule.amount * hours) - membershipDiscountPaise)
+    : payableAmountPaise;
+  const additionalPlayersCostPaise = isPerPlayerPricing
+    ? Math.round(pricingRule.amount * hours * Math.max(0, players - 1))
+    : 0;
 
   return {
     pricingRule: {
@@ -241,6 +257,19 @@ export async function calculateSessionPrice({
     totalAmountRupees: payableAmountPaise / 100,
     payableAmountPaise,
     payableAmountRupees: payableAmountPaise / 100,
+    // Per-player entitlement breakdown
+    memberBreakdown: {
+      eligiblePlayerCount: 1,
+      additionalPlayersCount: Math.max(0, players - 1),
+      memberAmountRupees: memberCostPaise / 100,
+      additionalPlayersAmountRupees: additionalPlayersCostPaise / 100,
+      perPlayerRateRupees: pricingRule.amount / 100,
+      freeHoursApplied,
+      discountRupees: membershipDiscountPaise / 100,
+      breakdownMessage: isPerPlayerPricing && players > 1 && membershipApplied
+        ? `Member (1 player): ₹${(memberCostPaise / 100).toFixed(0)} (${freeHoursApplied}h free) + ${players - 1} extra player(s): ₹${(additionalPlayersCostPaise / 100).toFixed(0)}`
+        : null,
+    },
     // Membership breakdown
     membershipBenefit: {
       applied: membershipApplied,
@@ -251,6 +280,8 @@ export async function calculateSessionPrice({
       paidMinutes: Math.max(0, durationMinutes - Math.round(freeHoursApplied * 60)),
       discountPaise: membershipDiscountPaise,
       discountRupees: membershipDiscountPaise / 100,
+      coveredPlayerCount: 1,
+      chargeablePlayerCount: Math.max(0, players - 1),
       isFullyCovered: payableAmountPaise === 0 && membershipApplied,
       hasMembership: Boolean(membershipCoverage?.plan),
       freeHourAvailable: membershipCoverage?.freeHourAvailable ?? null,

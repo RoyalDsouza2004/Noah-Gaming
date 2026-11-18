@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { bookingApi } from '../../api/booking.js';
 import { paymentApi } from '../../api/payment.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -66,6 +67,22 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
   const pageSize = 5;
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookingToCancel, setBookingToCancel] = useState(null);
+
+  // Lock body scroll and handle Escape key while booking details modal is open
+  useEffect(() => {
+    if (selectedBooking) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setSelectedBooking(null);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [selectedBooking]);
   const [actionSuccess, setActionSuccess] = useState('');
   const [actionError, setActionError] = useState('');
 
@@ -362,62 +379,74 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
         />
       </div>
 
-      {/* Details Modal */}
-      {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-md p-6 bg-[#260D17] border border-slate-700 rounded-2xl shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-bold font-heading text-white">Booking Details</h3>
-              <button onClick={() => setSelectedBooking(null)} className="p-1 rounded text-slate-400 hover:text-white">
+      {/* Details Modal (Portaled to document.body for reliable viewport centering) */}
+      {selectedBooking && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedBooking(null);
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative w-full max-w-md my-auto p-5 sm:p-6 bg-white dark:bg-[#260D17] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl space-y-4 text-slate-900 dark:text-white max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-base font-bold font-heading text-slate-900 dark:text-white">Booking Details</h3>
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+                title="Close dialog"
+                aria-label="Close"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Booking ID:</span>
-                <span className="text-[#D7FF00] font-bold">{selectedBooking.bookingId}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Booking ID:</span>
+                <span className="text-[#851B2B] dark:text-[#D7FF00] font-bold">{selectedBooking.bookingId}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Status:</span>
-                <span className="text-emerald-400 font-bold">{selectedBooking.bookingStatus}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Status:</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">{selectedBooking.bookingStatus}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Payment Status:</span>
-                <span className="text-amber-400 font-bold">{selectedBooking.paymentStatus}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Payment Status:</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">{selectedBooking.paymentStatus}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Station:</span>
-                <span className="text-white font-sans">{selectedBooking.device?.name}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Station:</span>
+                <span className="text-slate-900 dark:text-white font-sans font-medium">{selectedBooking.device?.name}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Date:</span>
-                <span className="text-white">{selectedBooking.bookingDate}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Date:</span>
+                <span className="text-slate-900 dark:text-white">{selectedBooking.bookingDate}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Time Interval (IST):</span>
-                <span className="text-white">
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Time Interval (IST):</span>
+                <span className="text-slate-900 dark:text-white font-medium">
                   {formatBookingTimeRange(selectedBooking)} ({selectedBooking.duration}h)
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Mode:</span>
-                <span className="text-purple-400">{selectedBooking.bookingType}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Mode:</span>
+                <span className="text-purple-600 dark:text-purple-400 font-semibold">{selectedBooking.bookingType}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Number of Players:</span>
-                <span className="text-white">{selectedBooking.numberOfPlayers}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Number of Players:</span>
+                <span className="text-slate-900 dark:text-white font-bold">{selectedBooking.numberOfPlayers}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Total Price:</span>
-                <span className="text-emerald-400 font-bold">₹{selectedBooking.totalAmount / 100}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Total Price:</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹{selectedBooking.totalAmount / 100}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400 font-sans">Amount Paid:</span>
-                <span className="text-emerald-300">₹{(selectedBooking.amountPaid || 0) / 100}</span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-sans">Amount Paid:</span>
+                <span className="text-emerald-700 dark:text-emerald-300">₹{(selectedBooking.amountPaid || 0) / 100}</span>
               </div>
               {selectedBooking.balanceRemaining > 0 && (
-                <div className="flex justify-between py-1 text-sm font-sans font-bold text-amber-300">
+                <div className="flex justify-between py-1 text-sm font-sans font-bold text-amber-600 dark:text-amber-300">
                   <span>Balance Due:</span>
                   <span className="font-mono">₹{selectedBooking.balanceRemaining / 100}</span>
                 </div>
@@ -433,7 +462,7 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
                     setActiveReceiptBookingId(selectedBooking._id);
                     setSelectedBooking(null);
                   }}
-                  className="px-4 py-2 bg-[#851B2B]/25 text-[#FFF4E8] rounded-lg text-xs font-semibold"
+                  className="px-4 py-2 bg-[#851B2B]/15 hover:bg-[#851B2B]/25 text-[#851B2B] dark:text-[#FFF4E8] rounded-xl text-xs font-semibold border border-[#851B2B]/30 transition-colors"
                 >
                   View Receipt
                 </button>
@@ -441,20 +470,21 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
               {selectedBooking.bookingStatus === 'CONFIRMED' && (
                 <button
                   onClick={() => handleCancelBooking(selectedBooking._id, selectedBooking.bookingId)}
-                  className="px-4 py-2 bg-rose-500/20 text-rose-300 rounded-lg text-xs font-semibold"
+                  className="px-4 py-2 bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 rounded-xl text-xs font-semibold border border-rose-200 dark:border-rose-500/30 transition-colors"
                 >
                   Cancel Booking
                 </button>
               )}
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-xs font-semibold transition-colors"
               >
                 Close
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Digital Receipt Modal (Phase 4) */}

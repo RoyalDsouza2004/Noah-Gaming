@@ -851,16 +851,8 @@ export async function checkMembershipBookingCoverage({
     };
   }
 
-  // 6. Check Continuous Session Duration Cap
+  // 6. Check Daily Usage Limit & Bookings per Day for the requested date
   const requestedDurationMinutes = durationHours * 60;
-  if (plan.maximumSessionDuration && requestedDurationMinutes > plan.maximumSessionDuration) {
-    return {
-      covered: false,
-      reason: `Requested duration (${durationHours}h) exceeds the maximum continuous session limit of ${plan.maximumSessionDuration / 60}h allowed under '${plan.name}'.`,
-    };
-  }
-
-  // 7. Check Daily Usage Limit & Bookings per Day for the requested date
   const dayUsages = await MembershipUsage.find({
     customer: customer._id,
     usageDate: bookingDate,
@@ -875,24 +867,19 @@ export async function checkMembershipBookingCoverage({
   }
 
   const minutesAlreadyUsed = dayUsages.reduce((sum, u) => sum + (u.duration || 0), 0);
-  if (plan.dailyUsageLimit && plan.dailyUsageLimit > 0) {
-    if (minutesAlreadyUsed + requestedDurationMinutes > plan.dailyUsageLimit) {
-      const remainingMinutes = Math.max(0, plan.dailyUsageLimit - minutesAlreadyUsed);
-      return {
-        covered: false,
-        reason: `Daily gaming allowance exceeded. Plan allows ${plan.dailyUsageLimit / 60}h/day (${remainingMinutes} mins remaining on ${bookingDate}).`,
-      };
-    }
-  }
+  const dailyUsageLimitMins = plan.dailyUsageLimit || 60; // default 1 hour
+  const remainingAllowanceMinutes = plan.dailyUsageLimit
+    ? Math.max(0, dailyUsageLimitMins - minutesAlreadyUsed)
+    : 9999;
 
-  // 8. Check if free-hour entitlement is available today (atomic check via MembershipEntitlement)
+  // 7. Check if free-hour entitlement is available today (atomic check via MembershipEntitlement)
   const entitlementKey = `${customer._id}_${subscription._id}_${bookingDate}_DAILY_FREE_HOUR`;
   const existingEntitlement = await MembershipEntitlement.findOne({
     entitlementKey,
     state: { $in: ['RESERVED', 'CONSUMED'] },
   });
 
-  let freeHourAvailable = true;
+  let freeHourAvailable = remainingAllowanceMinutes > 0;
   let entitlementState = null;
 
   if (existingEntitlement) {
@@ -909,9 +896,25 @@ export async function checkMembershipBookingCoverage({
     }
   }
 
-  // Calculate how many free minutes are available
-  const dailyUsageLimitMins = plan.dailyUsageLimit || 60; // default 1 hour
-  const freeMinutesAvailable = freeHourAvailable ? Math.min(dailyUsageLimitMins - minutesAlreadyUsed, dailyUsageLimitMins) : 0;
+  // Calculate how many free minutes are available to apply to this session.
+  // For a session longer than the daily free allowance or continuous cap (e.g. 2 hours with 1h free allowance),
+  // apply free entitlement to the eligible first qualifying hour; remaining duration is chargeable.
+  const sessionCapMins = plan.maximumSessionDuration || dailyUsageLimitMins;
+  const allowableMins = Math.min(sessionCapMins, remainingAllowanceMinutes);
+  const freeMinutesAvailable = freeHourAvailable
+    ? Math.min(requestedDurationMinutes, allowableMins)
+    : 0;
+
+  // If daily allowance was already exhausted and plan provides no discount, not covered
+  if (remainingAllowanceMinutes === 0 && (!plan.discountPercentage || plan.discountPercentage === 0)) {
+    return {
+      covered: false,
+      reason: `Daily gaming allowance already exhausted for ${bookingDate}. Standard booking rates apply.`,
+      remainingMinutesToday: 0,
+      freeHourAvailable: false,
+      freeMinutesAvailable: 0,
+    };
+  }
 
   // All eligibility checks passed!
   return {
@@ -930,7 +933,7 @@ export async function checkMembershipBookingCoverage({
       expirationDate: subscription.expirationDate,
     },
     minutesAlreadyUsedToday: minutesAlreadyUsed,
-    remainingMinutesToday: plan.dailyUsageLimit ? Math.max(0, plan.dailyUsageLimit - minutesAlreadyUsed) : 9999,
+    remainingMinutesToday: remainingAllowanceMinutes,
     freeHourAvailable,
     freeMinutesAvailable,
     entitlementState,

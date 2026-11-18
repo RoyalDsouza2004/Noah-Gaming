@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { notificationsApi } from '../../api/notifications.js';
 import { showToast } from '../../utils/toast.js';
 import { Pagination } from '../common/Pagination.jsx';
@@ -67,6 +68,22 @@ export const NotificationCenter = ({
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [showPushSettings, setShowPushSettings] = useState(false);
+
+  // Lock body scroll and handle Escape key while details modal is open
+  useEffect(() => {
+    if (selectedNotification) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setSelectedNotification(null);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [selectedNotification]);
 
   const fetchNotifications = async (page = 1, append = false) => {
     if (!user) {
@@ -450,57 +467,73 @@ export const NotificationCenter = ({
         />
       </div>
 
-      {/* 4. Details Modal if selected */}
-      {selectedNotification && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md p-4 sm:p-5 bg-[#260D17] border border-[#851B2B] rounded-2xl shadow-2xl text-[#FFF4E8] space-y-3">
-            <div className="flex items-center justify-between border-b border-[#49202C] pb-2.5">
+      {/* 4. Details Modal if selected (Portaled to document.body for reliable viewport centering) */}
+      {selectedNotification && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedNotification(null);
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative w-full max-w-md my-auto p-5 sm:p-6 bg-white dark:bg-[#260D17] border border-slate-200 dark:border-[#851B2B] rounded-2xl shadow-2xl text-slate-900 dark:text-[#FFF4E8] space-y-3.5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#49202C] pb-3">
               <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-[#D7FF00]" />
-                <span className="text-xs font-bold font-heading uppercase text-[#F5B942]">
+                <Bell className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00]" />
+                <span className="text-xs font-bold font-heading uppercase text-amber-600 dark:text-[#F5B942]">
                   Notification Details
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedNotification(null)}
-                className="text-[#C7A5A8] hover:text-[#FFF4E8] transition-colors"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-[#FFF4E8] transition-colors"
+                title="Close notification"
+                aria-label="Close"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-[#FFF4E8] font-heading">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-[#FFF4E8] font-heading">
                 {selectedNotification.title}
               </h3>
-              <p className="text-xs text-[#FFF4E8]/90 mt-1.5 leading-relaxed bg-[#171014] p-2.5 rounded-xl border border-[#49202C]">
+              <p className="text-xs text-slate-700 dark:text-[#FFF4E8]/90 mt-2 leading-relaxed bg-slate-50 dark:bg-[#171014] p-3 rounded-xl border border-slate-200 dark:border-[#49202C]">
                 {selectedNotification.message}
               </p>
             </div>
 
-            <div className="space-y-1 text-xs text-[#C7A5A8] font-mono bg-[#171014]/60 p-2.5 rounded-xl border border-[#49202C]/60">
+            <div className="space-y-1.5 text-xs text-slate-600 dark:text-[#C7A5A8] font-mono bg-slate-50/80 dark:bg-[#171014]/60 p-3 rounded-xl border border-slate-200 dark:border-[#49202C]/60">
               <div className="flex justify-between">
                 <span>Received At:</span>
-                <span className="text-[#FFF4E8]">
+                <span className="text-slate-900 dark:text-[#FFF4E8] font-medium">
                   {new Date(selectedNotification.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Category:</span>
-                <span className="text-[#D7FF00] font-bold">{selectedNotification.category}</span>
+                <span className="text-[#851B2B] dark:text-[#D7FF00] font-bold">{selectedNotification.category}</span>
               </div>
               {selectedNotification.relatedBooking && (
                 <div className="flex justify-between">
                   <span>Booking Reference:</span>
-                  <span className="text-[#F5B942]">
+                  <span className="text-amber-600 dark:text-[#F5B942] font-semibold">
                     {selectedNotification.relatedBooking.bookingId || selectedNotification.relatedBooking}
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#49202C]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-[#49202C]">
+              <button
+                type="button"
+                onClick={() => setSelectedNotification(null)}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold transition-colors"
+              >
+                Dismiss
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -508,14 +541,15 @@ export const NotificationCenter = ({
                   setSelectedNotification(null);
                   handleActionNavigate(n);
                 }}
-                className="px-3.5 py-1.5 rounded-xl bg-[#851B2B] hover:bg-[#A51F35] text-[#FFF4E8] text-xs font-bold font-heading uppercase flex items-center gap-1.5 shadow-md shadow-[#851B2B]/30"
+                className="px-4 py-1.5 rounded-xl bg-[#851B2B] hover:bg-[#A51F35] text-[#FFF4E8] text-xs font-bold font-heading uppercase flex items-center gap-1.5 shadow-md shadow-[#851B2B]/30"
               >
                 <span>Navigate to Target</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

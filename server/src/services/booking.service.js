@@ -30,6 +30,37 @@ import {
 import * as scheduleService from './schedule.service.js';
 
 /**
+ * Determines if a game is configured for multiplayer gameplay.
+ * Multiplayer games must use shared-seat booking and cannot be reserved as private sessions.
+ */
+export function isMultiplayerGame(game) {
+  if (!game) return false;
+  if (game.isExclusive) return false; // Exclusive titles like GTA 6 have dedicated private station lock
+  if (game.bookingMode === 'PRIVATE_ONLY') return false;
+  if (game.bookingMode === 'SHARED') return true;
+
+  // Single player check: if maximum supported players is 1, it is strictly single player
+  const maxP = game.maxPlayers || 1;
+  const localP = game.localPlayersSupported || 1;
+  if (maxP <= 1 && localP <= 1) {
+    return false;
+  }
+
+  // If game supports multiple local/couch or shared players
+  if (maxP > 1 || localP > 1) {
+    return true;
+  }
+
+  if (game.multiplayer) {
+    if (game.multiplayer.localCoop || game.multiplayer.splitScreen) return true;
+    if (game.multiplayer.maxOfflineMultiplayerPlayers && game.multiplayer.maxOfflineMultiplayerPlayers > 1) return true;
+    if (game.multiplayer.maxOnlinePlayers && game.multiplayer.maxOnlinePlayers > 1) return true;
+  }
+
+  return false;
+}
+
+/**
  * Checks real-time availability for a specific device and time interval
  * @param {string} deviceId
  * @param {Date} startAt
@@ -156,6 +187,66 @@ export async function checkSlotAvailability(deviceId, startAt, endAt, gameId = n
     };
   }
 
+  const isMultiplayer = isMultiplayerGame(game);
+
+  // Check shared session compatibility for overlapping bookings
+  if (overlappingBookings.length > 0) {
+    // 1. Time interval matching: All customers sharing the session must match the complete time interval
+    const hasMismatchedTime = overlappingBookings.some(
+      (b) => b.startAt.getTime() !== startAt.getTime() || b.endAt.getTime() !== endAt.getTime()
+    );
+    if (hasMismatchedTime) {
+      return {
+        status: 'FULL',
+        capacity: effectiveMax,
+        deviceCapacity: device.capacity,
+        occupiedPlayers: device.capacity,
+        remainingPlayers: 0,
+        hasPrivateBooking: false,
+        sharedBookingsCount: overlappingBookings.length,
+        canBookShared: false,
+        canBookPrivate: false,
+        reason: 'Station is occupied by a session with a non-matching time interval.',
+        playerSlots: Array.from({ length: device.capacity }, (_, i) => ({
+          slotNumber: i + 1,
+          status: 'BOOKED',
+          bookingType: 'SHARED',
+        })),
+      };
+    }
+
+    // 2. Game compatibility: All customers sharing the session must play the same game
+    const firstWithGame = overlappingBookings.find((b) => b.game || b.isVenueSelection);
+    if (firstWithGame) {
+      const sessionGameId = firstWithGame.game ? (firstWithGame.game._id || firstWithGame.game).toString() : null;
+      const requestedGameId = game ? (game._id || game).toString() : null;
+      const isMismatchedGame = sessionGameId
+        ? (!requestedGameId || requestedGameId !== sessionGameId)
+        : (game !== null);
+
+      if (isMismatchedGame) {
+        const activeTitle = firstWithGame.game?.name || (firstWithGame.isVenueSelection ? 'Select at Venue' : 'Active Session');
+        return {
+          status: 'FULL',
+          capacity: effectiveMax,
+          deviceCapacity: device.capacity,
+          occupiedPlayers: device.capacity,
+          remainingPlayers: 0,
+          hasPrivateBooking: false,
+          sharedBookingsCount: overlappingBookings.length,
+          canBookShared: false,
+          canBookPrivate: false,
+          reason: `Station is currently running '${activeTitle}'. Shared players must join the same title.`,
+          playerSlots: Array.from({ length: device.capacity }, (_, i) => ({
+            slotNumber: i + 1,
+            status: 'BOOKED',
+            bookingType: 'SHARED',
+          })),
+        };
+      }
+    }
+  }
+
   // Calculate shared player occupancy
   let occupiedPlayers = 0;
   const bookedSlots = [];
@@ -194,8 +285,9 @@ export async function checkSlotAvailability(deviceId, startAt, endAt, gameId = n
     status = 'PARTIALLY_BOOKED';
   }
 
+  // Multiplayer games MUST use shared-seat booking: canBookPrivate is strictly FALSE for multiplayer games
   const canBookShared = bookingMode !== 'PRIVATE_ONLY' && remainingPlayers >= effectiveMin;
-  const canBookPrivate = bookingMode !== 'SHARED' && occupiedPlayers === 0;
+  const canBookPrivate = !isMultiplayer && bookingMode !== 'SHARED' && occupiedPlayers === 0;
 
   return {
     status,
@@ -418,9 +510,20 @@ export async function createBookingAtomic({
     }
   }
 
-  // Exclusive & booking mode rules
+  // Exclusive & multiplayer booking mode rules
   let effectiveBookingType = bookingType;
-  if (game) {
+  const isMultiplayer = isMultiplayerGame(game);
+
+  if (isMultiplayer) {
+    if (bookingType === 'PRIVATE') {
+      const err = new Error(
+        `'${game.name}' is a multiplayer game and must be booked as a Shared session. Private booking is not permitted for multiplayer titles.`
+      );
+      err.status = 400;
+      throw err;
+    }
+    effectiveBookingType = 'SHARED';
+  } else if (game) {
     if (game.bookingMode === 'PRIVATE_ONLY' || game.isExclusive) {
       if (bookingType === 'SHARED') {
         const err = new Error(
@@ -571,6 +674,14 @@ export async function createBookingAtomic({
         throw err;
       }
 
+      if (!avail.canBookShared) {
+        const err = new Error(
+          avail.reason || 'This slot is not available for a shared session.'
+        );
+        err.status = 409;
+        throw err;
+      }
+
       if (players > avail.remainingPlayers) {
         const err = new Error(
           `Session is almost full. Only ${avail.remainingPlayers} player position(s) remain available for '${game ? game.name : device.name}' (requested ${players}).`
@@ -645,12 +756,13 @@ export async function createBookingAtomic({
     const bookingId = generateBookingId(bookingDate);
 
     // 8. Construct slot objects
+    const customer = customerId ? await User.findById(customerId).select('name') : null;
     const playerSlots = [];
     for (let i = 1; i <= players; i++) {
       playerSlots.push({
         slotNumber: avail.occupiedPlayers + i,
-        playerName: `Player ${i}`,
-        isHost: i === 1,
+        playerName: i === 1 && customer?.name ? customer.name : `Player ${avail.occupiedPlayers + i}`,
+        isHost: i === 1 && avail.occupiedPlayers === 0,
       });
     }
 

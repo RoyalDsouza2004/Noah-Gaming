@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { bookingApi } from '../../api/booking.js';
 import { reportsApi } from '../../api/reports.js';
 import {
@@ -590,17 +591,26 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
       </div>
 
       {/* ---------------- MODAL: BOOKING DETAILS ---------------- */}
-      {detailModalOpen && selectedBooking && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
-          <div className="m-auto w-full max-w-xl p-6 bg-[#171014] border border-slate-700/80 rounded-2xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      {detailModalOpen && selectedBooking && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setDetailModalOpen(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="m-auto w-full max-w-xl p-6 bg-white dark:bg-[#171014] border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
-                <span className="text-[10px] font-mono uppercase text-[#D7FF00]">Reservation Details</span>
-                <h3 className="text-lg font-bold font-heading text-white">{selectedBooking.bookingId}</h3>
+                <span className="text-[10px] font-mono uppercase text-[#851B2B] dark:text-[#D7FF00] font-bold">Reservation Details</span>
+                <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white">{selectedBooking.bookingId}</h3>
               </div>
               <button
                 onClick={() => setDetailModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white"
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+                title="Close dialog"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -702,7 +712,8 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ---------------- MODAL: NEW WALK-IN BOOKING ---------------- */}

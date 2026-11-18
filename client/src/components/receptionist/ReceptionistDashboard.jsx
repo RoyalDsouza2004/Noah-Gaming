@@ -322,8 +322,15 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
       !isExclusiveGame
     ) {
       const freeHours = Math.min(walkInDuration, walkInCustomerQuota.remainingHours);
-      const paidHours = Math.max(0, walkInDuration - freeHours);
-      return paidHours * rate * billablePlayers;
+      if (isPool) {
+        // Pool is per table
+        const paidHours = Math.max(0, walkInDuration - freeHours);
+        return paidHours * rate;
+      }
+      // PS5 per-player: 1 eligible member gets free hours applied to their seat; remaining players pay configured per-player rate
+      const memberCost = Math.max(0, walkInDuration - freeHours) * rate;
+      const additionalPlayersCost = Math.max(0, billablePlayers - 1) * walkInDuration * rate;
+      return memberCost + additionalPlayersCost;
     }
 
     return rate * walkInDuration * billablePlayers;

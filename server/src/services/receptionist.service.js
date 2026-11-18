@@ -1221,7 +1221,9 @@ export async function extendSession({
 
   const rate = standardPricing.pricingRule.ratePerUnitRupees;
   const billingType = standardPricing.pricingRule.billingType;
-  const billableUnits = billingType === 'PER_DEVICE_HOURLY' ? 1 : booking.numberOfPlayers;
+  const isPerPlayer = billingType === 'PER_PLAYER_HOURLY';
+  const players = booking.numberOfPlayers || 1;
+  const billableUnits = billingType === 'PER_DEVICE_HOURLY' ? 1 : players;
   const standardUnitCostRupees = rate * billableUnits;
 
   let freeHoursApplied = 0;
@@ -1237,9 +1239,18 @@ export async function extendSession({
 
   if (canApplyFreeHours) {
     freeHoursApplied = Math.min(parsedDuration, quota.remainingHours);
-    paidDurationHours = Math.max(0, parsedDuration - freeHoursApplied);
-    const paidAmountRupees = Math.round(paidDurationHours * standardUnitCostRupees * 100) / 100;
-    additionalAmountPaise = Math.round(paidAmountRupees * 100);
+    if (isPerPlayer && players > 1) {
+      // 1 eligible member gets free hours applied to their seat; additional players pay configured per-player rate
+      const memberCostRupees = Math.max(0, parsedDuration - freeHoursApplied) * rate;
+      const otherPlayersCostRupees = (players - 1) * parsedDuration * rate;
+      const paidAmountRupees = Math.round((memberCostRupees + otherPlayersCostRupees) * 100) / 100;
+      additionalAmountPaise = Math.round(paidAmountRupees * 100);
+    } else {
+      paidDurationHours = Math.max(0, parsedDuration - freeHoursApplied);
+      const paidAmountRupees = Math.round(paidDurationHours * standardUnitCostRupees * 100) / 100;
+      additionalAmountPaise = Math.round(paidAmountRupees * 100);
+    }
+  }
 
     // Record MembershipUsage for the free hours consumed
     if (freeHoursApplied > 0) {
