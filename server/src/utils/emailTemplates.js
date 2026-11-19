@@ -510,7 +510,7 @@ export function getMembershipExpiryReminderEmail({ customer, plan, expiresAt, da
 /**
  * 7. Password Reset Request Email
  */
-export function getPasswordResetEmail({ name, resetUrl, resetToken, expiresMinutes = 60 }) {
+export function getPasswordResetEmail({ name, resetUrl, expiresMinutes = 60 }) {
   const content = `
     <h2 style="color: #FFF4E8; margin-top: 0; font-size: 20px;">Password Reset Request 🔐</h2>
     <p style="color: #C7A5A8; font-size: 14px;">
@@ -525,13 +525,6 @@ export function getPasswordResetEmail({ name, resetUrl, resetToken, expiresMinut
       <a href="${resetUrl}" class="btn">Reset Password &rarr;</a>
     </div>
 
-    <div class="info-box">
-      <span style="font-size: 11px; text-transform: uppercase; color: #C7A5A8;">Security Verification Token:</span>
-      <p style="font-family: monospace; font-size: 14px; color: #D7FF00; margin: 8px 0 0 0; word-break: break-all;">
-        ${resetToken}
-      </p>
-    </div>
-
     <p style="font-size: 11px; color: #8F7275; line-height: 1.5;">
       If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
     </p>
@@ -544,7 +537,7 @@ export function getPasswordResetEmail({ name, resetUrl, resetToken, expiresMinut
       previewText: 'Reset your NOAH GAMING password with this secure link.',
       contentHtml: content,
     }),
-    text: `Password Reset Request for NOAH GAMING\n\nReset your password here: ${resetUrl}\n\nToken: ${resetToken}\n(Valid for ${expiresMinutes} minutes)`,
+    text: `Password Reset Request for NOAH GAMING\n\nReset your password here: ${resetUrl}\n(Valid for ${expiresMinutes} minutes)`,
   };
 }
 

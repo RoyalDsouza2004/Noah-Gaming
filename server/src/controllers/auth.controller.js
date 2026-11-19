@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import User from '../models/User.js';
 import OtpVerification from '../models/OtpVerification.js';
+import AdminAssistanceRequest from '../models/AdminAssistanceRequest.js';
 import OtpAuditLog from '../models/OtpAuditLog.js';
 import ActivityLog from '../models/ActivityLog.js';
 import { ROLES } from '../config/constants.js';
@@ -1035,6 +1036,24 @@ export const requestOtpAssistance = async (req, res) => {
     record.status = 'AWAITING_ADMIN_ASSISTANCE';
     await record.save();
 
+    // Dedicated Admin Assistance record: strictly isolated from OTP Manager entries
+    await AdminAssistanceRequest.findOneAndUpdate(
+      { challengeId: record.challengeId },
+      {
+        userId: record.userId,
+        userName: record.userName || 'Customer',
+        email: record.email,
+        phone: record.phone || '',
+        challengeId: record.challengeId,
+        requestType: record.purpose === 'LOGIN_2FA' ? 'LOGIN_2FA' : 'REGISTRATION',
+        status: 'PENDING',
+        emailDeliveryStatus: record.emailDeliveryStatus || 'PENDING',
+        emailDeliveryError: record.emailDeliveryError || '',
+        expiresAt: record.expiresAt,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
     await ActivityLog.create({
       userId: record.userId,
       userName: record.userName || 'Customer',
@@ -1164,6 +1183,11 @@ export const completeOtpAssistance = async (req, res) => {
     record.status = 'CONSUMED';
     record.authMethod = 'admin_assisted';
     await record.save();
+
+    await AdminAssistanceRequest.updateOne(
+      { challengeId: record.challengeId },
+      { status: 'CONSUMED' }
+    ).catch(() => {});
 
     const user = await User.findById(record.userId);
     if (!user) {
@@ -1978,10 +2002,9 @@ export const requestPasswordResetEmail = async (req, res) => {
     // Use centralized getPasswordResetUrl pointing to production deployed frontend or local dev
     const resetUrl = getPasswordResetUrl(resetToken, req);
 
-    // Dispatch email
+    // Dispatch email (token is safely embedded inside the resetUrl, never exposed in plain text)
     sendPasswordResetEmail({
       user,
-      resetToken,
       resetUrl,
     }).catch((err) => console.error('[Password Reset Email Error]:', err.message));
 

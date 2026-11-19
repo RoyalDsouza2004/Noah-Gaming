@@ -9,6 +9,7 @@ import { AdminAutomationTab } from './AdminAutomationTab.jsx';
 import { UserManagementTab } from './UserManagementTab.jsx';
 import { AdminEmailTab } from './AdminEmailTab.jsx';
 import { AdminOtpTab } from './AdminOtpTab.jsx';
+import { AdminAssistanceTab } from './AdminAssistanceTab.jsx';
 import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
 import { ReportExportModal } from './analytics/ReportExportModal.jsx';
 import { AdminGameImportModal } from './AdminGameImportModal.jsx';
@@ -724,7 +725,8 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
         const adminTabs = [
           { id: 'overview', label: 'Dashboard Overview', icon: BarChart3 },
           { id: 'users', label: 'User Management', icon: Users },
-          { id: 'otp_management', label: 'OTP Management & Assistance', icon: KeyRound },
+          { id: 'verification_assistance', label: 'Verification Assistance', icon: ShieldCheck },
+          { id: 'otp_management', label: 'OTP Manager', icon: KeyRound },
           { id: 'analytics', label: 'Analytics & Reports (BI)', icon: TrendingUp },
           { id: 'automation', label: 'Automation & Timers', icon: Bot },
           { id: 'email', label: 'Email Integration (Resend)', icon: Mail },
@@ -849,7 +851,12 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
         <AdminEmailTab />
       )}
 
-      {/* ---------------- TAB: OTP MANAGEMENT & ASSISTANCE FALLBACK ---------------- */}
+      {/* ---------------- TAB: VERIFICATION ASSISTANCE ---------------- */}
+      {activeTab === 'verification_assistance' && (
+        <AdminAssistanceTab />
+      )}
+
+      {/* ---------------- TAB: OTP MANAGER ---------------- */}
       {activeTab === 'otp_management' && (
         <AdminOtpTab />
       )}

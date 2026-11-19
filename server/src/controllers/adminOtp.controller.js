@@ -42,6 +42,11 @@ export const getPendingOtpRequests = async (req, res) => {
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     query.createdAt = { $gte: twelveHoursAgo };
 
+    // Strict isolation: OTP Manager strictly monitors actual OTP challenges and delivery failures.
+    // Dedicated Admin Assistance requests appear solely in Verification Assistance.
+    query.assistanceRequested = { $ne: true };
+    query.status = { $ne: 'AWAITING_ADMIN_ASSISTANCE' };
+
     const records = await OtpVerification.find(query)
       .sort({ createdAt: -1 })
       .populate('userId', 'name email phone accountStatus isEmailVerified role customerId')

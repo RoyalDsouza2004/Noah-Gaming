@@ -394,13 +394,12 @@ export async function sendMembershipExpiryReminderEmail({ customer, plan, expire
 /**
  * 7. Password Reset Email
  */
-export async function sendPasswordResetEmail({ user, resetToken, resetUrl, expiresMinutes = 60 }) {
+export async function sendPasswordResetEmail({ user, resetUrl, expiresMinutes = 60 }) {
   if (!user?.email) return;
 
   const template = templates.getPasswordResetEmail({
     name: user.name,
     resetUrl,
-    resetToken,
     expiresMinutes,
   });
 

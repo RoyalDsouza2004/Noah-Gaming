@@ -25,6 +25,7 @@ import adminAutomationRoutes from './routes/adminAutomation.routes.js';
 import userManagementRoutes from './routes/userManagement.routes.js';
 import adminEmailRoutes from './routes/adminEmail.routes.js';
 import adminOtpRoutes from './routes/adminOtp.routes.js';
+import adminAssistanceRoutes from './routes/adminAssistance.routes.js';
 import pushNotificationRoutes from './routes/pushNotification.routes.js';
 import cloudinaryRoutes from './routes/cloudinary.routes.js';
 import scheduleRoutes from './routes/schedule.routes.js';
@@ -135,6 +136,7 @@ app.use('/api/admin/users', userManagementRoutes);
 app.use('/api/users-management', userManagementRoutes);
 app.use('/api/admin/email', adminEmailRoutes);
 app.use('/api/admin/otp', adminOtpRoutes);
+app.use('/api/admin/assistance', adminAssistanceRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
 app.use('/api/schedule', scheduleRoutes);
 
