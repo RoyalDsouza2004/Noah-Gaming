@@ -8,7 +8,6 @@ import {
   Sparkles,
   Download,
   LogOut,
-  User,
   Shield,
   Activity,
   Bell,
@@ -20,7 +19,6 @@ export const Navbar = ({
   onOpenReceptionistDashboard,
   onOpenAdminDashboard,
   onOpenNotifications,
-  onOpenProfile,
   unreadCount = 0,
   activeNav = 'home',
 }) => {
@@ -196,31 +194,7 @@ export const Navbar = ({
           {/* 6. Theme Toggle (Light / Dark Mode Switch) */}
           <ThemeToggle className="flex h-9 w-9 p-0 rounded-xl shrink-0" />
 
-          {/* 7. Profile Icon & Settings Shortcut (Authenticated) */}
-          {isAuthenticated && (
-            <button
-              type="button"
-              onClick={onOpenProfile || (() => { window.location.hash = '#profile'; })}
-              title="Open Player Profile & Theme Settings"
-              className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-[#260D17] hover:bg-[#F1F3F7] dark:hover:bg-[#381322] border border-[#E2E5EC] dark:border-[#49202C] text-[#414858] dark:text-[#C7A5A8] hover:text-[#851B2B] dark:hover:text-[#FFF4E8] shadow-sm transition-all shrink-0 overflow-hidden active:scale-95"
-              aria-label="Player Profile & Settings"
-            >
-              {user?.profilePicture ? (
-                <img
-                  src={user.profilePicture}
-                  alt={user.name || 'Profile'}
-                  className="w-full h-full object-cover rounded-xl"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <User className="w-4 h-4 text-current" />
-              )}
-            </button>
-          )}
-
-          {/* 8. Logout / Login */}
+          {/* 7. Logout / Login */}
           {isAuthenticated ? (
             <button
               type="button"
