@@ -9,22 +9,24 @@ import {
   getAdminUsage,
 } from '../controllers/adminMembership.controller.js';
 import { authenticate } from '../middlewares/auth.js';
-import { requireAdmin } from '../middlewares/rbac.js';
+import { requireAdmin, requireStaff } from '../middlewares/rbac.js';
 
 const router = Router();
 
-// Strictly Admin-Only Routes
-router.use(authenticate, requireAdmin);
+// All routes require authentication
+router.use(authenticate);
 
-// Plans CRUD
-router.get('/plans', getAdminPlans);
-router.post('/plans', createPlan);
-router.put('/plans/:id', updatePlan);
-router.delete('/plans/:id', deletePlan);
+// Plans Browsing - Allowed for Staff (Admin & Receptionist) for customer desk operations
+router.get('/plans', requireStaff, getAdminPlans);
 
-// Subscriptions & Usage Audit
-router.get('/subscriptions', getAdminSubscriptions);
-router.patch('/subscriptions/:id', updateSubscription);
-router.get('/usage', getAdminUsage);
+// Plans Creation, Modification, Deletion - Strictly Admin-Only
+router.post('/plans', requireAdmin, createPlan);
+router.put('/plans/:id', requireAdmin, updatePlan);
+router.delete('/plans/:id', requireAdmin, deletePlan);
+
+// Subscriptions & Usage Audit - Accessible by Staff (Admin & Receptionist)
+router.get('/subscriptions', requireStaff, getAdminSubscriptions);
+router.patch('/subscriptions/:id', requireStaff, updateSubscription);
+router.get('/usage', requireStaff, getAdminUsage);
 
 export default router;

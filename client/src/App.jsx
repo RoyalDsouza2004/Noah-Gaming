@@ -437,6 +437,9 @@ function AppContent() {
       case 'reception_bookings':
         handleOpenReceptionistDashboard('bookings');
         break;
+      case 'reception_memberships':
+        handleOpenReceptionistDashboard('memberships');
+        break;
       default:
         break;
     }

@@ -12,6 +12,7 @@ import {
   createUpgradeOrder,
   verifyMembershipUpgradePayment,
   recordOfflineMembershipUpgrade,
+  recordOfflineMembershipRenewal,
 } from '../services/membership.service.js';
 
 /**
@@ -354,6 +355,36 @@ export const offlineUpgrade = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Offline membership upgrade completed successfully',
+      data: result,
+    });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * POST /api/memberships/renew/offline
+ * Front-desk offline membership extension / renewal (Admin & Receptionist)
+ */
+export const offlineRenewal = async (req, res) => {
+  try {
+    const { subscriptionId, planId, paymentMethod, transactionReference, notes } = req.body;
+    if (!subscriptionId) {
+      return res.status(400).json({ success: false, message: 'subscriptionId is required' });
+    }
+
+    const result = await recordOfflineMembershipRenewal({
+      subscriptionId,
+      planId,
+      paymentMethod,
+      transactionReference,
+      staffId: req.user._id,
+      notes,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Subscription extended and payment recorded successfully',
       data: result,
     });
   } catch (err) {

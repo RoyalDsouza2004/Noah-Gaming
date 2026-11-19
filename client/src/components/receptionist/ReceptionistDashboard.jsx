@@ -15,6 +15,7 @@ import { CollectPaymentModal } from './CollectPaymentModal.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { UserManagementTab } from '../admin/UserManagementTab.jsx';
 import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
+import { AdminMembershipsTab } from '../admin/AdminMembershipsTab.jsx';
 import {
   Sparkles,
   Gamepad2,
@@ -45,6 +46,7 @@ import {
   Award,
   BellRing,
   LayoutDashboard,
+  Crown,
 } from 'lucide-react';
 import { Pagination } from '../common/Pagination.jsx';
 
@@ -796,6 +798,23 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                 {pendingPayments.length} Due
               </span>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSelectTab('memberships')}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              outline: 'none',
+            }}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap select-none outline-none focus:outline-none active:scale-95 ${
+              activeTab === 'memberships'
+                ? 'bg-[#851B2B] text-[#FFF4E8] shadow-md shadow-[#851B2B]/30 font-bold border border-[#851B2B]'
+                : 'text-[#C7A5A8] hover:text-[#FFF4E8] hover:bg-[#341220]'
+            }`}
+          >
+            <Crown className="w-4 h-4 text-amber-400" /> Club Passes & Memberships
           </button>
 
           <button
@@ -1944,6 +1963,13 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
         {activeTab === 'notifications' && (
           <div className="space-y-6 pb-12 animate-fadeIn">
             <PushNotificationSettings />
+          </div>
+        )}
+
+        {/* TAB 7: CLUB PASSES & MEMBERSHIPS */}
+        {activeTab === 'memberships' && (
+          <div className="space-y-6 pb-12 animate-fadeIn">
+            <AdminMembershipsTab />
           </div>
         )}
       </div>

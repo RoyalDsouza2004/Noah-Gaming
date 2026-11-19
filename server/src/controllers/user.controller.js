@@ -50,22 +50,52 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// Search single customer by mobile or email (used by Receptionist for walk-ins)
+// Search single customer by mobile, email, or name (used by Receptionist & Admin for walk-ins/memberships)
 export const findCustomerByPhone = async (req, res) => {
   try {
-    const { phone } = req.params;
-    const customer = await User.findOne({ phone: phone.trim() }).select('-password');
+    const rawParam = String(req.params.phone || '').trim();
+    if (!rawParam) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query is required.',
+      });
+    }
+
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const safeRegex = new RegExp(escapeRegex(rawParam), 'i');
+
+    const orConditions = [
+      { name: safeRegex },
+      { email: safeRegex },
+      { customerId: safeRegex },
+      { phone: safeRegex },
+    ];
+
+    // Normalized phone matching (handles +91, spaces, dashes)
+    const digitsOnly = rawParam.replace(/\D/g, '');
+    if (digitsOnly.length >= 4) {
+      const national10 = digitsOnly.slice(-10);
+      const flexibleNational = national10.split('').map((d) => escapeRegex(d)).join('[\\s\\-]?');
+      orConditions.push({ phone: new RegExp(flexibleNational, 'i') });
+    }
+
+    const customer = await User.findOne({ $or: orConditions })
+      .select('-password')
+      .populate('membership.planId');
 
     if (!customer) {
       return res.status(404).json({
         success: false,
-        message: 'No customer found with this mobile number.',
+        message: 'No customer found matching this query.',
       });
     }
 
     res.status(200).json({
       success: true,
-      data: { customer },
+      data: {
+        customer,
+        user: customer, // For compatibility with frontend components expecting user or customer
+      },
     });
   } catch (err) {
     res.status(500).json({

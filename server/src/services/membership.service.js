@@ -1437,6 +1437,14 @@ export async function calculateUpgradeQuote({ customerId, targetPlanId }) {
       finalAmountPayablePaise,
       finalAmountPayableRupees: +(finalAmountPayablePaise / 100).toFixed(2),
     },
+    breakdown: {
+      remainingDays,
+      remainingEligibleDays: remainingDays,
+      unusedCreditInRupees: +(unusedCreditPaise / 100).toFixed(2),
+      targetPriceInRupees: +(newPricePaise / 100).toFixed(2),
+      finalPayableInRupees: +(finalAmountPayablePaise / 100).toFixed(2),
+      originalAmountInRupees: +(originalAmountPaise / 100).toFixed(2),
+    },
   };
 }
 
@@ -1737,7 +1745,7 @@ export async function recordOfflineMembershipUpgrade({
     paymentId: internalPaymentId,
     receiptNumber,
     customer: customerId,
-    cashier: cashierId,
+    collectedBy: cashierId,
     amount: quote.financials.finalAmountPayablePaise,
     currency: 'INR',
     paymentMethod: paymentMethod === 'COUNTER_UPI' || paymentMethod === 'UPI' ? 'COUNTER_UPI' : 'CASH',
@@ -1745,6 +1753,7 @@ export async function recordOfflineMembershipUpgrade({
     paymentStatus: 'PAID',
     paymentPurpose: 'MEMBERSHIP_UPGRADE',
     membershipPlan: targetPlan._id,
+    transactionReference: referenceNumber || `OFFLINE-UPG-${Date.now()}`,
     notes: `Front-desk offline upgrade (Ref: ${referenceNumber || 'N/A'}). ${notes}`,
     paidAt: now,
     auditTrail: [
@@ -1777,6 +1786,9 @@ export async function recordOfflineMembershipUpgrade({
     paymentReference: internalPaymentId,
     notes: `Offline counter upgrade by staff (${paymentMethod}). Ref: ${referenceNumber || 'N/A'}`,
   });
+
+  paymentRecord.membershipSubscription = newSub._id;
+  await paymentRecord.save();
 
   if (oldSub) {
     oldSub.upgradedTo = newSub._id;
@@ -1823,6 +1835,7 @@ export async function recordOfflineMembershipUpgrade({
       subscriptionId: newSub.subscriptionId,
       planName: targetPlan.name,
       expirationDate,
+      receiptNumber,
     },
   });
 
@@ -1831,5 +1844,132 @@ export async function recordOfflineMembershipUpgrade({
     payment: paymentRecord,
     upgrade,
     quote,
+  };
+}
+
+/**
+ * Front-desk offline subscription extension / renewal (Admin & Receptionist)
+ */
+export async function recordOfflineMembershipRenewal({
+  subscriptionId,
+  planId,
+  paymentMethod = 'CASH',
+  transactionReference = '',
+  staffId,
+  notes = '',
+}) {
+  const staff = await User.findById(staffId);
+  if (!staff || (staff.role !== 'admin' && staff.role !== 'receptionist')) {
+    const error = new Error('Unauthorized staff member');
+    error.status = 403;
+    throw error;
+  }
+
+  const subscription = await MembershipSubscription.findById(subscriptionId).populate(
+    'membershipPlan customer'
+  );
+  if (!subscription) {
+    const error = new Error('Subscription not found');
+    error.status = 404;
+    throw error;
+  }
+
+  const effectivePlanId = planId || subscription.membershipPlan._id;
+  const plan = await MembershipPlan.findById(effectivePlanId);
+  if (!plan || plan.status !== 'ACTIVE') {
+    const error = new Error('Selected renewal plan is invalid or inactive');
+    error.status = 400;
+    throw error;
+  }
+
+  const now = new Date();
+  const customerId = subscription.customer._id;
+
+  // If subscription is currently active with future expiry, extend from current expirationDate.
+  // If subscription is expired or cancelled, renew starting from now.
+  const isCurrentlyActive = subscription.status === 'ACTIVE' && new Date(subscription.expirationDate) > now;
+  const baseDateForExtension = isCurrentlyActive ? new Date(subscription.expirationDate) : now;
+  const newExpirationDate = calculateExpirationDate(
+    baseDateForExtension,
+    plan.validityDuration,
+    plan.validityUnit
+  );
+  const newStartDate = isCurrentlyActive ? subscription.startDate : now;
+
+  const renewalPricePaise = plan.price;
+  const internalPaymentId = `PAY-REN-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(10000 + Math.random() * 90000)}`;
+  const receiptNumber = `REC-REN-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(10000 + Math.random() * 90000)}`;
+
+  // 1. Create Payment record
+  const paymentRecord = await Payment.create({
+    paymentId: internalPaymentId,
+    receiptNumber,
+    customer: customerId,
+    collectedBy: staff._id,
+    amount: renewalPricePaise,
+    currency: plan.currency || 'INR',
+    paymentMethod: paymentMethod === 'COUNTER_UPI' || paymentMethod === 'UPI' ? 'COUNTER_UPI' : 'CASH',
+    paymentGateway: paymentMethod === 'COUNTER_UPI' || paymentMethod === 'UPI' ? 'OFFLINE_COUNTER_UPI' : 'OFFLINE_CASH',
+    paymentStatus: 'PAID',
+    paymentPurpose: 'MEMBERSHIP_RENEWAL',
+    membershipPlan: plan._id,
+    membershipSubscription: subscription._id,
+    transactionReference: transactionReference || `OFFLINE-REN-${Date.now()}`,
+    paidAt: now,
+    notes: `Front-desk offline extension (${plan.name} +${plan.validityDuration} ${plan.validityUnit}). ${notes}`,
+    auditTrail: [
+      {
+        status: 'PAID',
+        changedBy: staff._id,
+        reason: `Collected renewal ₹${renewalPricePaise / 100} via ${paymentMethod} by ${staff.name} (${staff.role})`,
+        timestamp: now,
+      },
+    ],
+  });
+
+  // 2. Update Subscription
+  const previousExpiration = subscription.expirationDate;
+  subscription.status = 'ACTIVE';
+  subscription.membershipPlan = plan._id;
+  subscription.startDate = newStartDate;
+  subscription.expirationDate = newExpirationDate;
+  subscription.payment = paymentRecord._id;
+  subscription.paymentReference = internalPaymentId;
+  subscription.renewalHistory.push({
+    renewedAt: now,
+    previousExpirationDate: previousExpiration,
+    newExpirationDate,
+    renewedBy: staff._id,
+    payment: paymentRecord._id,
+    notes: `Front-desk offline extension (${paymentMethod}) by ${staff.name} (${staff.role}). ${notes}`,
+  });
+  await subscription.save();
+
+  // 3. Synchronize User record
+  await User.findByIdAndUpdate(customerId, {
+    'membership.status': 'ACTIVE',
+    'membership.planId': plan._id,
+    'membership.subscriptionId': subscription._id,
+    'membership.expiresAt': newExpirationDate,
+  });
+
+  // 4. Emit Notification
+  await createNotification({
+    recipient: customerId,
+    title: 'Membership Extended at Front Desk!',
+    message: `Your membership has been extended to ${newExpirationDate.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })} via ${plan.name}.`,
+    category: 'MEMBERSHIP_ACTIVATED',
+    data: {
+      subscriptionId: subscription.subscriptionId,
+      planName: plan.name,
+      expirationDate: newExpirationDate,
+      receiptNumber,
+    },
+  });
+
+  return {
+    subscription,
+    payment: paymentRecord,
+    plan,
   };
 }

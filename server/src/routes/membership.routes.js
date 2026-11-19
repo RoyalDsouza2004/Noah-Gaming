@@ -13,6 +13,7 @@ import {
   initiateUpgrade,
   verifyUpgrade,
   offlineUpgrade,
+  offlineRenewal,
 } from '../controllers/membership.controller.js';
 import { authenticate } from '../middlewares/auth.js';
 import { authorize } from '../middlewares/rbac.js';
@@ -45,5 +46,6 @@ router.post('/upgrade/offline', authorize('admin', 'receptionist'), offlineUpgra
 
 // Staff Offline Purchase Desk (Admin & Receptionist)
 router.post('/offline-purchase', authorize('admin', 'receptionist'), recordOfflinePurchase);
+router.post('/renew/offline', authorize('admin', 'receptionist'), offlineRenewal);
 
 export default router;

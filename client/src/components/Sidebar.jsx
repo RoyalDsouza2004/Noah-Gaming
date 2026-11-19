@@ -163,6 +163,12 @@ export const Sidebar = ({
         icon: Calendar,
       },
       {
+        id: 'reception_memberships',
+        label: 'Club Passes',
+        sublabel: 'Memberships & Renewals',
+        icon: Crown,
+      },
+      {
         id: 'equipment',
         label: 'Hardware Status',
         sublabel: 'Equipment Availability',

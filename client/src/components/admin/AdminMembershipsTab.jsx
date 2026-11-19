@@ -4,6 +4,7 @@ import { equipmentApi } from '../../api/equipment.js';
 import { userProfileApi } from '../../api/userProfile.js';
 import { reportsApi } from '../../api/reports.js';
 import { authApi } from '../../api/auth.js';
+import { receptionistApi } from '../../api/receptionist.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
   Crown,
@@ -29,8 +30,13 @@ import {
   RotateCcw,
   Download,
   Loader2,
+  ChevronDown,
+  ArrowRight,
+  Printer,
+  FileText,
 } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
+import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { showToast } from '../../utils/toast.js';
 import { Pagination } from '../common/Pagination.jsx';
 
@@ -112,15 +118,23 @@ export const AdminMembershipsTab = () => {
   });
   const [planSubmitting, setPlanSubmitting] = useState(false);
 
-  // Manage Subscription Modal state
+  // Manage / Extend Subscription Modal state
   const [manageSubModalOpen, setManageSubModalOpen] = useState(false);
   const [selectedSub, setSelectedSub] = useState(null);
+  const [extendPlanId, setExtendPlanId] = useState('');
+  const [extendPaymentMethod, setExtendPaymentMethod] = useState('CASH');
+  const [extendTxnRef, setExtendTxnRef] = useState('');
+  const [extendNotes, setExtendNotes] = useState('');
+  const [extendSubmitting, setExtendSubmitting] = useState(false);
   const [subManageForm, setSubManageForm] = useState({
     status: '',
     extendDays: 0,
     notes: '',
   });
   const [subManaging, setSubManaging] = useState(false);
+
+  // Receipt Modal state
+  const [receiptModalPaymentId, setReceiptModalPaymentId] = useState(null);
 
   // Offline Membership Desk state
   const [offlineForm, setOfflineForm] = useState({
@@ -133,7 +147,11 @@ export const AdminMembershipsTab = () => {
     transactionReference: '',
     notes: '',
   });
+  const [offlineCustomerQuery, setOfflineCustomerQuery] = useState('');
+  const [offlineCustomerResults, setOfflineCustomerResults] = useState([]);
   const [offlineCustomerSearching, setOfflineCustomerSearching] = useState(false);
+  const [offlineHasSearched, setOfflineHasSearched] = useState(false);
+  const [offlineSelectedCustomer, setOfflineSelectedCustomer] = useState(null);
   const [offlineSubmitting, setOfflineSubmitting] = useState(false);
 
   const fetchAllData = async () => {
@@ -242,9 +260,14 @@ export const AdminMembershipsTab = () => {
     });
   };
 
-  // Open Subscription Manage Modal
+  // Open Subscription Manage / Extend Modal
   const handleOpenManageSub = (sub) => {
     setSelectedSub(sub);
+    const planId = sub.membershipPlan?._id || (plans.find((p) => p.status === 'ACTIVE')?._id || '');
+    setExtendPlanId(planId);
+    setExtendPaymentMethod('CASH');
+    setExtendTxnRef('');
+    setExtendNotes('');
     setSubManageForm({
       status: sub.status,
       extendDays: 0,
@@ -253,7 +276,42 @@ export const AdminMembershipsTab = () => {
     setManageSubModalOpen(true);
   };
 
-  // Submit Manage Subscription
+  // Submit Extension / Renewal with Payment Collection
+  const handleConfirmExtendSub = async (e) => {
+    e.preventDefault();
+    if (!selectedSub || !extendPlanId) return;
+    setExtendSubmitting(true);
+    setActionError('');
+    try {
+      const res = await membershipApi.offlineRenewal({
+        subscriptionId: selectedSub._id,
+        planId: extendPlanId,
+        paymentMethod: extendPaymentMethod,
+        transactionReference: extendTxnRef,
+        notes: extendNotes || `Front-desk offline renewal by ${user?.name || 'Staff'}`,
+      });
+
+      if (res.success) {
+        showToast.success('Subscription extended successfully!');
+        setActionSuccess(`Subscription extended successfully for ${selectedSub.customer?.name}!`);
+        setManageSubModalOpen(false);
+        const pId = res.data?.payment?.paymentId || res.data?.payment?._id;
+        if (pId) {
+          setReceiptModalPaymentId(pId);
+        }
+        setSelectedSub(null);
+        fetchAllData();
+        setTimeout(() => setActionSuccess(''), 5000);
+      }
+    } catch (err) {
+      showToast.error(err.message || 'Failed to extend subscription');
+      setActionError(err.message || 'Failed to extend subscription');
+    } finally {
+      setExtendSubmitting(false);
+    }
+  };
+
+  // Submit Admin-Only Administrative Status Change
   const handleSaveManageSub = async (e) => {
     e.preventDefault();
     if (!selectedSub) return;
@@ -331,10 +389,15 @@ export const AdminMembershipsTab = () => {
       });
 
       if (res.success) {
-        showToast.success(`Membership upgraded to ${res.data.newSubscription?.membershipPlan?.name || 'new plan'}!`);
+        const newPlanName = res.data?.subscription?.membershipPlan?.name || 'new plan';
+        showToast.success(`Membership upgraded to ${newPlanName}!`);
         setActionSuccess(`Membership upgraded successfully!`);
         setUpgradeModalOpen(false);
         setSelectedSubForUpgrade(null);
+        const pId = res.data?.payment?.paymentId || res.data?.payment?._id;
+        if (pId) {
+          setReceiptModalPaymentId(pId);
+        }
         fetchAllData();
       }
     } catch (err) {
@@ -345,26 +408,49 @@ export const AdminMembershipsTab = () => {
     }
   };
 
-  // Search Customer for Offline Desk
-  const handleSearchCustomerForOffline = async () => {
-    if (!offlineForm.customerPhone) return;
+  // Search Customer for Offline Desk (Name, Email, or Mobile)
+  const handleSearchCustomersForOffline = async (query) => {
+    const q = (query !== undefined ? query : offlineCustomerQuery).trim();
+    if (!q) {
+      setOfflineCustomerResults([]);
+      setOfflineHasSearched(false);
+      return;
+    }
     setOfflineCustomerSearching(true);
+    setOfflineHasSearched(true);
+    setActionError('');
     try {
-      const data = await authApi.searchCustomerByPhone(offlineForm.customerPhone.trim());
-      if (data?.data?.user) {
-        setOfflineForm({
-          ...offlineForm,
-          customerId: data.data.user._id,
-          customerName: `${data.data.user.name} (${data.data.user.customerId || 'Customer'})`,
-        });
+      const res = await receptionistApi.searchCustomers(q);
+      if (res?.success && Array.isArray(res.data)) {
+        setOfflineCustomerResults(res.data);
       } else {
-        setActionError('Customer not found with this mobile number');
+        setOfflineCustomerResults([]);
       }
-    } catch (err) {
-      setActionError(err.message || 'Error searching customer');
+    } catch {
+      try {
+        const fallback = await authApi.searchCustomerByPhone(q);
+        const cust = fallback?.data?.customer || fallback?.data?.user;
+        if (cust) {
+          setOfflineCustomerResults([cust]);
+        } else {
+          setOfflineCustomerResults([]);
+        }
+      } catch {
+        setOfflineCustomerResults([]);
+      }
     } finally {
       setOfflineCustomerSearching(false);
     }
+  };
+
+  const handleSelectOfflineCustomer = (cust) => {
+    setOfflineSelectedCustomer(cust);
+    setOfflineForm((prev) => ({
+      ...prev,
+      customerId: cust._id,
+      customerName: `${cust.name} (${cust.phone || cust.customerId || 'Customer'})`,
+      customerPhone: cust.phone || '',
+    }));
   };
 
   // Submit Offline Membership Desk
@@ -393,6 +479,10 @@ export const AdminMembershipsTab = () => {
         setActionSuccess(
           `Membership activated for ${offlineForm.customerName}! Subscription: ${res.data.subscription.subscriptionId}`
         );
+        const pId = res.data?.payment?.paymentId || res.data?.payment?._id;
+        if (pId) {
+          setReceiptModalPaymentId(pId);
+        }
         setOfflineForm({
           customerPhone: '',
           customerId: '',
@@ -403,6 +493,9 @@ export const AdminMembershipsTab = () => {
           transactionReference: '',
           notes: '',
         });
+        setOfflineSelectedCustomer(null);
+        setOfflineCustomerQuery('');
+        setOfflineCustomerResults([]);
         fetchAllData();
         setActiveSubTab('subscriptions');
         setTimeout(() => setActionSuccess(''), 6000);
@@ -509,10 +602,33 @@ export const AdminMembershipsTab = () => {
       )}
 
       {/* Subtab Navigation */}
-      <div className="flex border-b border-slate-800 gap-4 text-xs font-heading font-bold uppercase tracking-wider">
+      {/* Mobile Selector Dropdown (sm:hidden) */}
+      <div className="sm:hidden w-full max-w-full">
+        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5 font-heading">
+          Select Membership View
+        </label>
+        <div className="relative">
+          <select
+            value={activeSubTab}
+            onChange={(e) => setActiveSubTab(e.target.value)}
+            className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-heading font-bold text-xs uppercase tracking-wider pr-10 focus:outline-none focus:border-amber-400"
+          >
+            <option value="plans">Membership Plans ({plans.length})</option>
+            <option value="subscriptions">Active Subscriptions ({subscriptions.length})</option>
+            <option value="offline">Front Desk Cash/UPI Registration</option>
+            <option value="usage">Usage Audit Logs ({usages.length})</option>
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+            <ChevronDown className="w-4 h-4" />
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop / Tablet Subtab Navigation (hidden sm:flex) */}
+      <div className="hidden sm:flex border-b border-slate-800 gap-4 text-xs font-heading font-bold uppercase tracking-wider overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveSubTab('plans')}
-          className={`pb-3 transition-all border-b-2 flex items-center gap-1.5 ${
+          className={`pb-3 transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
             activeSubTab === 'plans'
               ? 'text-amber-400 border-amber-400'
               : 'text-slate-400 border-transparent hover:text-white'
@@ -523,7 +639,7 @@ export const AdminMembershipsTab = () => {
 
         <button
           onClick={() => setActiveSubTab('subscriptions')}
-          className={`pb-3 transition-all border-b-2 flex items-center gap-1.5 ${
+          className={`pb-3 transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
             activeSubTab === 'subscriptions'
               ? 'text-[#D7FF00] border-[#D7FF00]'
               : 'text-slate-400 border-transparent hover:text-white'
@@ -534,7 +650,7 @@ export const AdminMembershipsTab = () => {
 
         <button
           onClick={() => setActiveSubTab('offline')}
-          className={`pb-3 transition-all border-b-2 flex items-center gap-1.5 ${
+          className={`pb-3 transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
             activeSubTab === 'offline'
               ? 'text-emerald-400 border-emerald-400'
               : 'text-slate-400 border-transparent hover:text-white'
@@ -545,7 +661,7 @@ export const AdminMembershipsTab = () => {
 
         <button
           onClick={() => setActiveSubTab('usage')}
-          className={`pb-3 transition-all border-b-2 flex items-center gap-1.5 ${
+          className={`pb-3 transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
             activeSubTab === 'usage'
               ? 'text-purple-400 border-purple-400'
               : 'text-slate-400 border-transparent hover:text-white'
@@ -732,12 +848,13 @@ export const AdminMembershipsTab = () => {
                             Upgrade Pass
                           </button>
                         )}
-                        {isAdmin && (
+                        {(isAdmin || isStaff) && (
                           <button
                             onClick={() => handleOpenManageSub(s)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[#FFF4E8] font-semibold text-xs"
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[#FFF4E8] font-semibold text-xs border border-slate-700"
+                            title="Extend or renew subscription"
                           >
-                            Manage / Extend
+                            Extend / Renew
                           </button>
                         )}
                       </div>
@@ -777,32 +894,197 @@ export const AdminMembershipsTab = () => {
           </div>
 
           <form onSubmit={handleSubmitOfflineMembership} className="space-y-4 text-xs">
-            {/* Step 1: Find Customer */}
-            <div className="space-y-1.5">
+            {/* Step 1: Find Customer (Name, Email, or Mobile) */}
+            <div className="space-y-2">
               <label className="text-[11px] font-bold uppercase text-slate-400 block font-heading">
-                Step 1: Find Registered Customer (Mobile Number)
+                Step 1: Find Registered Customer (Name, Email, or Phone) <span className="text-rose-400">*</span>
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="tel"
-                  placeholder="Enter 10-digit mobile number..."
-                  value={offlineForm.customerPhone}
-                  onChange={(e) => setOfflineForm({ ...offlineForm, customerPhone: e.target.value })}
-                  className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={handleSearchCustomerForOffline}
-                  disabled={offlineCustomerSearching}
-                  className="px-4 py-2 bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold rounded-xl font-heading text-xs uppercase"
-                >
-                  {offlineCustomerSearching ? 'Searching...' : 'Find Customer'}
-                </button>
-              </div>
 
-              {offlineForm.customerName && (
-                <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold">
-                  ✓ Selected: {offlineForm.customerName}
+              {!offlineSelectedCustomer ? (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+                      <input
+                        type="text"
+                        placeholder="Search by customer name, email, or mobile number..."
+                        value={offlineCustomerQuery}
+                        onChange={(e) => {
+                          setOfflineCustomerQuery(e.target.value);
+                          handleSearchCustomersForOffline(e.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSearchCustomersForOffline();
+                          }
+                        }}
+                        className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-sans text-xs focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSearchCustomersForOffline()}
+                      disabled={offlineCustomerSearching}
+                      className="px-4 py-2 bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold rounded-xl font-heading text-xs uppercase flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {offlineCustomerSearching ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Search className="w-3.5 h-3.5" />
+                      )}
+                      <span>Search</span>
+                    </button>
+                  </div>
+
+                  {/* Customer Results List */}
+                  {offlineCustomerResults.length > 0 && (
+                    <div className="max-h-48 overflow-y-auto divide-y divide-slate-800 rounded-xl bg-slate-950 border border-slate-700">
+                      {offlineCustomerResults.map((cust) => {
+                        const hasActiveSub = cust.membership?.status === 'ACTIVE';
+                        return (
+                          <div
+                            key={cust._id}
+                            onClick={() => handleSelectOfflineCustomer(cust)}
+                            className="p-2.5 hover:bg-slate-900 cursor-pointer flex items-center justify-between transition-colors"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white text-xs">{cust.name}</span>
+                                <span className="font-mono text-[11px] text-[#D7FF00]">{cust.phone}</span>
+                                {hasActiveSub ? (
+                                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                    ★ Active: {cust.membership?.planId?.name || 'Member'}
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.2 rounded text-[10px] text-slate-400 bg-slate-800">
+                                    {cust.membership?.status || 'No Membership'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                {cust.email} &bull; ID: {cust.customerId || cust._id}
+                              </div>
+                            </div>
+                            <span className="text-xs text-amber-400 font-bold flex items-center gap-1">
+                              Select &rarr;
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {offlineHasSearched && offlineCustomerResults.length === 0 && !offlineCustomerSearching && (
+                    <div className="p-3 text-center text-slate-500 text-xs bg-slate-950 rounded-xl border border-slate-800">
+                      No matching registered customers found. Check spelling or mobile number.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Selected Customer Card with Active Membership Warning & Direct Actions */
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-sm">{offlineSelectedCustomer.name}</span>
+                        <span className="font-mono text-xs text-[#D7FF00] font-bold">
+                          {offlineSelectedCustomer.phone}
+                        </span>
+                        {offlineSelectedCustomer.membership?.status === 'ACTIVE' && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            ★ Active Member
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {offlineSelectedCustomer.email} &bull; ID: {offlineSelectedCustomer.customerId || offlineSelectedCustomer._id}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOfflineSelectedCustomer(null);
+                        setOfflineCustomerResults([]);
+                        setOfflineCustomerQuery('');
+                        setOfflineHasSearched(false);
+                        setOfflineForm((prev) => ({
+                          ...prev,
+                          customerId: '',
+                          customerName: '',
+                          customerPhone: '',
+                        }));
+                      }}
+                      className="px-2 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-semibold"
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  {/* Active Membership Warning & Duplicate Prevention */}
+                  {offlineSelectedCustomer.membership?.status === 'ACTIVE' && (
+                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Customer already has an active subscription!</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300">
+                        Expires:{' '}
+                        {offlineSelectedCustomer.membership?.expiresAt
+                          ? new Date(offlineSelectedCustomer.membership.expiresAt).toLocaleDateString('en-IN')
+                          : 'Active'}{' '}
+                        &bull; Avoid creating duplicate passes. Upgrade or extend their existing pass instead:
+                      </p>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sub = subscriptions.find(
+                              (s) =>
+                                (s.customer?._id || s.customer) === offlineSelectedCustomer._id &&
+                                s.status === 'ACTIVE'
+                            );
+                            if (sub) {
+                              handleOpenOfflineUpgrade(sub);
+                            } else {
+                              handleOpenOfflineUpgrade({
+                                customer: offlineSelectedCustomer,
+                                membershipPlan: offlineSelectedCustomer.membership?.planId,
+                                expirationDate: offlineSelectedCustomer.membership?.expiresAt,
+                              });
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] uppercase font-heading"
+                        >
+                          Upgrade Current Pass &rarr;
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sub = subscriptions.find(
+                              (s) =>
+                                (s.customer?._id || s.customer) === offlineSelectedCustomer._id &&
+                                s.status === 'ACTIVE'
+                            );
+                            if (sub) {
+                              handleOpenManageSub(sub);
+                            } else {
+                              handleOpenManageSub({
+                                _id: offlineSelectedCustomer.membership?.subscriptionId,
+                                customer: offlineSelectedCustomer,
+                                membershipPlan: offlineSelectedCustomer.membership?.planId,
+                                expirationDate: offlineSelectedCustomer.membership?.expiresAt,
+                                status: 'ACTIVE',
+                              });
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-bold text-[10px] uppercase font-heading border border-slate-700"
+                        >
+                          Extend / Renew &rarr;
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -896,9 +1178,38 @@ export const AdminMembershipsTab = () => {
               </div>
             )}
 
+            {/* Step 4: Payment Summary */}
+            {offlineForm.customerId && offlineForm.planId && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5 font-mono text-xs">
+                <div className="text-[10px] uppercase font-bold text-emerald-400 font-heading tracking-wider">
+                  Payment Collection Summary
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span>Customer:</span>
+                  <span className="font-bold text-white">{offlineSelectedCustomer?.name || offlineForm.customerName}</span>
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span>Selected Pass:</span>
+                  <span className="text-white">{plans.find((p) => p._id === offlineForm.planId)?.name || 'Pass'}</span>
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span>Operation:</span>
+                  <span className="text-amber-400 font-bold">New Membership Purchase</span>
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span>Payment Method:</span>
+                  <span className="text-white">{offlineForm.paymentMethod === 'COUNTER_UPI' ? 'Front Desk UPI QR' : 'Cash Drawer'}</span>
+                </div>
+                <div className="flex justify-between text-white font-bold text-sm pt-1 border-t border-emerald-500/20">
+                  <span>Total Amount to Collect:</span>
+                  <span className="text-emerald-400 font-bold">₹{offlineForm.amount || 0}</span>
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={offlineSubmitting || !offlineForm.customerId}
+              disabled={offlineSubmitting || !offlineForm.customerId || (offlineForm.paymentMethod === 'COUNTER_UPI' && !offlineForm.transactionReference)}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 disabled:opacity-50"
             >
               {offlineSubmitting ? 'Activating Membership...' : 'Confirm Payment & Activate Membership'}
@@ -1153,15 +1464,19 @@ export const AdminMembershipsTab = () => {
         </div>
       )}
 
-      {/* ---------------- MODAL 2: MANAGE SUBSCRIPTION (EXTEND / SUSPEND) ---------------- */}
+      {/* ---------------- MODAL 2: EXTEND / RENEW SUBSCRIPTION WITH PAYMENT ---------------- */}
       {manageSubModalOpen && selectedSub && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-          <div className="m-auto w-full max-w-md bg-[#260D17] border border-[#49202C] rounded-3xl p-6 shadow-2xl text-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="m-auto w-full max-w-lg bg-[#260D17] border border-[#851B2B] rounded-3xl p-6 shadow-2xl text-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-bold font-heading text-white">
-                Manage Subscription
-              </h3>
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-[#D7FF00]" />
+                <h3 className="text-base font-bold font-heading text-white">
+                  Extend / Renew Subscription
+                </h3>
+              </div>
               <button
+                type="button"
                 onClick={() => setManageSubModalOpen(false)}
                 className="p-1 rounded text-slate-400 hover:text-white"
               >
@@ -1169,53 +1484,148 @@ export const AdminMembershipsTab = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveManageSub} className="space-y-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1 font-mono text-[11px]">
-                <div>Customer: {selectedSub.customer?.name} ({selectedSub.customer?.phone})</div>
-                <div>Plan: {selectedSub.membershipPlan?.name}</div>
-                <div>Current Expiry: {new Date(selectedSub.expirationDate).toLocaleDateString('en-IN')}</div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Subscription Status</label>
-                <select
-                  value={subManageForm.status}
-                  onChange={(e) => setSubManageForm({ ...subManageForm, status: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+            {/* Customer & Current Subscription Snapshot */}
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 font-mono text-xs">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-white text-sm">
+                  {selectedSub.customer?.name} ({selectedSub.customer?.phone || selectedSub.customer?.customerId})
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    selectedSub.status === 'ACTIVE'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
                 >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="SUSPENDED">SUSPENDED</option>
-                  <option value="EXPIRED">EXPIRED</option>
-                  <option value="CANCELLED">CANCELLED</option>
+                  {selectedSub.status}
+                </span>
+              </div>
+              <div className="text-slate-400">
+                Current Pass: <span className="text-amber-400 font-bold">{selectedSub.membershipPlan?.name}</span>
+              </div>
+              <div className="text-slate-400">
+                Current Expiration:{' '}
+                <span className="text-white font-bold">
+                  {new Date(selectedSub.expirationDate).toLocaleDateString('en-IN')}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmExtendSub} className="space-y-4 text-xs">
+              {/* Select Extension / Renewal Plan */}
+              <div>
+                <label className="block text-slate-300 mb-1 font-semibold">
+                  Select Extension Plan / Duration *
+                </label>
+                <select
+                  required
+                  value={extendPlanId}
+                  onChange={(e) => setExtendPlanId(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                >
+                  <option value="">-- Select Extension Plan --</option>
+                  {plans
+                    .filter((p) => p.status === 'ACTIVE')
+                    .map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name} - ₹{p.price / 100} (+{p.validityDuration} {p.validityUnit})
+                      </option>
+                    ))}
                 </select>
               </div>
 
+              {/* Calculated Extension Preview */}
+              {(() => {
+                const selectedPlan = plans.find((p) => p._id === extendPlanId);
+                if (!selectedPlan) return null;
+                const isCurrentlyActive =
+                  selectedSub.status === 'ACTIVE' && new Date(selectedSub.expirationDate) > new Date();
+                const baseDate = isCurrentlyActive ? new Date(selectedSub.expirationDate) : new Date();
+                const previewDate = new Date(baseDate);
+                previewDate.setDate(previewDate.getDate() + (selectedPlan.validityDuration || 30));
+
+                return (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1.5 font-mono text-xs">
+                    <div className="text-[11px] uppercase tracking-wider text-amber-400 font-bold font-heading">
+                      Extension Details & Payment Summary
+                    </div>
+                    <div className="flex justify-between text-slate-300">
+                      <span>Extension Plan:</span>
+                      <span className="text-white font-bold">{selectedPlan.name}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-300">
+                      <span>Validity Added:</span>
+                      <span className="text-white">+{selectedPlan.validityDuration} {selectedPlan.validityUnit}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-300">
+                      <span>New Expiration Date:</span>
+                      <span className="text-emerald-400 font-bold">{previewDate.toLocaleDateString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between text-white font-bold text-sm pt-1 border-t border-amber-500/20">
+                      <span>Amount to Collect:</span>
+                      <span className="text-amber-400 font-bold">₹{selectedPlan.price / 100}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Payment Method Selection */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase text-slate-400 block font-heading">
+                  Payment Collection Method *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExtendPaymentMethod('CASH')}
+                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 font-bold font-mono transition-all ${
+                      extendPaymentMethod === 'CASH'
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <Banknote className="w-4 h-4" /> Cash Drawer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExtendPaymentMethod('COUNTER_UPI')}
+                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 font-bold font-mono transition-all ${
+                      extendPaymentMethod === 'COUNTER_UPI'
+                        ? 'bg-[#851B2B]/20 border-[#D7FF00] text-[#FFF4E8]'
+                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <Smartphone className="w-4 h-4" /> Counter UPI QR
+                  </button>
+                </div>
+              </div>
+
+              {extendPaymentMethod === 'COUNTER_UPI' && (
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">UPI Transaction Reference / UTR *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 98471928374 or UPI Txn Ref"
+                    value={extendTxnRef}
+                    onChange={(e) => setExtendTxnRef(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                  />
+                </div>
+              )}
+
               <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Extend Validity (Extra Days)</label>
+                <label className="block text-slate-400 mb-1 font-semibold">Front-Desk Notes / Remarks</label>
                 <input
-                  type="number"
-                  min="0"
-                  value={subManageForm.extendDays}
-                  onChange={(e) =>
-                    setSubManageForm({ ...subManageForm, extendDays: e.target.value })
-                  }
-                  placeholder="e.g. 7, 30"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                  type="text"
+                  placeholder="e.g. Monthly extension renewed at reception"
+                  value={extendNotes}
+                  onChange={(e) => setExtendNotes(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-sans text-xs"
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Administrative Reason / Notes</label>
-                <textarea
-                  rows="2"
-                  value={subManageForm.notes}
-                  onChange={(e) => setSubManageForm({ ...subManageForm, notes: e.target.value })}
-                  placeholder="Reason for extension or suspension..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setManageSubModalOpen(false)}
@@ -1225,13 +1635,55 @@ export const AdminMembershipsTab = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={subManaging}
-                  className="px-5 py-2 bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold font-heading rounded-lg uppercase"
+                  disabled={extendSubmitting || !extendPlanId || (extendPaymentMethod === 'COUNTER_UPI' && !extendTxnRef)}
+                  className="px-5 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold font-heading rounded-lg uppercase disabled:opacity-50"
                 >
-                  {subManaging ? 'Updating...' : 'Update Subscription'}
+                  {extendSubmitting ? 'Processing Extension...' : 'Confirm Payment & Extend Subscription'}
                 </button>
               </div>
             </form>
+
+            {/* Optional Administrative Override for Admins */}
+            {isAdmin && (
+              <details className="mt-4 pt-3 border-t border-slate-800 text-xs">
+                <summary className="cursor-pointer text-slate-400 hover:text-white font-semibold flex items-center justify-between">
+                  <span>Administrative Status Override (Admin Only)</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </summary>
+                <form onSubmit={handleSaveManageSub} className="space-y-3 mt-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-semibold">Change Status Directly</label>
+                    <select
+                      value={subManageForm.status}
+                      onChange={(e) => setSubManageForm({ ...subManageForm, status: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                    >
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="SUSPENDED">SUSPENDED</option>
+                      <option value="EXPIRED">EXPIRED</option>
+                      <option value="CANCELLED">CANCELLED</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-semibold">Reason for Administrative Override</label>
+                    <textarea
+                      rows="2"
+                      value={subManageForm.notes}
+                      onChange={(e) => setSubManageForm({ ...subManageForm, notes: e.target.value })}
+                      placeholder="Administrative note..."
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={subManaging}
+                    className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold font-heading rounded-lg uppercase"
+                  >
+                    {subManaging ? 'Updating...' : 'Update Status'}
+                  </button>
+                </form>
+              </details>
+            )}
           </div>
         </div>
       )}
@@ -1289,23 +1741,33 @@ export const AdminMembershipsTab = () => {
                 </div>
               )}
 
-              {upgradeQuote && !upgradeQuoteLoading && (
-                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2 text-xs font-mono">
-                  <div className="text-[11px] uppercase tracking-wider text-amber-400 font-bold">Prorated Upgrade Breakdown</div>
-                  <div className="flex justify-between text-slate-300">
-                    <span>Unused Credit ({upgradeQuote.breakdown.remainingDays} days remaining):</span>
-                    <span className="text-emerald-400 font-bold">-₹{upgradeQuote.breakdown.unusedCreditInRupees}</span>
+              {upgradeQuote && !upgradeQuoteLoading && (() => {
+                const fin = upgradeQuote.financials || upgradeQuote.breakdown || {};
+                const remDays = fin.remainingEligibleDays ?? fin.remainingDays ?? 0;
+                const unusedCredit = fin.unusedCreditRupees ?? fin.unusedCreditInRupees ?? 0;
+                const targetPrice = fin.newPlanPriceRupees ?? fin.targetPriceInRupees ?? 0;
+                const payable = fin.finalAmountPayableRupees ?? fin.finalPayableInRupees ?? 0;
+
+                return (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2 text-xs font-mono">
+                    <div className="text-[11px] uppercase tracking-wider text-amber-400 font-bold font-heading">
+                      Prorated Upgrade Breakdown
+                    </div>
+                    <div className="flex justify-between text-slate-300">
+                      <span>Unused Credit ({remDays} days remaining):</span>
+                      <span className="text-emerald-400 font-bold">-₹{unusedCredit}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-300">
+                      <span>New Plan Price:</span>
+                      <span>₹{targetPrice}</span>
+                    </div>
+                    <div className="flex justify-between text-white font-bold text-sm pt-1 border-t border-amber-500/20">
+                      <span>Amount to Collect at Counter:</span>
+                      <span className="text-amber-400 font-bold">₹{payable}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-slate-300">
-                    <span>New Plan Price:</span>
-                    <span>₹{upgradeQuote.breakdown.targetPriceInRupees}</span>
-                  </div>
-                  <div className="flex justify-between text-white font-bold text-sm pt-1 border-t border-amber-500/20">
-                    <span>Amount to Collect at Counter:</span>
-                    <span className="text-amber-400">₹{upgradeQuote.breakdown.finalPayableInRupees}</span>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase text-slate-400 block font-heading">
@@ -1370,6 +1832,14 @@ export const AdminMembershipsTab = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Payment Receipt Modal */}
+      {receiptModalPaymentId && (
+        <ReceiptModal
+          paymentId={receiptModalPaymentId}
+          onClose={() => setReceiptModalPaymentId(null)}
+        />
       )}
 
       {/* Centered Confirmation Modal */}

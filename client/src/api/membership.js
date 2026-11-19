@@ -57,6 +57,11 @@ export const membershipApi = {
       method: 'POST',
       body: data,
     }),
+  offlineRenewal: (data) =>
+    apiRequest('/memberships/renew/offline', {
+      method: 'POST',
+      body: data,
+    }),
 
   // Admin Plan Management
   getAdminPlans: () => apiRequest('/admin/memberships/plans'),
