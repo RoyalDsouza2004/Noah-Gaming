@@ -250,21 +250,61 @@ html:not(.light) svg text[fill="#94a3b8"] {
 }
 
 /* ========================================================================= */
-/* CRITICAL: MOBILE BOTTOM NAVIGATION PRESERVATION SHIELD                   */
-/* Untouched in both light and dark mode: preserves white frosted glass pill */
+/* CRITICAL: MOBILE BOTTOM NAVIGATION SYSTEM                                 */
+/* Light Mode: White frosted glass pill with dark text and icons             */
+/* Dark Mode: Glossy burgundy/brown glass pill with pure white text & icons   */
 /* ========================================================================= */
-#mobile-bottom-nav {
+html.light #mobile-bottom-nav {
   background-color: color-mix(in oklab, white 65%, transparent) !important;
   backdrop-filter: blur(22px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.7) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 12px 35px -15px rgba(0, 0, 0, 0.22) !important;
 }
+
+html.dark #mobile-bottom-nav {
+  background-color: rgba(90, 24, 40, 0.78) !important;
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 16px 36px -12px rgba(0, 0, 0, 0.65), 0 0 20px -3px rgba(90, 24, 40, 0.45) !important;
+}
+
 #mobile-bottom-nav nav {
   background: transparent !important;
 }
 #mobile-bottom-nav button {
   background: transparent !important;
+}
+
+/* Dark Mode Mobile Nav: Active & Inactive Text & Icon Colors */
+html.dark #mobile-bottom-nav .nav-label-active,
+html.dark #mobile-bottom-nav .nav-icon-active,
+html.dark #mobile-bottom-nav .nav-icon-active * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+}
+
+html.dark #mobile-bottom-nav .nav-label-inactive,
+html.dark #mobile-bottom-nav .nav-icon-inactive,
+html.dark #mobile-bottom-nav .nav-icon-inactive * {
+  color: rgba(255, 255, 255, 0.82) !important;
+  stroke: rgba(255, 255, 255, 0.82) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.82) !important;
+}
+
+/* Active indicator glass styling */
+html.light #mobile-bottom-nav .mobile-nav-indicator {
+  background-color: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+html.dark #mobile-bottom-nav .mobile-nav-indicator {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(133, 27, 43, 0.45) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* ========================================================================= */
