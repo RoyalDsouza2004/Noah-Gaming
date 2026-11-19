@@ -32,6 +32,36 @@ export const authApi = {
       body: { challengeId },
     }),
 
+  // Customer Registration OTP Verification
+  verifyRegistrationOtp: (challengeId, otp) =>
+    apiRequest('/auth/register/verify-otp', {
+      method: 'POST',
+      body: { challengeId, otp },
+    }),
+
+  // Customer Registration OTP Resend
+  resendRegistrationOtp: (challengeId) =>
+    apiRequest('/auth/register/resend-otp', {
+      method: 'POST',
+      body: { challengeId },
+    }),
+
+  // Admin-Assisted OTP Verification Fallback Endpoints
+  requestOtpAssistance: (challengeId) =>
+    apiRequest('/auth/otp-assistance/request', {
+      method: 'POST',
+      body: { challengeId },
+    }),
+
+  getOtpAssistanceStatus: (challengeId) =>
+    apiRequest(`/auth/otp-assistance/status/${challengeId}`),
+
+  completeOtpAssistance: (challengeId, approvalToken) =>
+    apiRequest('/auth/otp-assistance/complete', {
+      method: 'POST',
+      body: { challengeId, approvalToken },
+    }),
+
   // Fetch current user details
   getMe: () => apiRequest('/auth/me'),
 

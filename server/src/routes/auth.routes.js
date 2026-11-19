@@ -5,6 +5,11 @@ import {
   login,
   verifyCustomerLogin2FA,
   resendCustomerLogin2FA,
+  verifyRegistrationOtp,
+  resendRegistrationOtp,
+  requestOtpAssistance,
+  getOtpAssistanceStatus,
+  completeOtpAssistance,
   getMe,
   updateProfile,
   requestConversionOtpOnline,
@@ -75,6 +80,31 @@ const updateProfileValidation = [
 router.post('/register', authLimiter, registerValidation, validate, register);
 router.post('/login', authLimiter, loginValidation, validate, login);
 
+// Customer Registration OTP Verification
+router.post(
+  '/register/verify-otp',
+  authLimiter,
+  [
+    body('challengeId').trim().notEmpty().withMessage('Challenge identifier is required'),
+    body('otp')
+      .trim()
+      .notEmpty()
+      .withMessage('Verification code is required')
+      .matches(/^\d{6}$/)
+      .withMessage('Verification code must be exactly 6 digits'),
+  ],
+  validate,
+  verifyRegistrationOtp
+);
+
+router.post(
+  '/register/resend-otp',
+  authLimiter,
+  [body('challengeId').trim().notEmpty().withMessage('Challenge identifier is required')],
+  validate,
+  resendRegistrationOtp
+);
+
 // Customer Two-Factor Authentication (2FA) for Login
 router.post(
   '/login-2fa/verify',
@@ -98,6 +128,28 @@ router.post(
   [body('challengeId').trim().notEmpty().withMessage('Challenge identifier is required')],
   validate,
   resendCustomerLogin2FA
+);
+
+// Admin-Assisted OTP Fallback Endpoints
+router.post(
+  '/otp-assistance/request',
+  authLimiter,
+  [body('challengeId').trim().notEmpty().withMessage('Challenge identifier is required')],
+  validate,
+  requestOtpAssistance
+);
+
+router.get('/otp-assistance/status/:challengeId', authLimiter, getOtpAssistanceStatus);
+
+router.post(
+  '/otp-assistance/complete',
+  authLimiter,
+  [
+    body('challengeId').trim().notEmpty().withMessage('Challenge identifier is required'),
+    body('approvalToken').trim().notEmpty().withMessage('Approval token is required'),
+  ],
+  validate,
+  completeOtpAssistance
 );
 
 router.get('/me', authenticate, getMe);

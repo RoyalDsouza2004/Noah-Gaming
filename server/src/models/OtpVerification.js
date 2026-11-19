@@ -24,7 +24,18 @@ const otpVerificationSchema = new mongoose.Schema(
     purpose: {
       type: String,
       required: true,
-      enum: ['LOGIN_2FA', 'GUEST_CONVERSION', 'EMAIL_VERIFICATION', 'PASSWORD_RESET'],
+      enum: ['REGISTRATION', 'LOGIN_2FA', 'GUEST_CONVERSION', 'EMAIL_VERIFICATION', 'PASSWORD_RESET'],
+      index: true,
+    },
+    userName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    phone: {
+      type: String,
+      default: '',
+      trim: true,
       index: true,
     },
     challengeId: {
@@ -50,6 +61,65 @@ const otpVerificationSchema = new mongoose.Schema(
     resendAvailableAt: {
       type: Date,
       required: true,
+    },
+    emailDeliveryStatus: {
+      type: String,
+      enum: ['PENDING', 'ACCEPTED', 'DELIVERED', 'FAILED', 'NOT_CONFIGURED'],
+      default: 'PENDING',
+      index: true,
+    },
+    emailDeliveryError: {
+      type: String,
+      default: '',
+    },
+    assistanceRequested: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    assistanceRequestedAt: {
+      type: Date,
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ['PENDING', 'AWAITING_ADMIN_ASSISTANCE', 'APPROVED', 'REJECTED', 'EXPIRED', 'CONSUMED'],
+      default: 'PENDING',
+      index: true,
+    },
+    approvalToken: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    adminDecision: {
+      status: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED'],
+        default: 'PENDING',
+      },
+      adminId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+      },
+      adminName: {
+        type: String,
+        default: '',
+      },
+      decidedAt: {
+        type: Date,
+        default: null,
+      },
+      reason: {
+        type: String,
+        default: '',
+      },
+    },
+    authMethod: {
+      type: String,
+      enum: ['email_otp', 'admin_assisted', 'none'],
+      default: 'none',
     },
     verified: {
       type: Boolean,

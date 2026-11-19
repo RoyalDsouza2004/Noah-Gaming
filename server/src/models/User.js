@@ -65,10 +65,20 @@ const userSchema = new mongoose.Schema(
     },
     accountStatus: {
       type: String,
-      enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DEACTIVATED'],
+      enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DEACTIVATED', 'PENDING_VERIFICATION'],
       default: 'ACTIVE',
       index: true,
       set: (v) => v ? v.toUpperCase() : 'ACTIVE',
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    emailVerificationMethod: {
+      type: String,
+      enum: ['email_otp', 'admin_assisted', 'none'],
+      default: 'none',
     },
     notes: {
       type: String,

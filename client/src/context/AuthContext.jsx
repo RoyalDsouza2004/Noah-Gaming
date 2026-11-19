@@ -64,6 +64,16 @@ export const AuthProvider = ({ children }) => {
         return {
           success: false,
           requires2FA: true,
+          purpose: 'LOGIN_2FA',
+          message: response.message,
+          data: response.data,
+        };
+      }
+      if (response.requiresOtpVerification) {
+        return {
+          success: false,
+          requiresOtpVerification: true,
+          purpose: response.purpose || 'REGISTRATION',
           message: response.message,
           data: response.data,
         };
@@ -102,6 +112,70 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyRegistrationOtp = async (challengeId, otp) => {
+    try {
+      const response = await authApi.verifyRegistrationOtp(challengeId, otp);
+      if (response.success && response.data?.token) {
+        localStorage.setItem('noah_auth_token', response.data.token);
+        localStorage.setItem('nexus_auth_token', response.data.token);
+        if (response.data.user) {
+          localStorage.setItem('noah_user', JSON.stringify(response.data.user));
+        }
+        setToken(response.data.token);
+        setUser(response.data.user);
+        setAuthModalOpen(false);
+        return { success: true, user: response.data.user };
+      }
+      return { success: false, message: response.message || 'Verification failed' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const resendRegistrationOtp = async (challengeId) => {
+    try {
+      return await authApi.resendRegistrationOtp(challengeId);
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const requestOtpAssistance = async (challengeId) => {
+    try {
+      return await authApi.requestOtpAssistance(challengeId);
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const getOtpAssistanceStatus = async (challengeId) => {
+    try {
+      return await authApi.getOtpAssistanceStatus(challengeId);
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const completeOtpAssistance = async (challengeId, approvalToken) => {
+    try {
+      const response = await authApi.completeOtpAssistance(challengeId, approvalToken);
+      if (response.success && response.data?.token) {
+        localStorage.setItem('noah_auth_token', response.data.token);
+        localStorage.setItem('nexus_auth_token', response.data.token);
+        if (response.data.user) {
+          localStorage.setItem('noah_user', JSON.stringify(response.data.user));
+        }
+        setToken(response.data.token);
+        setUser(response.data.user);
+        setAuthModalOpen(false);
+        return { success: true, user: response.data.user };
+      }
+      return { success: false, message: response.message || 'Assistance completion failed' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
   const register = async (payload) => {
     try {
       const response = await authApi.register(payload);
@@ -115,6 +189,15 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.user);
         setAuthModalOpen(false);
         return { success: true, user: response.data.user };
+      }
+      if (response.requiresOtpVerification) {
+        return {
+          success: false,
+          requiresOtpVerification: true,
+          purpose: 'REGISTRATION',
+          message: response.message,
+          data: response.data,
+        };
       }
       if (response.requiresConversion) {
         return {
@@ -190,6 +273,11 @@ export const AuthProvider = ({ children }) => {
     login,
     verifyLogin2FA,
     resendLogin2FA,
+    verifyRegistrationOtp,
+    resendRegistrationOtp,
+    requestOtpAssistance,
+    getOtpAssistanceStatus,
+    completeOtpAssistance,
     register,
     setAuthData,
     updateUser,

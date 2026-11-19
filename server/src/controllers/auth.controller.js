@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import User from '../models/User.js';
 import OtpVerification from '../models/OtpVerification.js';
+import OtpAuditLog from '../models/OtpAuditLog.js';
 import ActivityLog from '../models/ActivityLog.js';
 import { ROLES } from '../config/constants.js';
 import {
@@ -88,6 +89,15 @@ export const register = async (req, res) => {
           });
         }
 
+        if (existingPhone.accountStatus === 'PENDING_VERIFICATION') {
+          // Unverified previous registration: reuse and re-issue verification challenge
+          existingPhone.name = name.trim();
+          existingPhone.email = cleanEmail;
+          existingPhone.password = password;
+          await existingPhone.save();
+          return dispatchRegistrationChallenge(existingPhone, req, res);
+        }
+
         return res.status(409).json({
           success: false,
           message: 'An account with this mobile number already exists.',
@@ -148,6 +158,14 @@ export const register = async (req, res) => {
           });
         }
 
+        if (existingEmail.accountStatus === 'PENDING_VERIFICATION') {
+          existingEmail.name = name.trim();
+          existingEmail.phone = cleanPhone;
+          existingEmail.password = password;
+          await existingEmail.save();
+          return dispatchRegistrationChallenge(existingEmail, req, res);
+        }
+
         return res.status(409).json({
           success: false,
           message: 'An account with this email address already exists.',
@@ -162,39 +180,14 @@ export const register = async (req, res) => {
       password,
       role: ROLES.CUSTOMER,
       accountType: 'REGISTERED',
+      accountStatus: 'PENDING_VERIFICATION',
       isGuest: false,
+      isEmailVerified: false,
+      emailVerificationMethod: 'none',
     });
 
     await user.save();
-
-    // Audit log
-    await ActivityLog.create({
-      userId: user._id,
-      userName: user.name,
-      userRole: user.role,
-      action: 'USER_REGISTER',
-      category: 'AUTH',
-      details: { email: user.email, phone: user.phone },
-      ipAddress: req.ip || '127.0.0.1',
-    });
-
-    // Send Welcome Email
-    if (user.email) {
-      sendWelcomeEmail({ user }).catch((err) =>
-        console.error('[Registration Welcome Email Error]:', err.message)
-      );
-    }
-
-    const token = user.generateAuthToken();
-
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful! Welcome to NOAH GAMING.',
-      data: {
-        token,
-        user: user.toSafeObject(),
-      },
-    });
+    return dispatchRegistrationChallenge(user, req, res);
   } catch (err) {
     console.error('Registration Error:', err);
     res.status(500).json({
@@ -204,6 +197,88 @@ export const register = async (req, res) => {
     });
   }
 };
+
+// Helper: Dispatch Registration OTP Challenge & Audit
+async function dispatchRegistrationChallenge(user, req, res) {
+  // Invalidate previous registration challenges for this user
+  await OtpVerification.updateMany(
+    { userId: user._id, purpose: 'REGISTRATION', used: false },
+    { used: true }
+  );
+
+  const otpCode = OtpVerification.generateNumericOtp();
+  const challengeId = crypto.randomBytes(32).toString('hex');
+  const otpHash = OtpVerification.hashOtp(otpCode);
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  const resendAvailableAt = new Date(Date.now() + 60 * 1000);
+
+  let emailDeliveryStatus = 'PENDING';
+  let emailDeliveryError = '';
+  try {
+    const emailResult = await sendOtpEmail({
+      email: user.email,
+      name: user.name,
+      otp: otpCode,
+      purpose: 'REGISTRATION',
+      expiresMinutes: 5,
+    });
+
+    if (emailResult.success) {
+      emailDeliveryStatus = 'ACCEPTED';
+    } else if (emailResult.notConfigured) {
+      emailDeliveryStatus = 'NOT_CONFIGURED';
+      emailDeliveryError = emailResult.message || 'Email service not configured on server';
+    } else {
+      emailDeliveryStatus = 'FAILED';
+      emailDeliveryError = emailResult.error || emailResult.reason || 'Failed to dispatch email';
+    }
+  } catch (e) {
+    emailDeliveryStatus = 'FAILED';
+    emailDeliveryError = e.message;
+  }
+
+  await OtpVerification.create({
+    userId: user._id,
+    email: user.email,
+    phone: user.phone,
+    userName: user.name,
+    otpHash,
+    purpose: 'REGISTRATION',
+    challengeId,
+    expiresAt,
+    resendAvailableAt,
+    attempts: 0,
+    maxAttempts: 5,
+    emailDeliveryStatus,
+    emailDeliveryError,
+    status: 'PENDING',
+  });
+
+  await ActivityLog.create({
+    userId: user._id,
+    userName: user.name,
+    userRole: user.role,
+    action: 'USER_REGISTER_CHALLENGE_CREATED',
+    category: 'AUTH',
+    details: { email: user.email, phone: user.phone, challengeId, emailDeliveryStatus },
+    ipAddress: req.ip || '127.0.0.1',
+  });
+
+  return res.status(200).json({
+    success: true,
+    requiresOtpVerification: true,
+    purpose: 'REGISTRATION',
+    message: 'Verification code dispatched to your registered email address.',
+    data: {
+      challengeId,
+      maskedEmail: maskEmail(user.email),
+      maskedPhone: maskPhone(user.phone),
+      emailDeliveryStatus,
+      resendCooldownSeconds: 60,
+      expiresInSeconds: 300,
+    },
+  });
+}
 
 // Login User (supports login via email or mobile number)
 export const login = async (req, res) => {
@@ -235,6 +310,85 @@ export const login = async (req, res) => {
       return res.status(403).json({
         success: false,
         message: 'Your account has been deactivated. Please contact the administrator.',
+      });
+    }
+
+    // Handle pending registration verification
+    if (user.accountStatus === 'PENDING_VERIFICATION') {
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials. Please verify your email/phone and password.',
+        });
+      }
+
+      await OtpVerification.updateMany(
+        { userId: user._id, purpose: 'REGISTRATION', used: false },
+        { used: true }
+      );
+
+      const otpCode = OtpVerification.generateNumericOtp();
+      const challengeId = crypto.randomBytes(32).toString('hex');
+      const otpHash = OtpVerification.hashOtp(otpCode);
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      const resendAvailableAt = new Date(Date.now() + 60 * 1000);
+
+      let emailDeliveryStatus = 'PENDING';
+      let emailDeliveryError = '';
+      try {
+        const emailResult = await sendOtpEmail({
+          email: user.email,
+          name: user.name,
+          otp: otpCode,
+          purpose: 'REGISTRATION',
+          expiresMinutes: 5,
+        });
+
+        if (emailResult.success) {
+          emailDeliveryStatus = 'ACCEPTED';
+        } else if (emailResult.notConfigured) {
+          emailDeliveryStatus = 'NOT_CONFIGURED';
+          emailDeliveryError = emailResult.message || 'Email service not configured';
+        } else {
+          emailDeliveryStatus = 'FAILED';
+          emailDeliveryError = emailResult.error || emailResult.reason || 'Failed to dispatch email';
+        }
+      } catch (e) {
+        emailDeliveryStatus = 'FAILED';
+        emailDeliveryError = e.message;
+      }
+
+      await OtpVerification.create({
+        userId: user._id,
+        email: user.email,
+        phone: user.phone,
+        userName: user.name,
+        otpHash,
+        purpose: 'REGISTRATION',
+        challengeId,
+        expiresAt,
+        resendAvailableAt,
+        attempts: 0,
+        maxAttempts: 5,
+        emailDeliveryStatus,
+        emailDeliveryError,
+        status: 'PENDING',
+      });
+
+      return res.status(200).json({
+        success: true,
+        requiresOtpVerification: true,
+        purpose: 'REGISTRATION',
+        message: 'Your registration is pending verification. Please enter the verification code or request Admin Assistance.',
+        data: {
+          challengeId,
+          maskedEmail: maskEmail(user.email),
+          maskedPhone: maskPhone(user.phone),
+          emailDeliveryStatus,
+          resendCooldownSeconds: 60,
+          expiresInSeconds: 300,
+        },
       });
     }
 
@@ -288,10 +442,38 @@ export const login = async (req, res) => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes validity
     const resendAvailableAt = new Date(Date.now() + 60 * 1000); // 60s cooldown
 
-    // 3. Save verification record with SHA-256 hash only
+    // 3. Dispatch real OTP email via Resend
+    let emailDeliveryStatus = 'PENDING';
+    let emailDeliveryError = '';
+    try {
+      const emailResult = await sendOtpEmail({
+        email: user.email,
+        name: user.name,
+        otp: otpCode,
+        purpose: 'LOGIN_2FA',
+        expiresMinutes: 5,
+      });
+
+      if (emailResult.success) {
+        emailDeliveryStatus = 'ACCEPTED';
+      } else if (emailResult.notConfigured) {
+        emailDeliveryStatus = 'NOT_CONFIGURED';
+        emailDeliveryError = emailResult.message || 'Email service not configured';
+      } else {
+        emailDeliveryStatus = 'FAILED';
+        emailDeliveryError = emailResult.error || emailResult.reason || 'Failed to dispatch email';
+      }
+    } catch (e) {
+      emailDeliveryStatus = 'FAILED';
+      emailDeliveryError = e.message;
+    }
+
+    // 4. Save verification record with SHA-256 hash
     await OtpVerification.create({
       userId: user._id,
       email: user.email,
+      phone: user.phone,
+      userName: user.name,
       otpHash,
       purpose: 'LOGIN_2FA',
       challengeId,
@@ -299,24 +481,10 @@ export const login = async (req, res) => {
       resendAvailableAt,
       attempts: 0,
       maxAttempts: 5,
+      emailDeliveryStatus,
+      emailDeliveryError,
+      status: 'PENDING',
     });
-
-    // 4. Dispatch real OTP email via Resend
-    const emailResult = await sendOtpEmail({
-      email: user.email,
-      name: user.name,
-      otp: otpCode,
-      purpose: 'LOGIN_2FA',
-      expiresMinutes: 5,
-    });
-
-    if (emailResult.notConfigured) {
-      return res.status(503).json({
-        success: false,
-        message:
-          'Email verification service is currently unconfigured on the server. Please contact lounge administration to enable 2FA delivery.',
-      });
-    }
 
     await ActivityLog.create({
       userId: user._id,
@@ -324,19 +492,21 @@ export const login = async (req, res) => {
       userRole: user.role,
       action: 'CUSTOMER_LOGIN_2FA_DISPATCHED',
       category: 'AUTH',
-      details: { email: user.email, challengeId },
+      details: { email: user.email, challengeId, emailDeliveryStatus },
       ipAddress: req.ip || '127.0.0.1',
     });
 
-    // 5. Return challenge identifier - ZERO authentication tokens or sessions issued!
+    // 5. Return challenge identifier
     return res.status(200).json({
       success: true,
       requires2FA: true,
+      purpose: 'LOGIN_2FA',
       message: 'Two-factor verification code dispatched to your registered email address.',
       data: {
         challengeId,
         maskedEmail: maskEmail(user.email),
         maskedPhone: maskPhone(user.phone),
+        emailDeliveryStatus,
         resendCooldownSeconds: 60,
         expiresInSeconds: 300,
       },
@@ -423,6 +593,8 @@ export const verifyCustomerLogin2FA = async (req, res) => {
     // 4. Invalidate challenge on success (single-use)
     record.verified = true;
     record.used = true;
+    record.status = 'CONSUMED';
+    record.authMethod = 'email_otp';
     await record.save();
 
     const user = await User.findById(record.userId);
@@ -443,6 +615,21 @@ export const verifyCustomerLogin2FA = async (req, res) => {
       action: 'CUSTOMER_LOGIN_2FA_SUCCESS',
       category: 'AUTH',
       details: { email: user.email, challengeId: record.challengeId },
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    await OtpAuditLog.create({
+      challengeId: record.challengeId,
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      phone: user.phone,
+      purpose: 'LOGIN_2FA',
+      emailDeliveryStatus: record.emailDeliveryStatus,
+      emailDeliveryError: record.emailDeliveryError,
+      resolution: 'EMAIL_OTP_VERIFIED',
+      decisionTimestamp: new Date(),
+      note: 'Verified directly via email OTP code',
       ipAddress: req.ip || '127.0.0.1',
     });
 
@@ -510,9 +697,36 @@ export const resendCustomerLogin2FA = async (req, res) => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     const resendAvailableAt = new Date(Date.now() + 60 * 1000);
 
+    let emailDeliveryStatus = 'PENDING';
+    let emailDeliveryError = '';
+    try {
+      const emailResult = await sendOtpEmail({
+        email: user.email,
+        name: user.name,
+        otp: newOtpCode,
+        purpose: 'LOGIN_2FA',
+        expiresMinutes: 5,
+      });
+
+      if (emailResult.success) {
+        emailDeliveryStatus = 'ACCEPTED';
+      } else if (emailResult.notConfigured) {
+        emailDeliveryStatus = 'NOT_CONFIGURED';
+        emailDeliveryError = emailResult.message || 'Email service not configured';
+      } else {
+        emailDeliveryStatus = 'FAILED';
+        emailDeliveryError = emailResult.error || emailResult.reason || 'Failed to dispatch email';
+      }
+    } catch (e) {
+      emailDeliveryStatus = 'FAILED';
+      emailDeliveryError = e.message;
+    }
+
     await OtpVerification.create({
       userId: user._id,
       email: user.email,
+      phone: user.phone,
+      userName: user.name,
       otpHash: newOtpHash,
       purpose: 'LOGIN_2FA',
       challengeId: newChallengeId,
@@ -520,14 +734,9 @@ export const resendCustomerLogin2FA = async (req, res) => {
       resendAvailableAt,
       attempts: 0,
       maxAttempts: 5,
-    });
-
-    await sendOtpEmail({
-      email: user.email,
-      name: user.name,
-      otp: newOtpCode,
-      purpose: 'LOGIN_2FA',
-      expiresMinutes: 5,
+      emailDeliveryStatus,
+      emailDeliveryError,
+      status: 'PENDING',
     });
 
     return res.status(200).json({
@@ -536,6 +745,7 @@ export const resendCustomerLogin2FA = async (req, res) => {
       data: {
         challengeId: newChallengeId,
         maskedEmail: maskEmail(user.email),
+        emailDeliveryStatus,
         resendCooldownSeconds: 60,
         expiresInSeconds: 300,
       },
@@ -543,6 +753,478 @@ export const resendCustomerLogin2FA = async (req, res) => {
   } catch (err) {
     console.error('[resendCustomerLogin2FA Error]', err);
     return res.status(500).json({ success: false, message: 'Failed to resend verification code.' });
+  }
+};
+
+// Customer: Verify Registration OTP
+export const verifyRegistrationOtp = async (req, res) => {
+  try {
+    const { challengeId, otp } = req.body;
+    if (!challengeId || !challengeId.trim()) {
+      return res.status(400).json({ success: false, message: 'Challenge identifier is required.' });
+    }
+    if (!otp || !otp.trim()) {
+      return res.status(400).json({ success: false, message: '6-digit verification code is required.' });
+    }
+
+    const cleanOtp = otp.trim();
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({ success: false, message: 'Verification code must be exactly 6 digits.' });
+    }
+
+    const record = await OtpVerification.findOne({
+      challengeId: challengeId.trim(),
+      purpose: 'REGISTRATION',
+      used: false,
+    }).select('+otpHash');
+
+    if (!record) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or already used registration challenge. Please register again.',
+      });
+    }
+
+    if (new Date() > new Date(record.expiresAt)) {
+      record.used = true;
+      record.status = 'EXPIRED';
+      await record.save();
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code has expired (5-minute limit). Please request a new code or request Admin Assistance.',
+      });
+    }
+
+    if (record.attempts >= record.maxAttempts) {
+      record.used = true;
+      await record.save();
+      return res.status(429).json({
+        success: false,
+        message: 'Maximum verification attempts exceeded (5/5). For your security, this verification session is terminated.',
+      });
+    }
+
+    const isValid = record.verifyOtp(cleanOtp);
+    if (!isValid) {
+      record.attempts += 1;
+      if (record.attempts >= record.maxAttempts) {
+        record.used = true;
+        await record.save();
+        return res.status(429).json({
+          success: false,
+          message: 'Maximum verification attempts exceeded (5/5). For your security, this verification session is terminated.',
+        });
+      }
+      await record.save();
+      const remaining = record.maxAttempts - record.attempts;
+      return res.status(400).json({
+        success: false,
+        message: `Invalid verification code. ${remaining} attempt(s) remaining.`,
+      });
+    }
+
+    record.verified = true;
+    record.used = true;
+    record.status = 'CONSUMED';
+    record.authMethod = 'email_otp';
+    await record.save();
+
+    const user = await User.findById(record.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User account not found.' });
+    }
+
+    user.accountStatus = 'ACTIVE';
+    user.isEmailVerified = true;
+    user.emailVerificationMethod = 'email_otp';
+    user.isActive = true;
+    user.lastLogin = new Date();
+    await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      userRole: user.role,
+      action: 'USER_REGISTER_VERIFIED',
+      category: 'AUTH',
+      details: { email: user.email, phone: user.phone, challengeId: record.challengeId },
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    await OtpAuditLog.create({
+      challengeId: record.challengeId,
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      phone: user.phone,
+      purpose: 'REGISTRATION',
+      emailDeliveryStatus: record.emailDeliveryStatus,
+      emailDeliveryError: record.emailDeliveryError,
+      resolution: 'EMAIL_OTP_VERIFIED',
+      decisionTimestamp: new Date(),
+      note: 'Customer verified registration via direct email OTP code',
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    if (user.email) {
+      sendWelcomeEmail({ user }).catch((err) =>
+        console.error('[Registration Welcome Email Error]:', err.message)
+      );
+    }
+
+    const token = user.generateAuthToken();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Registration verified successfully! Welcome to NOAH GAMING.',
+      data: {
+        token,
+        user: user.toSafeObject(),
+      },
+    });
+  } catch (err) {
+    console.error('[verifyRegistrationOtp Error]', err);
+    return res.status(500).json({ success: false, message: 'Server error during registration verification.' });
+  }
+};
+
+// Customer: Resend Registration OTP
+export const resendRegistrationOtp = async (req, res) => {
+  try {
+    const { challengeId } = req.body;
+    if (!challengeId || !challengeId.trim()) {
+      return res.status(400).json({ success: false, message: 'Challenge identifier is required.' });
+    }
+
+    const record = await OtpVerification.findOne({
+      challengeId: challengeId.trim(),
+      purpose: 'REGISTRATION',
+      used: false,
+    });
+
+    if (!record) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired registration challenge. Please register again.',
+      });
+    }
+
+    const now = new Date();
+    if (now < new Date(record.resendAvailableAt)) {
+      const waitSeconds = Math.ceil((new Date(record.resendAvailableAt).getTime() - now.getTime()) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSeconds} second(s) before requesting a new verification code.`,
+        data: { remainingSeconds: waitSeconds },
+      });
+    }
+
+    record.used = true;
+    await record.save();
+
+    const user = await User.findById(record.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const newOtpCode = OtpVerification.generateNumericOtp();
+    const newChallengeId = crypto.randomBytes(32).toString('hex');
+    const newOtpHash = OtpVerification.hashOtp(newOtpCode);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const resendAvailableAt = new Date(Date.now() + 60 * 1000);
+
+    let emailDeliveryStatus = 'PENDING';
+    let emailDeliveryError = '';
+    try {
+      const emailResult = await sendOtpEmail({
+        email: user.email,
+        name: user.name,
+        otp: newOtpCode,
+        purpose: 'REGISTRATION',
+        expiresMinutes: 5,
+      });
+
+      if (emailResult.success) {
+        emailDeliveryStatus = 'ACCEPTED';
+      } else if (emailResult.notConfigured) {
+        emailDeliveryStatus = 'NOT_CONFIGURED';
+        emailDeliveryError = emailResult.message || 'Email service not configured';
+      } else {
+        emailDeliveryStatus = 'FAILED';
+        emailDeliveryError = emailResult.error || emailResult.reason || 'Failed to dispatch email';
+      }
+    } catch (e) {
+      emailDeliveryStatus = 'FAILED';
+      emailDeliveryError = e.message;
+    }
+
+    await OtpVerification.create({
+      userId: user._id,
+      email: user.email,
+      phone: user.phone,
+      userName: user.name,
+      otpHash: newOtpHash,
+      purpose: 'REGISTRATION',
+      challengeId: newChallengeId,
+      expiresAt,
+      resendAvailableAt,
+      attempts: 0,
+      maxAttempts: 5,
+      emailDeliveryStatus,
+      emailDeliveryError,
+      status: 'PENDING',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'A fresh verification code has been dispatched to your email address.',
+      data: {
+        challengeId: newChallengeId,
+        maskedEmail: maskEmail(user.email),
+        emailDeliveryStatus,
+        resendCooldownSeconds: 60,
+        expiresInSeconds: 300,
+      },
+    });
+  } catch (err) {
+    console.error('[resendRegistrationOtp Error]', err);
+    return res.status(500).json({ success: false, message: 'Failed to resend registration code.' });
+  }
+};
+
+// Customer: Request Admin Assistance for Pending OTP
+export const requestOtpAssistance = async (req, res) => {
+  try {
+    const { challengeId } = req.body;
+    if (!challengeId || !challengeId.trim()) {
+      return res.status(400).json({ success: false, message: 'Challenge identifier is required.' });
+    }
+
+    const record = await OtpVerification.findOne({
+      challengeId: challengeId.trim(),
+      used: false,
+    });
+
+    if (!record) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification challenge. Please initiate authentication again.',
+      });
+    }
+
+    if (new Date() > new Date(record.expiresAt)) {
+      record.status = 'EXPIRED';
+      record.used = true;
+      await record.save();
+      return res.status(400).json({
+        success: false,
+        message: 'Verification challenge has expired (5-minute limit). Please initiate authentication again.',
+      });
+    }
+
+    record.assistanceRequested = true;
+    record.assistanceRequestedAt = new Date();
+    record.status = 'AWAITING_ADMIN_ASSISTANCE';
+    await record.save();
+
+    await ActivityLog.create({
+      userId: record.userId,
+      userName: record.userName || 'Customer',
+      userRole: ROLES.CUSTOMER,
+      action: 'OTP_ADMIN_ASSISTANCE_REQUESTED',
+      category: 'AUTH',
+      details: { email: record.email, phone: record.phone, challengeId: record.challengeId, purpose: record.purpose },
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    const expiresInSeconds = Math.max(0, Math.floor((new Date(record.expiresAt).getTime() - Date.now()) / 1000));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Admin assistance requested. Lounge administration has been alerted to review and verify your request.',
+      data: {
+        challengeId: record.challengeId,
+        status: record.status,
+        expiresInSeconds,
+      },
+    });
+  } catch (err) {
+    console.error('[requestOtpAssistance Error]', err);
+    return res.status(500).json({ success: false, message: 'Failed to request admin assistance.' });
+  }
+};
+
+// Customer: Check OTP Assistance Status (Polled by client)
+export const getOtpAssistanceStatus = async (req, res) => {
+  try {
+    const { challengeId } = req.params;
+    if (!challengeId || !challengeId.trim()) {
+      return res.status(400).json({ success: false, message: 'Challenge identifier is required.' });
+    }
+
+    const record = await OtpVerification.findOne({ challengeId: challengeId.trim() });
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Verification challenge not found.' });
+    }
+
+    if (record.status === 'CONSUMED') {
+      return res.status(200).json({
+        success: true,
+        data: {
+          status: 'CONSUMED',
+          purpose: record.purpose,
+        },
+      });
+    }
+
+    const isExpired = new Date() > new Date(record.expiresAt);
+    if (isExpired && record.status !== 'APPROVED' && record.status !== 'REJECTED') {
+      if (!record.used) {
+        record.used = true;
+        record.status = 'EXPIRED';
+        await record.save();
+      }
+      return res.status(200).json({
+        success: true,
+        data: {
+          status: 'EXPIRED',
+          purpose: record.purpose,
+          message: 'Challenge validity has expired (5-minute limit).',
+          expiresInSeconds: 0,
+        },
+      });
+    }
+
+    const expiresInSeconds = Math.max(0, Math.floor((new Date(record.expiresAt).getTime() - Date.now()) / 1000));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        status: record.status, // 'PENDING', 'AWAITING_ADMIN_ASSISTANCE', 'APPROVED', 'REJECTED', 'EXPIRED'
+        purpose: record.purpose,
+        emailDeliveryStatus: record.emailDeliveryStatus,
+        assistanceRequested: record.assistanceRequested,
+        approvalToken: record.status === 'APPROVED' ? record.approvalToken : null,
+        rejectionReason: record.status === 'REJECTED' ? record.adminDecision?.reason : null,
+        expiresInSeconds,
+      },
+    });
+  } catch (err) {
+    console.error('[getOtpAssistanceStatus Error]', err);
+    return res.status(500).json({ success: false, message: 'Failed to retrieve challenge status.' });
+  }
+};
+
+// Customer: Complete Authentication via Admin Approval
+export const completeOtpAssistance = async (req, res) => {
+  try {
+    const { challengeId, approvalToken } = req.body;
+    if (!challengeId || !challengeId.trim()) {
+      return res.status(400).json({ success: false, message: 'Challenge identifier is required.' });
+    }
+    if (!approvalToken || !approvalToken.trim()) {
+      return res.status(400).json({ success: false, message: 'Approval token is required.' });
+    }
+
+    const record = await OtpVerification.findOne({
+      challengeId: challengeId.trim(),
+      approvalToken: approvalToken.trim(),
+      status: 'APPROVED',
+      used: false,
+    });
+
+    if (!record) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid, expired, or already consumed approval token.',
+      });
+    }
+
+    if (new Date() > new Date(record.expiresAt)) {
+      record.used = true;
+      record.status = 'EXPIRED';
+      await record.save();
+      return res.status(400).json({
+        success: false,
+        message: 'This approval session has expired (5-minute limit). Please sign in or register again.',
+      });
+    }
+
+    // Invalidate immediately (single-use guarantee)
+    record.used = true;
+    record.verified = true;
+    record.status = 'CONSUMED';
+    record.authMethod = 'admin_assisted';
+    await record.save();
+
+    const user = await User.findById(record.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User account not found.' });
+    }
+
+    if (record.purpose === 'REGISTRATION') {
+      user.accountStatus = 'ACTIVE';
+      user.isEmailVerified = true;
+      user.emailVerificationMethod = 'admin_assisted';
+      user.isActive = true;
+      if (user.email) {
+        sendWelcomeEmail({ user }).catch((err) =>
+          console.error('[Welcome Email Error]:', err.message)
+        );
+      }
+    }
+
+    user.lastLogin = new Date();
+    await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      userRole: user.role,
+      action: 'OTP_ADMIN_ASSISTANCE_COMPLETED',
+      category: 'AUTH',
+      details: {
+        email: user.email,
+        phone: user.phone,
+        challengeId: record.challengeId,
+        purpose: record.purpose,
+        approvedBy: record.adminDecision?.adminName,
+      },
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    await OtpAuditLog.create({
+      challengeId: record.challengeId,
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      phone: user.phone,
+      purpose: record.purpose,
+      emailDeliveryStatus: record.emailDeliveryStatus,
+      emailDeliveryError: record.emailDeliveryError,
+      assistanceRequested: true,
+      assistanceRequestedAt: record.assistanceRequestedAt,
+      resolution: 'ADMIN_APPROVED',
+      adminId: record.adminDecision?.adminId,
+      adminName: record.adminDecision?.adminName,
+      decisionTimestamp: record.adminDecision?.decidedAt || new Date(),
+      note: record.adminDecision?.reason || 'Verified via Admin-Assisted OTP Fallback',
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    const token = user.generateAuthToken();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Authentication verified successfully by Administrator. Welcome to NOAH GAMING!',
+      data: {
+        token,
+        user: user.toSafeObject(),
+      },
+    });
+  } catch (err) {
+    console.error('[completeOtpAssistance Error]', err);
+    return res.status(500).json({ success: false, message: 'Server error during assistance completion.' });
   }
 };
 

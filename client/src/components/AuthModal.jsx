@@ -18,6 +18,10 @@ import {
   CheckCircle2,
   Loader2,
   UserCheck,
+  ShieldCheck,
+  Clock,
+  HelpCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 export const AuthModal = () => {
@@ -29,6 +33,11 @@ export const AuthModal = () => {
     login,
     verifyLogin2FA,
     resendLogin2FA,
+    verifyRegistrationOtp,
+    resendRegistrationOtp,
+    requestOtpAssistance,
+    getOtpAssistanceStatus,
+    completeOtpAssistance,
     register,
     setAuthData,
   } = useAuth();
@@ -37,11 +46,16 @@ export const AuthModal = () => {
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Customer 2FA state
-  const [login2FAData, setLogin2FAData] = useState(null);
-  const [login2FAOtp, setLogin2FAOtp] = useState('');
-  const [login2FACooldown, setLogin2FACooldown] = useState(0);
-  const [submittingLogin2FA, setSubmittingLogin2FA] = useState(false);
+  // Customer 2FA & Registration OTP challenge state
+  const [otpChallengeData, setOtpChallengeData] = useState(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [challengeRemainingSeconds, setChallengeRemainingSeconds] = useState(300);
+  const [submittingOtp, setSubmittingOtp] = useState(false);
+  const [assistanceRequested, setAssistanceRequested] = useState(false);
+  const [assistanceStatus, setAssistanceStatus] = useState('PENDING'); // PENDING, AWAITING_ADMIN_ASSISTANCE, APPROVED, REJECTED, EXPIRED
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [requestingAssistance, setRequestingAssistance] = useState(false);
 
   // Register form state
   const [registerName, setRegisterName] = useState('');
@@ -78,12 +92,69 @@ export const AuthModal = () => {
   // Countdown timers tick
   useEffect(() => {
     const timer = setInterval(() => {
-      setLogin2FACooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      setOtpCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      setChallengeRemainingSeconds((prev) => (prev > 0 ? prev - 1 : 0));
       setConvertCooldown((prev) => (prev > 0 ? prev - 1 : 0));
       setForgotCooldown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Polling for Admin Assistance Approval
+  useEffect(() => {
+    let interval = null;
+    if (
+      (authModalTab === 'login2FA' || authModalTab === 'registerOTP') &&
+      assistanceRequested &&
+      assistanceStatus === 'AWAITING_ADMIN_ASSISTANCE' &&
+      otpChallengeData?.challengeId
+    ) {
+      interval = setInterval(async () => {
+        try {
+          const res = await getOtpAssistanceStatus(otpChallengeData.challengeId);
+          if (res?.success && res.data) {
+            if (res.data.status === 'APPROVED' && res.data.approvalToken) {
+              setAssistanceStatus('APPROVED');
+              clearInterval(interval);
+              showToast.success('Administrator approved your verification! Completing authentication...');
+              const compRes = await completeOtpAssistance(otpChallengeData.challengeId, res.data.approvalToken);
+              if (compRes?.success) {
+                setAuthModalOpen(false);
+                showToast.success(`Welcome to NOAH GAMING, ${compRes.user?.name || 'Gamer'}!`);
+                if (compRes.user?.role === 'admin') {
+                  window.location.hash = '#admin';
+                } else if (compRes.user?.role === 'receptionist') {
+                  window.location.hash = '#receptionist';
+                }
+              } else {
+                setErrorMessage(compRes?.message || 'Failed to complete authentication.');
+              }
+            } else if (res.data.status === 'REJECTED') {
+              setAssistanceStatus('REJECTED');
+              setRejectionReason(res.data.rejectionReason || 'Identity verification could not be confirmed.');
+              clearInterval(interval);
+            } else if (res.data.status === 'EXPIRED') {
+              setAssistanceStatus('EXPIRED');
+              clearInterval(interval);
+            }
+          }
+        } catch (err) {
+          console.warn('Status poll error:', err.message);
+        }
+      }, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [
+    authModalTab,
+    assistanceRequested,
+    assistanceStatus,
+    otpChallengeData?.challengeId,
+    completeOtpAssistance,
+    getOtpAssistanceStatus,
+    setAuthModalOpen,
+  ]);
 
   // Check URL hash for #reset-password?token=...
   useEffect(() => {
@@ -122,18 +193,24 @@ export const AuthModal = () => {
     const result = await login(loginIdentifier, loginPassword);
     setLoading(false);
 
-    // If customer requires 2FA:
-    if (result.requires2FA) {
-      setLogin2FAData({
+    // If customer requires 2FA or pending registration verification:
+    if (result.requires2FA || result.requiresOtpVerification) {
+      const isRegistration = result.purpose === 'REGISTRATION';
+      setOtpChallengeData({
         challengeId: result.data?.challengeId,
         maskedEmail: result.data?.maskedEmail,
         maskedPhone: result.data?.maskedPhone,
-        resendCooldownSeconds: result.data?.resendCooldownSeconds || 60,
+        emailDeliveryStatus: result.data?.emailDeliveryStatus || 'PENDING',
+        purpose: isRegistration ? 'REGISTRATION' : 'LOGIN_2FA',
       });
-      setLogin2FAOtp('');
-      setLogin2FACooldown(result.data?.resendCooldownSeconds || 60);
-      setAuthModalTab('login2FA');
-      showToast.info('Verification code sent to your registered email.');
+      setOtpCode('');
+      setOtpCooldown(result.data?.resendCooldownSeconds || 60);
+      setChallengeRemainingSeconds(result.data?.expiresInSeconds || 300);
+      setAssistanceRequested(false);
+      setAssistanceStatus('PENDING');
+      setRejectionReason('');
+      setAuthModalTab(isRegistration ? 'registerOTP' : 'login2FA');
+      showToast.info('Verification code dispatched to your registered email.');
       return;
     }
 
@@ -151,21 +228,30 @@ export const AuthModal = () => {
     }
   };
 
-  // Handle Customer 2FA Verification Submit
-  const handleVerifyLogin2FA = async (e) => {
+  // Handle Customer OTP Verification Submit (both Login 2FA and Registration)
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!login2FAOtp || login2FAOtp.length !== 6) {
+    if (!otpCode || otpCode.length !== 6) {
       setErrorMessage('Please enter the complete 6-digit verification code.');
       return;
     }
 
     try {
-      setSubmittingLogin2FA(true);
-      const res = await verifyLogin2FA(login2FAData.challengeId, login2FAOtp);
+      setSubmittingOtp(true);
+      const isReg = otpChallengeData?.purpose === 'REGISTRATION';
+      const res = isReg
+        ? await verifyRegistrationOtp(otpChallengeData.challengeId, otpCode)
+        : await verifyLogin2FA(otpChallengeData.challengeId, otpCode);
+
       if (res.success) {
-        showToast.success(`Welcome back, ${res.user?.name || 'Gamer'}!`);
+        showToast.success(`Welcome to NOAH GAMING, ${res.user?.name || 'Gamer'}!`);
         setAuthModalOpen(false);
+        if (res.user?.role === 'admin') {
+          window.location.hash = '#admin';
+        } else if (res.user?.role === 'receptionist') {
+          window.location.hash = '#receptionist';
+        }
       } else {
         setErrorMessage(res.message || 'Verification failed');
         showToast.error(res.message || 'Verification failed');
@@ -174,23 +260,29 @@ export const AuthModal = () => {
       setErrorMessage(err.message || 'Verification failed');
       showToast.error(err.message || 'Verification failed');
     } finally {
-      setSubmittingLogin2FA(false);
+      setSubmittingOtp(false);
     }
   };
 
-  // Handle Customer 2FA Resend
-  const handleResendLogin2FA = async () => {
-    if (login2FACooldown > 0 || !login2FAData?.challengeId) return;
+  // Handle Customer OTP Resend
+  const handleResendOtp = async () => {
+    if (otpCooldown > 0 || !otpChallengeData?.challengeId) return;
     try {
-      setSubmittingLogin2FA(true);
-      const res = await resendLogin2FA(login2FAData.challengeId);
+      setSubmittingOtp(true);
+      const isReg = otpChallengeData?.purpose === 'REGISTRATION';
+      const res = isReg
+        ? await resendRegistrationOtp(otpChallengeData.challengeId)
+        : await resendLogin2FA(otpChallengeData.challengeId);
+
       if (res.success) {
-        setLogin2FAData((prev) => ({
+        setOtpChallengeData((prev) => ({
           ...prev,
           challengeId: res.data?.challengeId || prev.challengeId,
           maskedEmail: res.data?.maskedEmail || prev.maskedEmail,
+          emailDeliveryStatus: res.data?.emailDeliveryStatus || prev.emailDeliveryStatus,
         }));
-        setLogin2FACooldown(res.data?.resendCooldownSeconds || 60);
+        setOtpCooldown(res.data?.resendCooldownSeconds || 60);
+        setChallengeRemainingSeconds(res.data?.expiresInSeconds || 300);
         showToast.success('A fresh verification code has been dispatched to your email.');
       } else {
         showToast.error(res.message || 'Failed to resend verification code');
@@ -198,7 +290,31 @@ export const AuthModal = () => {
     } catch (err) {
       showToast.error(err.message || 'Failed to resend verification code');
     } finally {
-      setSubmittingLogin2FA(false);
+      setSubmittingOtp(false);
+    }
+  };
+
+  // Handle Request Admin Assistance Fallback
+  const handleRequestAdminAssistance = async () => {
+    if (!otpChallengeData?.challengeId) return;
+    try {
+      setRequestingAssistance(true);
+      setErrorMessage('');
+      const res = await requestOtpAssistance(otpChallengeData.challengeId);
+      if (res.success) {
+        setAssistanceRequested(true);
+        setAssistanceStatus('AWAITING_ADMIN_ASSISTANCE');
+        if (res.data?.expiresInSeconds) {
+          setChallengeRemainingSeconds(res.data.expiresInSeconds);
+        }
+        showToast.info('Verification request sent to Administrator. Waiting for approval...');
+      } else {
+        showToast.error(res.message || 'Failed to request Admin assistance');
+      }
+    } catch (err) {
+      showToast.error(err.message || 'Failed to request Admin assistance');
+    } finally {
+      setRequestingAssistance(false);
     }
   };
 
@@ -215,6 +331,25 @@ export const AuthModal = () => {
       password: registerPassword,
     });
     setLoading(false);
+
+    if (result.requiresOtpVerification) {
+      setOtpChallengeData({
+        challengeId: result.data?.challengeId,
+        maskedEmail: result.data?.maskedEmail,
+        maskedPhone: result.data?.maskedPhone,
+        emailDeliveryStatus: result.data?.emailDeliveryStatus || 'PENDING',
+        purpose: 'REGISTRATION',
+      });
+      setOtpCode('');
+      setOtpCooldown(result.data?.resendCooldownSeconds || 60);
+      setChallengeRemainingSeconds(result.data?.expiresInSeconds || 300);
+      setAssistanceRequested(false);
+      setAssistanceStatus('PENDING');
+      setRejectionReason('');
+      setAuthModalTab('registerOTP');
+      showToast.info('Verification code sent to your registered email.');
+      return;
+    }
 
     if (result.requiresConversion) {
       setConversionData({
@@ -570,20 +705,56 @@ export const AuthModal = () => {
           </form>
         )}
 
-        {/* ---------------- 2. MANDATORY CUSTOMER 2FA TAB ---------------- */}
-        {authModalTab === 'login2FA' && (
-          <form onSubmit={handleVerifyLogin2FA} className="space-y-4">
+        {/* ---------------- 2. CUSTOMER OTP VERIFICATION (LOGIN 2FA & REGISTRATION) ---------------- */}
+        {(authModalTab === 'login2FA' || authModalTab === 'registerOTP') && (
+          <form onSubmit={handleVerifyOtp} className="space-y-4">
+            {/* Header Banner */}
             <div className="p-3.5 rounded-xl bg-[#851B2B]/20 border border-[#851B2B]/40 text-xs text-[#FFF4E8]">
-              <div className="flex items-center gap-2 mb-1 text-[#D7FF00] font-bold">
-                <Shield className="w-4 h-4" /> Two-Factor Security Verification
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2 text-[#D7FF00] font-bold">
+                  {authModalTab === 'registerOTP' ? (
+                    <UserCheck className="w-4 h-4 text-[#D7FF00]" />
+                  ) : (
+                    <Shield className="w-4 h-4 text-[#D7FF00]" />
+                  )}
+                  <span>
+                    {authModalTab === 'registerOTP'
+                      ? 'Registration Verification'
+                      : 'Two-Factor Security Verification'}
+                  </span>
+                </div>
+                <span className="font-mono text-[11px] font-bold text-amber-300 flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  <Clock className="w-3 h-3" />
+                  {Math.floor(challengeRemainingSeconds / 60)}:
+                  {(challengeRemainingSeconds % 60).toString().padStart(2, '0')}
+                </span>
               </div>
               <p className="text-[#C7A5A8]">
-                We sent a 6-digit security code to your registered email:{' '}
-                <span className="font-mono text-white font-bold">{login2FAData?.maskedEmail || 'your email'}</span>.
-                Code expires in 5 minutes.
+                {authModalTab === 'registerOTP'
+                  ? 'We sent a 6-digit verification code to activate your account at: '
+                  : 'We sent a 6-digit security code to your registered email: '}
+                <span className="font-mono text-white font-bold">
+                  {otpChallengeData?.maskedEmail || 'your email'}
+                </span>
+                .
               </p>
             </div>
 
+            {/* Email Delivery Warning (if unconfigured or failed) */}
+            {(otpChallengeData?.emailDeliveryStatus === 'FAILED' ||
+              otpChallengeData?.emailDeliveryStatus === 'NOT_CONFIGURED') && (
+              <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Email delivery is currently restricted.</span>
+                  <p className="text-[11px] text-amber-200/80 mt-0.5">
+                    If you do not receive the email code, click <strong>Request Admin Assistance</strong> below to complete verification with lounge staff.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 6-Digit OTP Input */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-[#C7A5A8]">
@@ -591,48 +762,147 @@ export const AuthModal = () => {
                 </label>
                 <button
                   type="button"
-                  onClick={handleResendLogin2FA}
-                  disabled={login2FACooldown > 0 || submittingLogin2FA}
-                  className="text-[11px] text-[#D7FF00] hover:underline disabled:opacity-50 disabled:no-underline font-mono"
+                  onClick={handleResendOtp}
+                  disabled={otpCooldown > 0 || submittingOtp}
+                  className="text-[11px] text-[#D7FF00] hover:underline disabled:opacity-50 disabled:no-underline font-mono flex items-center gap-1"
                 >
-                  {login2FACooldown > 0 ? `Resend in ${login2FACooldown}s` : 'Resend Code'}
+                  <RefreshCw className={`w-3 h-3 ${submittingOtp ? 'animate-spin' : ''}`} />
+                  {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : 'Resend Code'}
                 </button>
               </div>
 
               <SixDigitOtpInput
-                value={login2FAOtp}
-                onChange={setLogin2FAOtp}
-                disabled={submittingLogin2FA}
+                value={otpCode}
+                onChange={setOtpCode}
+                disabled={submittingOtp || assistanceStatus === 'AWAITING_ADMIN_ASSISTANCE'}
                 variant="lime"
               />
             </div>
 
             <button
               type="submit"
-              disabled={submittingLogin2FA || login2FAOtp.length !== 6}
+              disabled={submittingOtp || otpCode.length !== 6 || challengeRemainingSeconds <= 0}
               className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {submittingLogin2FA ? (
+              {submittingOtp ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" /> Verifying Code...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4" /> Complete Sign In
+                  <CheckCircle2 className="w-4 h-4" />{' '}
+                  {authModalTab === 'registerOTP' ? 'Complete Registration' : 'Complete Sign In'}
                 </>
               )}
             </button>
 
+            {/* Admin-Assisted OTP Verification Fallback Section */}
+            <div className="pt-2 border-t border-[#49202C]/60 space-y-3">
+              <div className="flex items-center justify-between text-xs text-[#C7A5A8]">
+                <span className="font-semibold flex items-center gap-1">
+                  <HelpCircle className="w-3.5 h-3.5 text-[#D7FF00]" /> Didn't receive your OTP?
+                </span>
+              </div>
+
+              {/* Assistance Status: AWAITING_ADMIN_ASSISTANCE */}
+              {assistanceRequested && assistanceStatus === 'AWAITING_ADMIN_ASSISTANCE' && (
+                <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-xs text-cyan-200 space-y-2 animate-fadeIn">
+                  <div className="flex items-center gap-2 font-bold text-cyan-300">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+                    </span>
+                    <span>Admin Assistance Requested</span>
+                  </div>
+                  <p className="text-[11px] text-cyan-200/90 leading-relaxed">
+                    Your verification request has been sent to the Admin Console. Please wait for an administrator to review and approve your session.
+                  </p>
+                  <div className="flex items-center justify-between pt-1 text-[11px] text-cyan-300/80 font-mono border-t border-cyan-500/20">
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                      Listening for approval...
+                    </span>
+                    <span className="font-bold">
+                      Expires in: {Math.floor(challengeRemainingSeconds / 60)}:
+                      {(challengeRemainingSeconds % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Assistance Status: REJECTED */}
+              {assistanceStatus === 'REJECTED' && (
+                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-300 space-y-1.5 animate-fadeIn">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-400">
+                    <AlertCircle className="w-4 h-4" /> Verification Request Denied
+                  </div>
+                  <p className="text-[11px] text-rose-200">
+                    {rejectionReason || 'The administrator rejected this verification request.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssistanceRequested(false);
+                      setAssistanceStatus('PENDING');
+                    }}
+                    className="text-[11px] font-bold text-rose-300 underline hover:text-white"
+                  >
+                    Try Requesting Assistance Again
+                  </button>
+                </div>
+              )}
+
+              {/* Assistance Status: EXPIRED */}
+              {(challengeRemainingSeconds <= 0 || assistanceStatus === 'EXPIRED') && (
+                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-300 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4" /> Verification Challenge Expired
+                  </div>
+                  <p className="text-[11px] text-rose-200">
+                    This verification session has exceeded its 5-minute validity limit. Please return to start a fresh session.
+                  </p>
+                </div>
+              )}
+
+              {/* Request Assistance Button (Visible when not actively awaiting or rejected) */}
+              {!assistanceRequested && challengeRemainingSeconds > 0 && (
+                <div className="rounded-xl p-3 bg-[#171014] border border-[#49202C]">
+                  <p className="text-[11px] text-[#C7A5A8] mb-2 leading-relaxed">
+                    Not getting the verification email? You can request manual identity verification from the lounge administrator without entering an OTP.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRequestAdminAssistance}
+                    disabled={requestingAssistance}
+                    className="w-full py-2 px-3 rounded-lg bg-[#260D17] hover:bg-[#381322] border border-[#851B2B]/40 hover:border-[#851B2B] text-xs font-bold text-[#FFF4E8] flex items-center justify-center gap-2 transition-all shadow-sm font-heading"
+                  >
+                    {requestingAssistance ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Contacting Administrator...
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-4 h-4 text-[#D7FF00]" /> Request Admin Assistance
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Back Button */}
             <button
               type="button"
               onClick={() => {
-                setAuthModalTab('login');
+                setAuthModalTab(authModalTab === 'registerOTP' ? 'register' : 'login');
                 setErrorMessage('');
-                setLogin2FAOtp('');
+                setOtpCode('');
+                setAssistanceRequested(false);
+                setAssistanceStatus('PENDING');
               }}
               className="w-full text-center text-xs text-[#C7A5A8] hover:text-white pt-1"
             >
-              &larr; Back to Sign In
+              &larr; Back to {authModalTab === 'registerOTP' ? 'Registration' : 'Sign In'}
             </button>
           </form>
         )}
