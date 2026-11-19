@@ -183,13 +183,37 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
 
   const handleCreateWalkin = async (e) => {
     e.preventDefault();
-    setWalkinSubmitting(true);
     setActionError('');
+
+    if (!walkinForm.customerName.trim()) {
+      setActionError('Customer name is required.');
+      return;
+    }
+
+    const cleanPhone = walkinForm.customerPhone.trim().replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      setActionError('Customer mobile number must be exactly 10 digits.');
+      return;
+    }
+
+    if (!walkinForm.customerEmail || !walkinForm.customerEmail.trim()) {
+      setActionError('Customer email address is mandatory for registration.');
+      return;
+    }
+
+    const cleanEmail = walkinForm.customerEmail.trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setActionError('Please provide a valid customer email address.');
+      return;
+    }
+
+    setWalkinSubmitting(true);
     try {
       const payload = {
-        customerName: walkinForm.customerName,
-        customerPhone: walkinForm.customerPhone,
-        customerEmail: walkinForm.customerEmail || undefined,
+        customerName: walkinForm.customerName.trim(),
+        customerPhone: cleanPhone,
+        customerEmail: cleanEmail,
         deviceId: walkinForm.deviceId,
         gameId: walkinForm.gameId || undefined,
         bookingDate: walkinForm.bookingDate,
@@ -760,9 +784,10 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
               </div>
 
               <div>
-                <label className="block uppercase tracking-wider text-slate-400 mb-1">Customer Email (Optional)</label>
+                <label className="block uppercase tracking-wider text-slate-400 mb-1">Customer Email *</label>
                 <input
                   type="email"
+                  required
                   placeholder="e.g. rahul@example.com"
                   value={walkinForm.customerEmail}
                   onChange={(e) => setWalkinForm({ ...walkinForm, customerEmail: e.target.value })}

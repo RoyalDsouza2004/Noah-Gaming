@@ -5,6 +5,13 @@ import User from '../models/User.js';
 import { createBookingAtomic, cancelBookingService } from '../services/booking.service.js';
 import { scheduleService } from '../services/schedule.service.js';
 import { parseISTDateTime, formatISTDate } from '../utils/timeSlots.js';
+import {
+  normalizePhone,
+  isValidIndianPhone,
+  normalizeEmail,
+  isValidEmail,
+  isPlaceholderEmail,
+} from '../utils/validators.js';
 
 // GET /api/admin/bookings
 export const getAllBookingsAdmin = async (req, res) => {
@@ -127,21 +134,72 @@ export const createBookingAdmin = async (req, res) => {
 
     // If customerId not provided, search or create customer on-the-fly for walk-in
     if (!targetCustomerId) {
-      if (!customerPhone) {
+      if (!customerPhone || !String(customerPhone).trim()) {
         return res.status(400).json({
           success: false,
-          message: 'Either customerId or customerPhone is required for booking',
+          message: 'Customer mobile number is mandatory.',
         });
       }
 
-      let existing = await User.findOne({ phone: customerPhone.trim() });
+      if (!customerEmail || !String(customerEmail).trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer email address is mandatory for registration. Placeholder emails are not permitted.',
+        });
+      }
+
+      const cleanPhone = normalizePhone(customerPhone);
+      if (!isValidIndianPhone(cleanPhone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer mobile number must be a valid 10-digit number.',
+        });
+      }
+
+      const cleanEmail = normalizeEmail(customerEmail);
+      if (!isValidEmail(cleanEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid customer email address.',
+        });
+      }
+
+      if (isPlaceholderEmail(cleanEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Placeholder or fake email addresses are not permitted. Please enter the customer\'s real email address.',
+        });
+      }
+
+      const existingPhone = await User.findOne({
+        $or: [{ phone: cleanPhone }, { phone: `+91${cleanPhone}` }, { phone: `+91 ${cleanPhone}` }],
+      });
+      const existingEmail = await User.findOne({ email: cleanEmail });
+
+      if (existingPhone && existingEmail && existingPhone._id.toString() !== existingEmail._id.toString()) {
+        return res.status(409).json({
+          success: false,
+          message: `Conflicting records: Mobile '${cleanPhone}' belongs to '${existingPhone.name}', while email '${cleanEmail}' is registered to '${existingEmail.name}'.`,
+        });
+      }
+
+      let existing = existingPhone || existingEmail;
       if (!existing) {
+        if (!customerName || !String(customerName).trim()) {
+          return res.status(400).json({
+            success: false,
+            message: 'Customer name is mandatory for new player registration.',
+          });
+        }
+
         existing = new User({
-          name: customerName ? customerName.trim() : `Walk-In Player (${customerPhone.slice(-4)})`,
-          email: customerEmail ? customerEmail.trim().toLowerCase() : `walkin_${Date.now()}@gaminglounge.local`,
-          phone: customerPhone.trim(),
-          password: 'WalkInPassword@123',
+          name: customerName.trim(),
+          email: cleanEmail,
+          phone: cleanPhone,
+          password: `NoahPass_${Math.random().toString(36).slice(-8)}!1`,
           role: 'customer',
+          accountType: 'GUEST',
+          isGuest: true,
         });
         await existing.save();
       }

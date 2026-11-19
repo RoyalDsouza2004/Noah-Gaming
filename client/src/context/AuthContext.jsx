@@ -234,9 +234,9 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const completeOtpAssistance = useCallback(async (challengeId, approvalToken) => {
+  const completeOtpAssistance = useCallback(async (challengeId, approvalToken, password = null) => {
     try {
-      const response = await authApi.completeOtpAssistance(challengeId, approvalToken);
+      const response = await authApi.completeOtpAssistance(challengeId, approvalToken, password);
       if (response.success && response.data?.token) {
         localStorage.setItem('noah_auth_token', response.data.token);
         localStorage.setItem('nexus_auth_token', response.data.token);

@@ -13,6 +13,13 @@ import { createBookingAtomic } from './booking.service.js';
 import { calculateSessionPrice } from '../utils/pricingCalculator.js';
 import { generateReceipt } from '../utils/receiptGenerator.js';
 import { formatISTDate, formatISTTime } from '../utils/timeSlots.js';
+import {
+  normalizePhone,
+  isValidIndianPhone,
+  normalizeEmail,
+  isValidEmail,
+  isPlaceholderEmail,
+} from '../utils/validators.js';
 import { calculateRevenueMetrics } from './revenue.service.js';
 import { sendPaymentSuccessEmail } from './email.service.js';
 import { getCustomerMembershipQuota } from './membership.service.js';
@@ -382,38 +389,80 @@ export async function getReceptionistCustomerDetails({
 
 /**
  * 4. Register Walk-In Customer at Reception
+ * Mandatory Fields: Customer Name, Email Address, and Mobile Number
+ * Enforces strict validation, prohibits fake/placeholder emails, prevents duplicate records, and avoids overwriting.
  */
 export async function registerCustomerAtReception({ name, phone, email, staffUser }) {
-  const cleanPhone = phone.trim().replace(/\D/g, '');
-  if (cleanPhone.length !== 10) {
-    const err = new Error('Mobile number must be exactly 10 digits.');
+  // 1. Validate Customer Name
+  if (!name || !name.trim()) {
+    const err = new Error('Customer full name is mandatory.');
     err.status = 400;
     throw err;
   }
 
-  // Check if customer with this mobile number already exists
-  const existingUser = await User.findOne({ phone: cleanPhone });
+  // 2. Validate & Normalize Mobile Number
+  if (!phone || !String(phone).trim()) {
+    const err = new Error('Mobile number is mandatory.');
+    err.status = 400;
+    throw err;
+  }
+  const cleanPhone = normalizePhone(phone);
+  if (!isValidIndianPhone(cleanPhone)) {
+    const err = new Error('Mobile number must be a valid 10-digit number (e.g. 9876543210).');
+    err.status = 400;
+    throw err;
+  }
+
+  // 3. Validate & Normalize Email Address
+  if (!email || !String(email).trim()) {
+    const err = new Error('Email address is mandatory for registration.');
+    err.status = 400;
+    throw err;
+  }
+  const cleanEmail = normalizeEmail(email);
+  if (!isValidEmail(cleanEmail)) {
+    const err = new Error('Please enter a valid email address (e.g. customer@example.com).');
+    err.status = 400;
+    throw err;
+  }
+  if (isPlaceholderEmail(cleanEmail)) {
+    const err = new Error('Placeholder, test, or generic email addresses are not permitted. Please enter the customer\'s real email address.');
+    err.status = 400;
+    throw err;
+  }
+
+  // 4. Check for existing customers using normalized email and mobile values
+  const existingByPhone = await User.findOne({
+    $or: [
+      { phone: cleanPhone },
+      { phone: `+91${cleanPhone}` },
+      { phone: `+91 ${cleanPhone}` },
+    ],
+  });
+
+  const existingByEmail = await User.findOne({ email: cleanEmail });
+
+  // Prevent conflicting accounts
+  if (existingByPhone && existingByEmail && existingByPhone._id.toString() !== existingByEmail._id.toString()) {
+    const err = new Error(
+      `Conflicting customer records found: Mobile ${cleanPhone} belongs to '${existingByPhone.name}', while email '${cleanEmail}' is registered to '${existingByEmail.name}'.`
+    );
+    err.status = 409;
+    throw err;
+  }
+
+  const existingUser = existingByPhone || existingByEmail;
   if (existingUser) {
     return {
       customer: existingUser.toSafeObject(),
       alreadyExists: true,
       accountType: existingUser.accountType || 'REGISTERED',
       isGuest: existingUser.accountType === 'GUEST' || !!existingUser.isGuest,
-      message: `Existing ${existingUser.accountType === 'GUEST' ? 'Guest' : 'Registered'} profile found for phone ${cleanPhone}.`,
+      message: `Existing ${existingUser.accountType === 'GUEST' ? 'Guest' : 'Registered'} profile found for '${existingUser.name}' (${existingUser.phone}, ${existingUser.email}).`,
     };
   }
 
-  // Ensure unique email (auto-generate guest email if not provided)
-  const cleanEmail = email && email.trim() ? email.trim().toLowerCase() : `guest.${cleanPhone}@noahgaming.com`;
-
-  const existingEmail = await User.findOne({ email: cleanEmail });
-  if (existingEmail) {
-    const err = new Error(`An account with email '${cleanEmail}' already exists.`);
-    err.status = 400;
-    throw err;
-  }
-
-  // Generate a random secure password for walk-in guest accounts
+  // 5. Generate secure random initial password for walk-in guest accounts
   const tempPassword = `NoahPass_${Math.random().toString(36).slice(-8)}!1`;
 
   const newUser = await User.create({
@@ -430,7 +479,7 @@ export async function registerCustomerAtReception({ name, phone, email, staffUse
     staffUser,
     action: 'REGISTER_CUSTOMER',
     customerId: newUser._id,
-    description: `Registered new walk-in customer '${newUser.name}' (${newUser.phone})`,
+    description: `Registered new walk-in customer '${newUser.name}' (${newUser.phone}, ${newUser.email})`,
   });
 
   return {

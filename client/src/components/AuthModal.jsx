@@ -80,8 +80,12 @@ export const AuthModal = () => {
   const [conversionData, setConversionData] = useState(null);
   const [convertOtp, setConvertOtp] = useState('');
   const [convertPassword, setConvertPassword] = useState('');
+  const [showConvertPassword, setShowConvertPassword] = useState(false);
   const [convertCooldown, setConvertCooldown] = useState(0);
   const [submittingConversion, setSubmittingConversion] = useState(false);
+  const [claimIdentifier, setClaimIdentifier] = useState('');
+  const [claimStep, setClaimStep] = useState('search'); // 'search' | 'otp'
+  const [claimSearching, setClaimSearching] = useState(false);
 
   // Forgot password state
   const [forgotIdentifier, setForgotIdentifier] = useState('');
@@ -375,37 +379,34 @@ export const AuthModal = () => {
       return;
     }
 
-    if (result.requiresConversion) {
+    if (result.requiresConversion || result.isGuestAccount) {
       setConversionData({
         userId: result.data?.userId,
+        challengeId: result.data?.challengeId,
         phone: result.data?.phone || registerPhone,
         name: registerName || result.data?.name,
         email: registerEmail || result.data?.email,
         maskedPhone: result.data?.maskedPhone || `XXXXXX${registerPhone.slice(-4)}`,
         maskedEmail: result.data?.maskedEmail,
+        emailDeliveryStatus: result.data?.emailDeliveryStatus,
+        emailDeliveryError: result.data?.emailDeliveryError,
       });
-      setConvertPassword(registerPassword);
-      setConvertOtp('');
-      setConvertCooldown(result.data?.resendCooldownSeconds || 60);
-      setAuthModalTab('convertGuest');
-      showToast.success('Existing guest profile found! Enter email OTP to convert your account.');
-      return;
-    }
-
-    if (result.requiresConversion) {
-      setConversionData({
-        userId: result.data?.userId,
-        phone: result.data?.phone || registerPhone,
-        name: registerName || result.data?.name,
-        email: registerEmail || result.data?.email,
-        maskedPhone: result.data?.maskedPhone || `XXXXXX${registerPhone.slice(-4)}`,
+      setOtpChallengeData({
+        challengeId: result.data?.challengeId,
         maskedEmail: result.data?.maskedEmail,
+        maskedPhone: result.data?.maskedPhone,
+        emailDeliveryStatus: result.data?.emailDeliveryStatus,
+        purpose: 'GUEST_CONVERSION',
       });
+      setChallengeRemainingSeconds(result.data?.expiresInSeconds || 300);
       setConvertPassword(registerPassword);
       setConvertOtp('');
       setConvertCooldown(result.data?.resendCooldownSeconds || 60);
+      setAssistanceRequested(false);
+      setAssistanceStatus('PENDING');
+      setClaimStep('otp');
       setAuthModalTab('convertGuest');
-      showToast.success('Existing guest profile found! Enter email OTP to convert your account.');
+      showToast.success('Existing guest profile found! Enter email OTP to claim your account.');
       return;
     }
 
@@ -418,6 +419,81 @@ export const AuthModal = () => {
     }
   };
 
+  // Handle Claim Profile Search Submit (PART 1)
+  const handleClaimSearchSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setErrorMessage('');
+
+    if (!claimIdentifier || !claimIdentifier.trim()) {
+      setErrorMessage('Please enter your registered email or mobile number.');
+      return;
+    }
+
+    const cleanInput = claimIdentifier.trim();
+    const isEmail = cleanInput.includes('@');
+
+    if (isEmail) {
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+      if (!emailRegex.test(cleanInput.toLowerCase())) {
+        setErrorMessage('Please enter a valid email address (e.g. name@example.com).');
+        return;
+      }
+    } else {
+      const digits = cleanInput.replace(/\D/g, '');
+      let normalizedPhone = digits;
+      if (digits.length === 12 && digits.startsWith('91')) {
+        normalizedPhone = digits.slice(2);
+      } else if (digits.length === 11 && digits.startsWith('0')) {
+        normalizedPhone = digits.slice(1);
+      }
+      if (normalizedPhone.length !== 10) {
+        setErrorMessage('Mobile number must be a valid 10-digit number (e.g. 9876543210).');
+        return;
+      }
+      if (!/^[6-9]\d{9}$/.test(normalizedPhone)) {
+        setErrorMessage('Mobile number must be a valid 10-digit number starting with 6, 7, 8, or 9.');
+        return;
+      }
+    }
+
+    try {
+      setClaimSearching(true);
+      const res = await userManagementApi.requestOnlineConversionOtp(cleanInput);
+
+      if (res?.success) {
+        setConversionData(res.data);
+        setOtpChallengeData({
+          challengeId: res.data?.challengeId,
+          maskedEmail: res.data?.maskedEmail,
+          maskedPhone: res.data?.maskedPhone,
+          emailDeliveryStatus: res.data?.emailDeliveryStatus,
+          purpose: 'GUEST_CONVERSION',
+        });
+        setChallengeRemainingSeconds(res.data?.expiresInSeconds || 300);
+        setConvertCooldown(res.data?.resendCooldownSeconds || 60);
+        setAssistanceRequested(false);
+        setAssistanceStatus('PENDING');
+        setConvertOtp('');
+        setClaimStep('otp');
+
+        if (res.data?.emailDeliveryStatus === 'FAILED' || res.data?.emailDeliveryStatus === 'NOT_CONFIGURED') {
+          showToast.info('Email delivery restricted on domain. You can request Admin Assistance if code is not received.');
+        } else {
+          showToast.success(`Verification code dispatched to ${res.data?.maskedEmail || 'your email'}!`);
+        }
+      } else {
+        setErrorMessage(res?.message || 'Failed to locate gaming profile.');
+        showToast.error(res?.message || 'Failed to locate gaming profile.');
+      }
+    } catch (err) {
+      const msg = err.message || 'Failed to locate profile';
+      setErrorMessage(msg);
+      showToast.error(msg);
+    } finally {
+      setClaimSearching(false);
+    }
+  };
+
   // Online Guest Conversion Submit
   const handleConversionSubmit = async (e) => {
     e.preventDefault();
@@ -426,10 +502,15 @@ export const AuthModal = () => {
       setErrorMessage('Please enter the 6-digit OTP and your chosen password.');
       return;
     }
+    if (convertPassword.length < 6) {
+      setErrorMessage('Password must be at least 6 characters long.');
+      return;
+    }
 
     try {
       setSubmittingConversion(true);
       const res = await userManagementApi.verifyOnlineConversionOtp({
+        challengeId: conversionData?.challengeId || otpChallengeData?.challengeId,
         userId: conversionData?.userId,
         phone: conversionData?.phone,
         otp: convertOtp.trim(),
@@ -456,16 +537,32 @@ export const AuthModal = () => {
 
   // Request new conversion OTP
   const handleResendConversionOtp = async () => {
-    if (convertCooldown > 0 || !conversionData?.phone) return;
+    if (convertCooldown > 0 || (!conversionData?.phone && !conversionData?.email && !claimIdentifier)) return;
     try {
       setLoading(true);
+      const identifierToUse = conversionData?.email || conversionData?.phone || claimIdentifier.trim();
       const res = await userManagementApi.requestOnlineConversionOtp(
-        conversionData.phone,
-        conversionData.email
+        identifierToUse,
+        conversionData?.email
       );
       if (res?.success) {
-        showToast.success(`New verification code sent to ${res.data?.maskedEmail || 'your email'}!`);
+        if (res.data) {
+          setConversionData(res.data);
+          setOtpChallengeData({
+            challengeId: res.data.challengeId,
+            maskedEmail: res.data.maskedEmail,
+            maskedPhone: res.data.maskedPhone,
+            emailDeliveryStatus: res.data.emailDeliveryStatus,
+            purpose: 'GUEST_CONVERSION',
+          });
+          setChallengeRemainingSeconds(res.data.expiresInSeconds || 300);
+        }
         setConvertCooldown(res.data?.resendCooldownSeconds || 60);
+        if (res.data?.emailDeliveryStatus === 'FAILED' || res.data?.emailDeliveryStatus === 'NOT_CONFIGURED') {
+          showToast.info('Email delivery restricted on domain. If code is not received, request Admin Assistance.');
+        } else {
+          showToast.success(`New verification code sent to ${res.data?.maskedEmail || 'your email'}!`);
+        }
       } else {
         showToast.error(res?.message || 'Failed to send OTP');
       }
@@ -799,6 +896,9 @@ export const AuthModal = () => {
                 type="button"
                 onClick={() => {
                   setAuthModalTab('convertGuest');
+                  setClaimStep('search');
+                  setClaimIdentifier('');
+                  setConversionData(null);
                   setErrorMessage('');
                 }}
                 className="text-xs text-[#C7A5A8] hover:text-[#D7FF00] transition-colors inline-flex items-center gap-1"
@@ -1117,104 +1217,223 @@ export const AuthModal = () => {
           </form>
         )}
 
-        {/* ---------------- 4. GUEST CONVERSION VIEW ---------------- */}
+        {/* ---------------- 4. GUEST CONVERSION / CLAIM YOUR PROFILE VIEW ---------------- */}
         {authModalTab === 'convertGuest' && (
-          <form onSubmit={handleConversionSubmit} className="space-y-4">
-            <div className="p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-200">
-              <span className="font-bold text-white block mb-0.5">Existing Guest Profile Detected</span>
-              We found your counter walk-in profile! Enter the 6-digit verification code sent to your registered email to claim your account and past bookings.
-            </div>
+          <div className="space-y-4">
+            {/* STEP 1: Search Profile by Email or Mobile Number (PART 1) */}
+            {claimStep === 'search' && (
+              <form onSubmit={handleClaimSearchSubmit} className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-200">
+                  <span className="font-bold text-white block mb-0.5">Claim Your Walk-In Player Profile</span>
+                  Played at NOAH GAMING front desk? Enter your registered email address or mobile number to locate your account, verify ownership via email OTP, and claim your bookings.
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#C7A5A8] mb-1">
-                Mobile Number
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C7A5A8]" />
-                <input
-                  type="tel"
-                  required
-                  value={conversionData?.phone || registerPhone}
-                  onChange={(e) =>
-                    setConversionData({
-                      ...conversionData,
-                      phone: e.target.value.replace(/\D/g, ''),
-                    })
-                  }
-                  placeholder="9876543210"
-                  className="w-full pl-9 pr-4 py-2 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-white font-mono"
-                />
-              </div>
-            </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#C7A5A8] mb-1">
+                    Email or Mobile Number <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C7A5A8]" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Enter your registered email or mobile number"
+                      value={claimIdentifier}
+                      onChange={(e) => setClaimIdentifier(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-[#FFF4E8] placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"
+                    />
+                  </div>
+                  <p className="text-[11px] text-[#C7A5A8]/70 mt-1">
+                    Accepts your 10-digit mobile number (e.g. 9876543210) or your registered email address.
+                  </p>
+                </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[#C7A5A8]">
-                  6-Digit Verification OTP *
-                </label>
+                <button
+                  type="submit"
+                  disabled={claimSearching || !claimIdentifier.trim()}
+                  className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {claimSearching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Locating Profile...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-400" /> Find Profile & Send Verification Code
+                    </>
+                  )}
+                </button>
+
                 <button
                   type="button"
-                  onClick={handleResendConversionOtp}
-                  disabled={convertCooldown > 0 || loading}
-                  className="text-[11px] text-[#D7FF00] hover:underline disabled:opacity-50 disabled:no-underline font-mono"
+                  onClick={() => {
+                    setAuthModalTab('login');
+                    setErrorMessage('');
+                  }}
+                  className="w-full text-center text-xs text-[#C7A5A8] hover:text-white pt-1"
                 >
-                  {convertCooldown > 0 ? `Resend in ${convertCooldown}s` : 'Resend OTP'}
+                  &larr; Back to Sign In
                 </button>
-              </div>
+              </form>
+            )}
 
-              <SixDigitOtpInput
-                value={convertOtp}
-                onChange={setConvertOtp}
-                disabled={submittingConversion}
-                variant="amber"
-              />
-            </div>
+            {/* STEP 2: Email OTP Verification, Admin Assistance & Set Password */}
+            {claimStep === 'otp' && (
+              <form onSubmit={handleConversionSubmit} className="space-y-4">
+                {/* Email Delivery Warning if delivery restricted */}
+                {conversionData?.emailDeliveryStatus === 'FAILED' || conversionData?.emailDeliveryStatus === 'NOT_CONFIGURED' ? (
+                  <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-200 flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="leading-relaxed">
+                      <strong className="block text-white mb-0.5">Email Delivery Restricted</strong>
+                      {conversionData?.emailDeliveryError || 'Verification email could not be delivered to your inbox due to domain restrictions.'} You can enter the OTP code if received, or click <strong>Request Admin Assistance</strong> below for instant front desk approval.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-200">
+                    <span className="font-bold text-white block mb-0.5">
+                      Profile Found for {conversionData?.name || 'Gamer'}!
+                    </span>
+                    We dispatched a 6-digit verification code to your registered email{' '}
+                    <strong className="text-white">{conversionData?.maskedEmail || 'your email'}</strong>. Enter the code and choose a password to activate your account.
+                  </div>
+                )}
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#C7A5A8] mb-1">
-                Set Account Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C7A5A8]" />
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={convertPassword}
-                  onChange={(e) => setConvertPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                  className="w-full pl-9 pr-4 py-2 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-white focus:outline-none focus:border-[#851B2B]"
-                />
-              </div>
-            </div>
+                {/* 5-Minute Timer & Resend Controls */}
+                <div className="flex items-center justify-between text-xs text-[#C7A5A8] px-1">
+                  <span className="flex items-center gap-1 font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                    <Clock className="w-3.5 h-3.5" />
+                    {Math.floor(challengeRemainingSeconds / 60).toString().padStart(2, '0')}:
+                    {(challengeRemainingSeconds % 60).toString().padStart(2, '0')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleResendConversionOtp}
+                    disabled={convertCooldown > 0 || loading}
+                    className="text-[#D7FF00] hover:underline disabled:opacity-50 disabled:no-underline font-mono"
+                  >
+                    {convertCooldown > 0 ? `Resend in ${convertCooldown}s` : 'Resend OTP'}
+                  </button>
+                </div>
 
-            <button
-              type="submit"
-              disabled={submittingConversion || convertOtp.length !== 6 || !convertPassword}
-              className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {submittingConversion ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
-                </>
-              ) : (
-                <>
-                  <UserCheck className="w-4 h-4" /> Activate & Claim Past History
-                </>
-              )}
-            </button>
+                {/* 6-Digit OTP Input */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#C7A5A8] mb-1">
+                    6-Digit Verification Code *
+                  </label>
+                  <SixDigitOtpInput
+                    value={convertOtp}
+                    onChange={setConvertOtp}
+                    disabled={submittingConversion}
+                    variant="amber"
+                  />
+                </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setAuthModalTab('login');
-                setErrorMessage('');
-              }}
-              className="w-full text-center text-xs text-[#C7A5A8] hover:text-white pt-1"
-            >
-              &larr; Back to Sign In
-            </button>
-          </form>
+                {/* Set Account Password */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#C7A5A8] mb-1">
+                    Set Account Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C7A5A8]" />
+                    <input
+                      type={showConvertPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      value={convertPassword}
+                      onChange={(e) => setConvertPassword(e.target.value)}
+                      placeholder="Choose a password (min 6 characters)"
+                      className="w-full pl-9 pr-10 py-2.5 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-[#FFF4E8] placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConvertPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C7A5A8] hover:text-[#FFF4E8] p-1 transition-colors"
+                      aria-label={showConvertPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConvertPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Admin Assistance Fallback */}
+                <div className="pt-1 pb-1">
+                  {assistanceStatus === 'AWAITING_ADMIN_ASSISTANCE' ? (
+                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
+                        <span>Awaiting Administrator approval...</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => checkApprovalStatusNow(false)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-bold border border-amber-500/40"
+                      >
+                        Check Status
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleRequestAdminAssistance}
+                      disabled={requestingAssistance || assistanceRequested}
+                      className="w-full py-2 px-3 rounded-xl bg-[#260D17] hover:bg-[#380C19] border border-[#49202C] text-xs font-semibold text-[#D7FF00] hover:text-white transition-all flex items-center justify-center gap-1.5"
+                    >
+                      {requestingAssistance ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Contacting Administrator...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-3.5 h-3.5" /> Did not receive code? Request Admin Assistance
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Submit Claim */}
+                <button
+                  type="submit"
+                  disabled={submittingConversion || convertOtp.length !== 6 || !convertPassword}
+                  className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {submittingConversion ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Activating Profile...
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4" /> Activate & Claim Past History
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClaimStep('search');
+                      setErrorMessage('');
+                    }}
+                    className="text-xs text-[#C7A5A8] hover:text-[#D7FF00] transition-colors"
+                  >
+                    &larr; Search Different Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModalTab('login');
+                      setErrorMessage('');
+                    }}
+                    className="text-xs text-[#C7A5A8] hover:text-white transition-colors"
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
         {/* ---------------- 5. FORGOT PASSWORD VIEW ---------------- */}

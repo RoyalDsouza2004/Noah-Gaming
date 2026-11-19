@@ -35,7 +35,7 @@ const adminAssistanceRequestSchema = new mongoose.Schema(
     },
     requestType: {
       type: String,
-      enum: ['REGISTRATION', 'LOGIN_2FA'],
+      enum: ['REGISTRATION', 'LOGIN_2FA', 'GUEST_CONVERSION'],
       required: true,
       index: true,
     },

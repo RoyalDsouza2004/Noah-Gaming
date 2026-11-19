@@ -15,6 +15,13 @@ import {
   sendPasswordResetConfirmationEmail,
   sendOtpEmail,
 } from '../services/email.service.js';
+import {
+  normalizePhone,
+  isValidIndianPhone,
+  normalizeEmail,
+  isValidEmail,
+  isPlaceholderEmail,
+} from '../utils/validators.js';
 
 function maskEmail(email) {
   if (!email || !email.includes('@')) return 'customer email';
@@ -1089,11 +1096,33 @@ export const checkDuplicateUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Provide phone or email to check' });
     }
 
-    const query = {};
-    if (phone) query.phone = phone.trim().replace(/\D/g, '');
-    if (email) query.email = email.trim().toLowerCase();
+    const orConditions = [];
 
-    const existingUser = await User.findOne(query)
+    if (phone && String(phone).trim()) {
+      const cleanPhone = normalizePhone(phone);
+      if (cleanPhone) {
+        orConditions.push({ phone: cleanPhone });
+        orConditions.push({ phone: `+91${cleanPhone}` });
+        orConditions.push({ phone: `+91 ${cleanPhone}` });
+      }
+    }
+
+    if (email && String(email).trim()) {
+      const cleanEmail = normalizeEmail(email);
+      if (cleanEmail) {
+        orConditions.push({ email: cleanEmail });
+      }
+    }
+
+    if (orConditions.length === 0) {
+      return res.status(200).json({
+        success: true,
+        exists: false,
+        message: 'No existing customer account found with these details.',
+      });
+    }
+
+    const existingUser = await User.findOne({ $or: orConditions })
       .populate('membership.planId', 'name')
       .select('-password -conversionOtp -passwordResetOtp')
       .lean();

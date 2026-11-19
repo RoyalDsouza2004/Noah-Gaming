@@ -24,14 +24,21 @@ export const QuickRegisterModal = ({ onClose, onSuccess, initialQuery = '' }) =>
     };
   }, []);
 
-  // Live duplicate check when 10 digits are entered
+  // Live duplicate check when 10 digits are entered or valid email is provided
   useEffect(() => {
     const cleanPhone = phone.trim().replace(/\D/g, '');
-    if (cleanPhone.length === 10) {
+    const cleanEmail = email.trim().toLowerCase();
+    const hasValidPhone = cleanPhone.length === 10;
+    const hasValidEmail = cleanEmail.includes('@') && cleanEmail.includes('.');
+
+    if (hasValidPhone || hasValidEmail) {
       let isMounted = true;
       setCheckingDuplicate(true);
       userManagementApi
-        .checkDuplicate(cleanPhone)
+        .checkDuplicate({
+          phone: hasValidPhone ? cleanPhone : undefined,
+          email: hasValidEmail ? cleanEmail : undefined,
+        })
         .then((res) => {
           if (isMounted && res?.success && res.exists) {
             setExistingUser(res.user);
@@ -49,7 +56,7 @@ export const QuickRegisterModal = ({ onClose, onSuccess, initialQuery = '' }) =>
     } else {
       setExistingUser(null);
     }
-  }, [phone]);
+  }, [phone, email]);
 
   const handleSelectExisting = () => {
     if (existingUser) {
@@ -63,14 +70,41 @@ export const QuickRegisterModal = ({ onClose, onSuccess, initialQuery = '' }) =>
     e.preventDefault();
     setError('');
 
+    if (!name.trim()) {
+      setError('Customer full name is mandatory.');
+      return;
+    }
+
     const cleanPhone = phone.trim().replace(/\D/g, '');
     if (cleanPhone.length !== 10) {
       setError('Mobile number must be exactly 10 digits.');
       return;
     }
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setError('Mobile number must be a valid 10-digit number starting with 6, 7, 8, or 9.');
+      return;
+    }
 
-    if (!name.trim()) {
-      setError('Customer name is required.');
+    if (!email.trim()) {
+      setError('Email address is mandatory for customer registration.');
+      return;
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setError('Please enter a valid email address (e.g. customer@example.com).');
+      return;
+    }
+
+    const [localPart = '', domain = ''] = cleanEmail.split('@');
+    const blockedDomains = ['gaminglounge.local', 'example.com', 'test.com', 'fake.com', 'dummy.com', 'temp.com', 'none.com'];
+    if (
+      blockedDomains.includes(domain) ||
+      localPart.startsWith('guest.') ||
+      localPart.startsWith('walkin_') ||
+      ['none', 'dummy', 'fake', 'test', 'noemail', 'placeholder', 'temp'].includes(localPart)
+    ) {
+      setError('Placeholder or fake email addresses are not permitted. Please enter the customer\'s real email address.');
       return;
     }
 
@@ -79,7 +113,7 @@ export const QuickRegisterModal = ({ onClose, onSuccess, initialQuery = '' }) =>
       const res = await receptionistApi.registerCustomer({
         name: name.trim(),
         phone: cleanPhone,
-        email: email.trim() || undefined,
+        email: cleanEmail,
       });
 
       if (res?.success) {
@@ -197,21 +231,22 @@ export const QuickRegisterModal = ({ onClose, onSuccess, initialQuery = '' }) =>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
-              Email Address (Optional)
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              Email Address <span className="text-rose-400">*</span>
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
               <input
                 type="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Auto-generated if empty"
+                placeholder="e.g. customer@example.com"
                 className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
               />
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">
-              If skipped, guest.phonenumber@noahgaming.com will be assigned.
+            <p className="text-[11px] text-slate-400 mt-1">
+              Compulsory. Player verification OTPs, booking receipts, and account claims will use this address.
             </p>
           </div>
 

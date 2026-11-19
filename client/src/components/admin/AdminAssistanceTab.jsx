@@ -327,6 +327,7 @@ export const AdminAssistanceTab = () => {
                 <option value="ALL">All Request Types</option>
                 <option value="REGISTRATION">Registration Assistance</option>
                 <option value="LOGIN_2FA">Login 2FA Assistance</option>
+                <option value="GUEST_CONVERSION">Profile Claim Assistance</option>
               </select>
 
               {/* Status Filter */}
@@ -411,11 +412,15 @@ export const AdminAssistanceTab = () => {
                             className={`px-2 py-0.5 rounded-md text-[10px] font-bold font-sans uppercase tracking-wider ${
                               item.requestType === 'REGISTRATION'
                                 ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                                : item.requestType === 'GUEST_CONVERSION'
+                                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                                 : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
                             }`}
                           >
                             {item.requestType === 'REGISTRATION'
                               ? 'Customer Registration'
+                              : item.requestType === 'GUEST_CONVERSION'
+                              ? 'Profile Claim'
                               : 'Login 2FA'}
                           </span>
                         </td>
@@ -533,6 +538,7 @@ export const AdminAssistanceTab = () => {
                 <option value="ALL">All Types</option>
                 <option value="REGISTRATION">Registration</option>
                 <option value="LOGIN_2FA">Login 2FA</option>
+                <option value="GUEST_CONVERSION">Profile Claim</option>
               </select>
             </div>
 

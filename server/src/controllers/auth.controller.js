@@ -12,6 +12,13 @@ import {
   sendOtpEmail,
 } from '../services/email.service.js';
 import { getFrontendUrl, getPasswordResetUrl } from '../utils/url.js';
+import {
+  normalizePhone,
+  isValidIndianPhone,
+  normalizeEmail,
+  isValidEmail,
+  isPlaceholderEmail,
+} from '../utils/validators.js';
 
 export function maskEmail(email) {
   if (!email || typeof email !== 'string' || !email.includes('@')) return 'your registered email';
@@ -46,6 +53,7 @@ export const register = async (req, res) => {
           );
 
           // Generate secure 6-digit conversion OTP and store SHA-256 hash
+          const challengeId = crypto.randomBytes(32).toString('hex');
           const otpCode = OtpVerification.generateNumericOtp();
           const otpHash = OtpVerification.hashOtp(otpCode);
           const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
@@ -53,40 +61,64 @@ export const register = async (req, res) => {
 
           const targetEmail = existingPhone.email || cleanEmail;
 
-          await OtpVerification.create({
-            userId: existingPhone._id,
-            email: targetEmail,
-            otpHash,
-            purpose: 'GUEST_CONVERSION',
-            expiresAt,
-            resendAvailableAt,
-            attempts: 0,
-            maxAttempts: 5,
-          });
-
-          // Dispatch real OTP email via Resend
-          if (targetEmail) {
-            await sendOtpEmail({
+          let emailDeliveryStatus = 'PENDING';
+          let emailDeliveryError = '';
+          try {
+            const emailResult = await sendOtpEmail({
               email: targetEmail,
               name: existingPhone.name,
               otp: otpCode,
               purpose: 'GUEST_CONVERSION',
               expiresMinutes: 5,
             });
+            if (emailResult.success) {
+              emailDeliveryStatus = 'ACCEPTED';
+            } else if (emailResult.notConfigured) {
+              emailDeliveryStatus = 'NOT_CONFIGURED';
+              emailDeliveryError = emailResult.message || 'Email service not configured on server';
+            } else {
+              emailDeliveryStatus = 'FAILED';
+              emailDeliveryError = emailResult.error || emailResult.reason || 'Failed to dispatch email';
+            }
+          } catch (e) {
+            emailDeliveryStatus = 'FAILED';
+            emailDeliveryError = e.message;
           }
+
+          await OtpVerification.create({
+            userId: existingPhone._id,
+            email: targetEmail,
+            phone: existingPhone.phone,
+            userName: existingPhone.name,
+            otpHash,
+            purpose: 'GUEST_CONVERSION',
+            challengeId,
+            expiresAt,
+            resendAvailableAt,
+            attempts: 0,
+            maxAttempts: 5,
+            emailDeliveryStatus,
+            emailDeliveryError,
+            status: 'PENDING',
+          });
 
           return res.status(200).json({
             success: true,
             requiresConversion: true,
             isGuestAccount: true,
-            message: `An existing guest gaming profile was found for ${cleanPhone}! Enter the verification code sent to your email to claim your profile, booking history, and receipts.`,
+            message: emailDeliveryStatus === 'ACCEPTED'
+              ? `An existing guest gaming profile was found for ${cleanPhone}! Enter the verification code sent to your email to claim your profile, booking history, and receipts.`
+              : 'An existing guest gaming profile was found, but email delivery is restricted. If you do not receive the email, you can request Admin Assistance.',
             data: {
+              challengeId,
               userId: existingPhone._id,
               phone: existingPhone.phone,
               name: existingPhone.name,
-              email: existingPhone.email,
+              email: targetEmail,
               maskedPhone: maskPhone(cleanPhone),
               maskedEmail: maskEmail(targetEmail),
+              emailDeliveryStatus,
+              emailDeliveryError: emailDeliveryError || null,
               resendCooldownSeconds: 60,
               expiresInSeconds: 300,
             },
@@ -120,42 +152,70 @@ export const register = async (req, res) => {
             { used: true }
           );
 
+          const challengeId = crypto.randomBytes(32).toString('hex');
           const otpCode = OtpVerification.generateNumericOtp();
           const otpHash = OtpVerification.hashOtp(otpCode);
           const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
           const resendAvailableAt = new Date(Date.now() + 60 * 1000);
 
+          let emailDeliveryStatus = 'PENDING';
+          let emailDeliveryError = '';
+          try {
+            const emailResult = await sendOtpEmail({
+              email: cleanEmail,
+              name: existingEmail.name,
+              otp: otpCode,
+              purpose: 'GUEST_CONVERSION',
+              expiresMinutes: 5,
+            });
+            if (emailResult.success) {
+              emailDeliveryStatus = 'ACCEPTED';
+            } else if (emailResult.notConfigured) {
+              emailDeliveryStatus = 'NOT_CONFIGURED';
+              emailDeliveryError = emailResult.message || 'Email service not configured on server';
+            } else {
+              emailDeliveryStatus = 'FAILED';
+              emailDeliveryError = emailResult.error || emailResult.reason || 'Failed to dispatch email';
+            }
+          } catch (e) {
+            emailDeliveryStatus = 'FAILED';
+            emailDeliveryError = e.message;
+          }
+
           await OtpVerification.create({
             userId: existingEmail._id,
             email: cleanEmail,
+            phone: existingEmail.phone,
+            userName: existingEmail.name,
             otpHash,
             purpose: 'GUEST_CONVERSION',
+            challengeId,
             expiresAt,
             resendAvailableAt,
             attempts: 0,
             maxAttempts: 5,
-          });
-
-          await sendOtpEmail({
-            email: cleanEmail,
-            name: existingEmail.name,
-            otp: otpCode,
-            purpose: 'GUEST_CONVERSION',
-            expiresMinutes: 5,
+            emailDeliveryStatus,
+            emailDeliveryError,
+            status: 'PENDING',
           });
 
           return res.status(200).json({
             success: true,
             requiresConversion: true,
             isGuestAccount: true,
-            message: `An existing guest gaming profile was found for ${cleanEmail}! Enter the verification code sent to your email to convert your account.`,
+            message: emailDeliveryStatus === 'ACCEPTED'
+              ? `An existing guest gaming profile was found for ${cleanEmail}! Enter the verification code sent to your email to claim your profile, booking history, and receipts.`
+              : 'An existing guest gaming profile was found, but email delivery is restricted. If you do not receive the email, you can request Admin Assistance.',
             data: {
+              challengeId,
               userId: existingEmail._id,
               phone: existingEmail.phone,
               name: existingEmail.name,
               email: existingEmail.email,
               maskedPhone: maskPhone(existingEmail.phone),
               maskedEmail: maskEmail(cleanEmail),
+              emailDeliveryStatus,
+              emailDeliveryError: emailDeliveryError || null,
               resendCooldownSeconds: 60,
               expiresInSeconds: 300,
             },
@@ -1045,7 +1105,7 @@ export const requestOtpAssistance = async (req, res) => {
         email: record.email,
         phone: record.phone || '',
         challengeId: record.challengeId,
-        requestType: record.purpose === 'LOGIN_2FA' ? 'LOGIN_2FA' : 'REGISTRATION',
+        requestType: record.purpose === 'LOGIN_2FA' ? 'LOGIN_2FA' : (record.purpose === 'GUEST_CONVERSION' ? 'GUEST_CONVERSION' : 'REGISTRATION'),
         status: 'PENDING',
         emailDeliveryStatus: record.emailDeliveryStatus || 'PENDING',
         emailDeliveryError: record.emailDeliveryError || '',
@@ -1204,6 +1264,22 @@ export const completeOtpAssistance = async (req, res) => {
           console.error('[Welcome Email Error]:', err.message)
         );
       }
+    } else if (record.purpose === 'GUEST_CONVERSION') {
+      user.accountType = 'REGISTERED';
+      user.isGuest = false;
+      user.accountStatus = 'ACTIVE';
+      user.isEmailVerified = true;
+      user.emailVerificationMethod = 'admin_assisted';
+      user.guestConvertedAt = new Date();
+      user.isActive = true;
+      if (req.body.password && String(req.body.password).trim().length >= 6) {
+        user.password = String(req.body.password).trim();
+      }
+      if (user.email) {
+        sendWelcomeEmail({ user }).catch((err) =>
+          console.error('[Conversion Welcome Email Error]:', err.message)
+        );
+      }
     }
 
     user.lastLogin = new Date();
@@ -1326,40 +1402,75 @@ export const updateProfile = async (req, res) => {
 };
 
 // Customer Online: Request OTP to convert guest profile
+// Supports searching by registered email or mobile number with automatic identification & normalization
 export const requestConversionOtpOnline = async (req, res) => {
   try {
     const { identifier, email } = req.body;
-    if (!identifier) {
-      return res.status(400).json({ success: false, message: 'Please provide your mobile number or email.' });
+    if (!identifier || !String(identifier).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your registered mobile number or email address.',
+      });
     }
-    const clean = identifier.trim();
-    const cleanPhone = clean.replace(/\D/g, '');
-    const cleanEmail = clean.toLowerCase();
 
-    const user = await User.findOne({
-      $or: [{ phone: cleanPhone }, { email: cleanEmail }],
-    });
+    const clean = String(identifier).trim();
+    const isEmail = clean.includes('@');
+    let user = null;
+
+    if (isEmail) {
+      const cleanEmail = normalizeEmail(clean);
+      if (!isValidEmail(cleanEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please enter a valid email address (e.g. player@example.com).',
+        });
+      }
+      user = await User.findOne({ email: cleanEmail });
+    } else {
+      const cleanPhone = normalizePhone(clean);
+      if (!isValidIndianPhone(cleanPhone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please enter a valid 10-digit mobile number or valid email address.',
+        });
+      }
+      user = await User.findOne({
+        $or: [
+          { phone: cleanPhone },
+          { phone: `+91${cleanPhone}` },
+          { phone: `+91 ${cleanPhone}` },
+        ],
+      });
+    }
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'No guest profile found with this mobile number or email.',
+        message: 'No gaming profile found matching this email or mobile number. Please check your details or register a new account.',
       });
     }
 
     if (user.accountType === 'REGISTERED' && !user.isGuest) {
       return res.status(400).json({
         success: false,
-        message: 'This account is already registered. Please sign in directly or reset your password.',
+        message: 'This account is already registered! Please sign in directly or use Forgot Password to reset your password.',
       });
     }
 
-    const targetEmail = (email && email.trim()) ? email.trim().toLowerCase() : user.email;
-    if (!targetEmail || !targetEmail.includes('@') || targetEmail.startsWith('guest.')) {
-      return res.status(400).json({
-        success: false,
-        message: 'A valid email address is required to receive your verification code. Please provide your email.',
-      });
+    // Determine target email: must be real and valid
+    let targetEmail = normalizeEmail(user.email);
+    if (!isValidEmail(targetEmail) || isPlaceholderEmail(targetEmail)) {
+      if (email && isValidEmail(email) && !isPlaceholderEmail(email)) {
+        targetEmail = normalizeEmail(email);
+        user.email = targetEmail;
+        await user.save();
+      } else {
+        return res.status(400).json({
+          success: false,
+          requiresEmailInput: true,
+          message: 'Your profile does not have a verified email on file. Please enter your valid email address to receive your verification code.',
+        });
+      }
     }
 
     // Check resend cooldown (60 seconds)
@@ -1378,44 +1489,61 @@ export const requestConversionOtpOnline = async (req, res) => {
       });
     }
 
-    // Invalidate prior OTPs
+    // Invalidate prior conversion OTPs
     await OtpVerification.updateMany(
       { userId: user._id, purpose: 'GUEST_CONVERSION', used: false },
       { used: true }
     );
 
     // Generate secure 6-digit OTP and store SHA-256 hash
+    const challengeId = crypto.randomBytes(32).toString('hex');
     const otpCode = OtpVerification.generateNumericOtp();
     const otpHash = OtpVerification.hashOtp(otpCode);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
     const resendAvailableAt = new Date(Date.now() + 60 * 1000); // 60s cooldown
 
+    // Dispatch real email via Resend
+    let emailDeliveryStatus = 'PENDING';
+    let emailDeliveryError = '';
+    try {
+      const emailResult = await sendOtpEmail({
+        email: targetEmail,
+        name: user.name,
+        otp: otpCode,
+        purpose: 'GUEST_CONVERSION',
+        expiresMinutes: 5,
+      });
+
+      if (emailResult.success) {
+        emailDeliveryStatus = 'ACCEPTED';
+      } else if (emailResult.notConfigured) {
+        emailDeliveryStatus = 'NOT_CONFIGURED';
+        emailDeliveryError = emailResult.message || 'Email service not configured on server';
+      } else {
+        emailDeliveryStatus = 'FAILED';
+        emailDeliveryError = emailResult.error || emailResult.reason || 'Failed to dispatch email';
+      }
+    } catch (e) {
+      emailDeliveryStatus = 'FAILED';
+      emailDeliveryError = e.message;
+    }
+
     await OtpVerification.create({
       userId: user._id,
       email: targetEmail,
+      phone: user.phone,
+      userName: user.name,
       otpHash,
       purpose: 'GUEST_CONVERSION',
+      challengeId,
       expiresAt,
       resendAvailableAt,
       attempts: 0,
       maxAttempts: 5,
+      emailDeliveryStatus,
+      emailDeliveryError,
+      status: 'PENDING',
     });
-
-    // Dispatch real email via Resend
-    const emailResult = await sendOtpEmail({
-      email: targetEmail,
-      name: user.name,
-      otp: otpCode,
-      purpose: 'GUEST_CONVERSION',
-      expiresMinutes: 5,
-    });
-
-    if (emailResult.notConfigured) {
-      return res.status(503).json({
-        success: false,
-        message: 'Email verification service is currently unconfigured on the server.',
-      });
-    }
 
     await ActivityLog.create({
       userId: user._id,
@@ -1423,20 +1551,25 @@ export const requestConversionOtpOnline = async (req, res) => {
       userRole: user.role,
       action: 'GUEST_CONVERSION_OTP_SENT',
       category: 'AUTH',
-      details: { email: targetEmail, phone: user.phone },
+      details: { email: targetEmail, phone: user.phone, challengeId, emailDeliveryStatus },
       ipAddress: req.ip || '127.0.0.1',
     });
 
     res.status(200).json({
       success: true,
-      message: `Verification code sent to ${maskEmail(targetEmail)}.`,
+      message: emailDeliveryStatus === 'ACCEPTED'
+        ? `Verification code sent to ${maskEmail(targetEmail)}.`
+        : 'Verification challenge created, but email delivery is restricted. If you do not receive the email, you can request Admin Assistance.',
       data: {
+        challengeId,
         userId: user._id,
         phone: user.phone,
         email: targetEmail,
         name: user.name,
         maskedPhone: maskPhone(user.phone),
         maskedEmail: maskEmail(targetEmail),
+        emailDeliveryStatus,
+        emailDeliveryError: emailDeliveryError || null,
         resendCooldownSeconds: 60,
         expiresInSeconds: 300,
       },
@@ -1450,16 +1583,35 @@ export const requestConversionOtpOnline = async (req, res) => {
 // Customer Online: Verify OTP and complete guest conversion to registered account
 export const verifyConversionOtpOnline = async (req, res) => {
   try {
-    const { userId, phone, otp, password, name, email } = req.body;
+    const { challengeId, userId, phone, otp, password, name, email } = req.body;
 
-    const query = {};
-    if (userId) query._id = userId;
-    else if (phone) query.phone = phone.trim().replace(/\D/g, '');
-    else {
-      return res.status(400).json({ success: false, message: 'User ID or mobile number is required.' });
+    let user = null;
+    let record = null;
+
+    if (challengeId && challengeId.trim()) {
+      record = await OtpVerification.findOne({
+        challengeId: challengeId.trim(),
+        purpose: 'GUEST_CONVERSION',
+        used: false,
+      }).select('+otpHash');
+      if (record) {
+        user = await User.findById(record.userId).select('+password');
+      }
     }
 
-    const user = await User.findOne(query).select('+password');
+    if (!user) {
+      const query = {};
+      if (userId) query._id = userId;
+      else if (phone) {
+        const cleanPhone = normalizePhone(phone);
+        query.$or = [{ phone: cleanPhone }, { phone: `+91${cleanPhone}` }];
+      } else {
+        return res.status(400).json({ success: false, message: 'Challenge identifier, User ID, or mobile number is required.' });
+      }
+
+      user = await User.findOne(query).select('+password');
+    }
+
     if (!user) {
       return res.status(404).json({ success: false, message: 'Guest account not found.' });
     }
@@ -1480,11 +1632,13 @@ export const verifyConversionOtpOnline = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Verification code must be exactly 6 digits.' });
     }
 
-    const record = await OtpVerification.findOne({
-      userId: user._id,
-      purpose: 'GUEST_CONVERSION',
-      used: false,
-    }).select('+otpHash').sort({ createdAt: -1 });
+    if (!record) {
+      record = await OtpVerification.findOne({
+        userId: user._id,
+        purpose: 'GUEST_CONVERSION',
+        used: false,
+      }).select('+otpHash').sort({ createdAt: -1 });
+    }
 
     if (!record) {
       return res.status(400).json({
@@ -1496,6 +1650,7 @@ export const verifyConversionOtpOnline = async (req, res) => {
     // 1. Enforce 5-minute expiry
     if (new Date() > new Date(record.expiresAt)) {
       record.used = true;
+      record.status = 'EXPIRED';
       await record.save();
       return res.status(400).json({
         success: false,
@@ -1506,6 +1661,7 @@ export const verifyConversionOtpOnline = async (req, res) => {
     // 2. Enforce maximum 5 attempts
     if (record.attempts >= record.maxAttempts) {
       record.used = true;
+      record.status = 'EXPIRED';
       await record.save();
       return res.status(429).json({
         success: false,
@@ -1519,6 +1675,7 @@ export const verifyConversionOtpOnline = async (req, res) => {
       record.attempts += 1;
       if (record.attempts >= record.maxAttempts) {
         record.used = true;
+        record.status = 'EXPIRED';
         await record.save();
         return res.status(429).json({
           success: false,
@@ -1536,6 +1693,7 @@ export const verifyConversionOtpOnline = async (req, res) => {
     // 4. Invalidate OTP immediately upon success (single-use)
     record.verified = true;
     record.used = true;
+    record.status = 'CONSUMED';
     await record.save();
 
     if (!password || password.length < 6) {
@@ -1543,7 +1701,7 @@ export const verifyConversionOtpOnline = async (req, res) => {
     }
 
     if (email && email.trim()) {
-      const cleanEmail = email.trim().toLowerCase();
+      const cleanEmail = normalizeEmail(email);
       if (cleanEmail !== user.email) {
         const emailExists = await User.findOne({ email: cleanEmail, _id: { $ne: user._id } });
         if (emailExists) {
@@ -1551,7 +1709,7 @@ export const verifyConversionOtpOnline = async (req, res) => {
         }
         user.email = cleanEmail;
       }
-    } else if (record.email && (!user.email || user.email.startsWith('guest.'))) {
+    } else if (record.email && (!user.email || isPlaceholderEmail(user.email))) {
       user.email = record.email;
     }
 
@@ -1559,6 +1717,9 @@ export const verifyConversionOtpOnline = async (req, res) => {
 
     user.accountType = 'REGISTERED';
     user.isGuest = false;
+    user.accountStatus = 'ACTIVE';
+    user.isEmailVerified = true;
+    user.emailVerificationMethod = 'email_otp';
     user.guestConvertedAt = new Date();
     user.guestConvertedBy = user._id;
     user.password = password;

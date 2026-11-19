@@ -77,10 +77,20 @@ export const userManagementApi = {
   },
 
   // Check duplicate user by phone or email
-  checkDuplicate: async (phoneOrEmail) => {
-    const isEmail = String(phoneOrEmail).includes('@');
-    const param = isEmail ? `email=${encodeURIComponent(phoneOrEmail)}` : `phone=${encodeURIComponent(phoneOrEmail)}`;
-    return apiRequest(`/admin/users/check-duplicate?${param}`);
+  checkDuplicate: async (phoneOrEmail, emailParam) => {
+    let queryStr = '';
+    if (typeof phoneOrEmail === 'object' && phoneOrEmail !== null) {
+      const parts = [];
+      if (phoneOrEmail.phone) parts.push(`phone=${encodeURIComponent(phoneOrEmail.phone)}`);
+      if (phoneOrEmail.email) parts.push(`email=${encodeURIComponent(phoneOrEmail.email)}`);
+      queryStr = parts.join('&');
+    } else if (emailParam) {
+      queryStr = `phone=${encodeURIComponent(phoneOrEmail)}&email=${encodeURIComponent(emailParam)}`;
+    } else {
+      const isEmail = String(phoneOrEmail).includes('@');
+      queryStr = isEmail ? `email=${encodeURIComponent(phoneOrEmail)}` : `phone=${encodeURIComponent(phoneOrEmail)}`;
+    }
+    return apiRequest(`/admin/users/check-duplicate?${queryStr}`);
   },
 
   // Merge duplicate accounts (Admin only)

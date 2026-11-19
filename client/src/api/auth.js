@@ -56,10 +56,10 @@ export const authApi = {
   getOtpAssistanceStatus: (challengeId) =>
     apiRequest(`/auth/otp-assistance/status/${challengeId}`),
 
-  completeOtpAssistance: (challengeId, approvalToken) =>
+  completeOtpAssistance: (challengeId, approvalToken, password = null) =>
     apiRequest('/auth/otp-assistance/complete', {
       method: 'POST',
-      body: { challengeId, approvalToken },
+      body: { challengeId, approvalToken, ...(password ? { password } : {}) },
     }),
 
   // Fetch current user details
