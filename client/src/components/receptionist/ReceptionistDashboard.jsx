@@ -49,6 +49,7 @@ import {
   Crown,
   LogOut,
 } from 'lucide-react';
+import { Pagination } from '../common/Pagination.jsx';
 
 export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChange }) => {
   const { user, logout } = useAuth();
