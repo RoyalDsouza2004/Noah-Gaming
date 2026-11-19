@@ -68,11 +68,12 @@ async function seedDatabase() {
     // 2. Default Accounts
     const defaultAccounts = [
       {
-        name: 'Lounge Admin',
-        email: 'admin@gaminglounge.com',
-        phone: '9876543210',
+        name: 'Royal Dsouza',
+        email: process.env.PRIMARY_ADMIN_EMAIL || 'royalofficial2004@gmail.com',
+        phone: '9825398395',
         password: 'AdminPassword@123',
         role: ROLES.ADMIN,
+        isPrimaryAdmin: true,
       },
       {
         name: 'Front Desk Reception',

@@ -671,8 +671,14 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                       {/* Role */}
                       <td className="p-3.5">
                         {u.role === 'admin' ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase">
-                            Admin
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                              u.isPrimaryAdmin || u.email === 'royalofficial2004@gmail.com'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                                : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            }`}
+                          >
+                            {u.isPrimaryAdmin || u.email === 'royalofficial2004@gmail.com' ? 'Primary Admin' : 'Admin'}
                           </span>
                         ) : u.role === 'receptionist' ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 uppercase">
@@ -773,8 +779,8 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                             <KeyRound className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Delete User (Admin Only) */}
-                          {isAdmin && (
+                          {/* Delete User (Admin Only, never on Primary Admin) */}
+                          {isAdmin && !u.isPrimaryAdmin && u.email !== 'royalofficial2004@gmail.com' && (
                             <button
                               type="button"
                               onClick={() => handleOpenDelete(u)}
@@ -843,7 +849,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
               </div>
 
               <div className="flex items-center gap-2">
-                {isAdmin && selectedUserDetail?.user && (
+                {isAdmin && selectedUserDetail?.user && !selectedUserDetail.user.isPrimaryAdmin && selectedUserDetail.user.email !== 'royalofficial2004@gmail.com' && (
                   <button
                     type="button"
                     onClick={() => handleOpenDelete(selectedUserDetail.user)}
@@ -1272,14 +1278,14 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                 <div>
                   <label className="block font-semibold text-[#C7A5A8] mb-1 flex items-center gap-1">
                     <Shield className="w-3 h-3 text-purple-400" />
-                    Role {isAdmin ? '(Admin Control)' : '(Protected)'}
+                    Role {editingUser?.isPrimaryAdmin || editingUser?.email === 'royalofficial2004@gmail.com' ? '(Primary Admin - Ownership Protected)' : isAdmin ? '(Admin Control)' : '(Protected)'}
                   </label>
                   <select
                     value={editForm.role}
-                    disabled={!isAdmin}
+                    disabled={!isAdmin || editingUser?.isPrimaryAdmin || editingUser?.email === 'royalofficial2004@gmail.com'}
                     onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                     className={`w-full px-3 py-2.5 rounded-xl bg-[#171014] border border-[#49202C] text-white focus:outline-none focus:border-[#851B2B] ${
-                      !isAdmin ? 'opacity-60 cursor-not-allowed' : ''
+                      !isAdmin || editingUser?.isPrimaryAdmin || editingUser?.email === 'royalofficial2004@gmail.com' ? 'opacity-60 cursor-not-allowed' : ''
                     }`}
                   >
                     <option value="customer">Customer</option>

@@ -628,27 +628,27 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     }}
                     className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
                       isGta6Locked
-                        ? 'bg-slate-950/60 border-slate-800/50 opacity-60 cursor-not-allowed'
+                        ? 'bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/50 opacity-60 cursor-not-allowed'
                         : isSelected
-                        ? 'bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/25 ring-2 ring-[#851B2B] cursor-pointer'
-                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 cursor-pointer'
+                        ? 'bg-rose-50/70 dark:bg-[#171014] border-[#851B2B] shadow-md shadow-[#851B2B]/20 ring-2 ring-[#851B2B] cursor-pointer'
+                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm cursor-pointer'
                     }`}
                   >
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         {isExclusive ? (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#851B2B]/30 border border-[#851B2B]/60 text-amber-300 flex items-center gap-1 font-heading">
-                            <Flame className="w-2.5 h-2.5 text-amber-400" /> Exclusive
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-[#851B2B]/30 border border-amber-300 dark:border-[#851B2B]/60 text-amber-800 dark:text-amber-300 flex items-center gap-1 font-heading">
+                            <Flame className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" /> Exclusive
                           </span>
                         ) : (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-heading">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-heading">
                             Non-Exclusive
                           </span>
                         )}
 
                         <span
                           className={`text-xs font-mono font-black ${
-                            isExclusive ? 'text-amber-300' : 'text-emerald-400'
+                            isExclusive ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'
                           }`}
                         >
                           ₹{gamePriceRupees}/hr{isExclusive ? ' (console)' : '/p'}
@@ -656,23 +656,23 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       </div>
 
                       <div className="flex items-center justify-between gap-1">
-                        <h4 className="font-bold text-white text-sm font-heading">{game.name}</h4>
+                        <h4 className="font-bold text-[#171923] dark:text-white text-sm font-heading">{game.name}</h4>
                         {isGta6Locked && (
                           <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold flex items-center gap-0.5 whitespace-nowrap">
                             <Lock className="w-2.5 h-2.5" /> Locked
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400 line-clamp-2">{game.description}</p>
+                      <p className="text-xs text-[#414858] dark:text-slate-400 line-clamp-2">{game.description}</p>
                       {isGta6Locked && (
-                        <p className="text-[10px] text-amber-300/80 font-mono mt-0.5">
+                        <p className="text-[10px] text-amber-700 dark:text-amber-300/80 font-mono mt-0.5">
                           Admin Activation Required
                         </p>
                       )}
                     </div>
 
-                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-                      <span className="text-[#D7FF00] font-semibold flex items-center gap-1">
+                    <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-[#851B2B] dark:text-[#D7FF00] font-semibold flex items-center gap-1">
                         <Users className="w-3 h-3 text-[#D7FF00]" />
                         {game.minPlayers === game.maxPlayers
                           ? `${game.maxPlayers} Player${game.maxPlayers > 1 ? 's' : ''}`

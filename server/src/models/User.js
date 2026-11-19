@@ -123,6 +123,10 @@ const userSchema = new mongoose.Schema(
       default: ROLES.CUSTOMER,
       index: true,
     },
+    isPrimaryAdmin: {
+      type: Boolean,
+      default: false,
+    },
     membership: {
       status: {
         type: String,
@@ -171,6 +175,12 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// Enforce at most ONE primary administrator in the entire database
+userSchema.index(
+  { isPrimaryAdmin: 1 },
+  { unique: true, partialFilterExpression: { isPrimaryAdmin: true } }
+);
+
 // Pre-save hook: auto-assign customerId, sync isGuest flag, and hash password
 userSchema.pre('save', async function (next) {
   if (this.accountType === 'GUEST') {
@@ -215,6 +225,7 @@ userSchema.methods.generateAuthToken = function () {
     email: this.email,
     phone: this.phone,
     role: this.role,
+    isPrimaryAdmin: Boolean(this.isPrimaryAdmin),
     accountType: this.accountType || 'REGISTERED',
     isGuest: !!this.isGuest,
   };

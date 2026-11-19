@@ -59,15 +59,17 @@ export const PwaProvider = ({ children }) => {
     // A. Native Chromium / Android prompt available
     if (installPrompt) {
       try {
-        installPrompt.prompt();
-        const { outcome } = await installPrompt.userChoice;
-        if (outcome === 'accepted') {
+        const promptEvent = installPrompt;
+        setInstallPrompt(null);
+        await promptEvent.prompt();
+        const choiceResult = await promptEvent.userChoice;
+        if (choiceResult?.outcome === 'accepted') {
           setIsInstalled(true);
-          setInstallPrompt(null);
         }
-        return outcome;
+        return choiceResult?.outcome || 'dismissed';
       } catch (err) {
         console.warn('[PWA] Error triggering install prompt:', err);
+        setInstallPrompt(null);
       }
     }
 

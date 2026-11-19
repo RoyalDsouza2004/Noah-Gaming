@@ -831,7 +831,7 @@ export const AuthModal = () => {
                 <input
                   type="text"
                   required
-                  placeholder="admin@gaminglounge.com or 9876543210"
+                  placeholder="Email or 10-digit mobile number"
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-[#FFF4E8] placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"

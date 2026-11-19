@@ -1086,28 +1086,28 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
             {filteredGames.slice((gamePage - 1) * 6, gamePage * 6).map((game) => (
               <div
                 key={game._id}
-                className={`p-5 rounded-2xl bg-[#171014] border transition-all flex flex-col justify-between ${
+                className={`p-5 rounded-2xl bg-white dark:bg-[#171014] border transition-all flex flex-col justify-between ${
                   game.isExclusive
-                    ? 'border-amber-500/40 shadow-lg shadow-amber-500/10'
-                    : 'border-slate-800 hover:border-slate-700'
+                    ? 'border-amber-500/40 shadow-md dark:shadow-lg dark:shadow-amber-500/10'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
                 }`}
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                    <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
                       {game.category?.name || 'Uncategorized'}
                     </span>
                     <div className="flex items-center gap-2">
                       {game.isExclusive && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1">
                           <Flame className="w-3 h-3" /> Exclusive
                         </span>
                       )}
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                           game.status === 'ACTIVE'
-                            ? 'bg-emerald-500/15 text-emerald-400'
-                            : 'bg-rose-500/15 text-rose-400'
+                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-rose-500/15 text-rose-700 dark:text-rose-400'
                         }`}
                       >
                         {game.status}
@@ -1115,15 +1115,15 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                     </div>
                   </div>
 
-                  <h4 className="text-lg font-bold text-white font-heading">{game.name}</h4>
-                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                  <h4 className="text-lg font-bold text-[#171923] dark:text-white font-heading">{game.name}</h4>
+                  <p className="text-xs text-[#414858] dark:text-slate-400 line-clamp-2 leading-relaxed">
                     {game.description || 'No description provided.'}
                   </p>
 
-                  <div className="pt-2 text-xs space-y-1.5 text-slate-400 font-mono">
+                  <div className="pt-2 text-xs space-y-1.5 text-slate-500 dark:text-slate-400 font-mono">
                     <div className="flex items-center justify-between">
                       <span>Capacity:</span>
-                      <span className="text-[#D7FF00] font-bold">
+                      <span className="text-[#851B2B] dark:text-[#D7FF00] font-bold">
                         {game.minPlayers === game.maxPlayers
                           ? `${game.maxPlayers} Player${game.maxPlayers > 1 ? 's' : ''}`
                           : `${game.minPlayers || 1} - ${game.maxPlayers || 4} Players`}
@@ -1236,21 +1236,21 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
       {/* ---------------- TAB 4: EXCLUSIVE GAMES (GTA 6 MANAGEMENT) ---------------- */}
       {activeTab === 'exclusive' && (
         <div className="space-y-6">
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-[#121722] to-[#1a1528] border border-amber-500/30 shadow-xl space-y-4">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-amber-50/80 via-white to-amber-100/40 dark:from-[#121722] dark:to-[#1a1528] border border-amber-500/30 shadow-sm dark:shadow-xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                <div className="p-3 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                   <Flame className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold font-heading text-white">Exclusive Games Suite (GTA 6)</h3>
-                  <p className="text-xs text-slate-400">
+                  <h3 className="text-xl font-bold font-heading text-[#171923] dark:text-white">Exclusive Games Suite (GTA 6)</h3>
+                  <p className="text-xs text-[#414858] dark:text-slate-400">
                     High-demand VIP titles requiring mandatory advance payments and dedicated administrator activation.
                   </p>
                 </div>
               </div>
 
-              <span className="self-start sm:self-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <span className="self-start sm:self-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40">
                 Exclusive Rules Active
               </span>
             </div>
@@ -1260,43 +1260,43 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
             {exclusiveGames.map((game) => (
               <div
                 key={game._id}
-                className="p-6 rounded-2xl bg-[#171014] border border-amber-500/40 shadow-xl space-y-4"
+                className="p-6 rounded-2xl bg-white dark:bg-[#171014] border border-amber-500/40 shadow-sm dark:shadow-xl space-y-4"
               >
                 <div className="flex items-center justify-between">
-                  <h4 className="text-2xl font-bold font-heading text-white">{game.name}</h4>
+                  <h4 className="text-2xl font-bold font-heading text-[#171923] dark:text-white">{game.name}</h4>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                       game.status === 'ACTIVE'
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                        ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/40'
+                        : 'bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/40'
                     }`}
                   >
                     {game.status === 'ACTIVE' ? 'ONLINE (ACTIVE)' : 'DISABLED (STANDBY)'}
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-300 leading-relaxed">{game.description}</p>
+                <p className="text-xs text-[#414858] dark:text-slate-300 leading-relaxed">{game.description}</p>
 
                 <div className="grid grid-cols-2 gap-3 text-xs font-mono pt-2">
-                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                    <span className="text-slate-500 block text-[10px] uppercase">Advance Payment</span>
-                    <span className="text-amber-300 font-bold">
+                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase">Advance Payment</span>
+                    <span className="text-amber-700 dark:text-amber-300 font-bold">
                       {game.advancePaymentRequired ? 'Mandatory (50%)' : 'Optional'}
                     </span>
                   </div>
-                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                    <span className="text-slate-500 block text-[10px] uppercase">Min Advance Amount</span>
-                    <span className="text-white font-bold">
+                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase">Min Advance Amount</span>
+                    <span className="text-[#171923] dark:text-white font-bold">
                       ₹{game.minimumAdvancePayment ? game.minimumAdvancePayment / 100 : 75}
                     </span>
                   </div>
-                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                    <span className="text-slate-500 block text-[10px] uppercase">Min Duration</span>
-                    <span className="text-[#FFF4E8] font-bold">{game.minimumDuration / 60 || 1} Hour(s)</span>
+                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase">Min Duration</span>
+                    <span className="text-[#171923] dark:text-[#FFF4E8] font-bold">{game.minimumDuration / 60 || 1} Hour(s)</span>
                   </div>
-                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                    <span className="text-slate-500 block text-[10px] uppercase">Max Duration</span>
-                    <span className="text-[#FFF4E8] font-bold">{game.maximumDuration / 60 || 4} Hours</span>
+                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase">Max Duration</span>
+                    <span className="text-[#171923] dark:text-[#FFF4E8] font-bold">{game.maximumDuration / 60 || 4} Hours</span>
                   </div>
                 </div>
 

@@ -27,3 +27,39 @@ export const authorize = (...allowedRoles) => {
 export const requireAdmin = authorize(ROLES.ADMIN);
 export const requireStaff = authorize(ROLES.RECEPTIONIST, ROLES.ADMIN);
 export const requireCustomer = authorize(ROLES.CUSTOMER, ROLES.RECEPTIONIST, ROLES.ADMIN);
+
+/**
+ * Check if a user is the designated Primary Administrator
+ * @param {object} user - User document or auth payload
+ * @returns {boolean}
+ */
+export const isUserPrimaryAdmin = (user) => {
+  if (!user) return false;
+  if (user.isPrimaryAdmin === true) return true;
+  const configuredEmail = process.env.PRIMARY_ADMIN_EMAIL?.trim()?.toLowerCase();
+  if (configuredEmail && user.email && user.email.trim().toLowerCase() === configuredEmail) {
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Strict authorization middleware for Primary Admin-only actions
+ */
+export const requirePrimaryAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required before permission verification.',
+    });
+  }
+
+  if (req.user.role !== ROLES.ADMIN || !isUserPrimaryAdmin(req.user)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden. This action strictly requires Primary Administrator privileges.',
+    });
+  }
+
+  next();
+};

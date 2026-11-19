@@ -997,22 +997,22 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
 
                           <div className="space-y-1.5 text-xs">
                             <div className="flex items-center justify-between">
-                              <span className="text-slate-400">Player:</span>
-                              <span className="font-semibold text-white">{currentSession.customerName}</span>
+                              <span className="text-slate-500 dark:text-slate-400">Player:</span>
+                              <span className="font-semibold text-[#171923] dark:text-white">{currentSession.customerName}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-slate-400">Game:</span>
-                              <span className="font-semibold text-[#FFF4E8]">{currentSession.gameName}</span>
+                              <span className="text-slate-500 dark:text-slate-400">Game:</span>
+                              <span className="font-semibold text-[#171923] dark:text-[#FFF4E8]">{currentSession.gameName}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-slate-400">Booking Mode:</span>
-                              <span className="font-semibold text-[#D7FF00]">
+                              <span className="text-slate-500 dark:text-slate-400">Booking Mode:</span>
+                              <span className="font-semibold text-[#851B2B] dark:text-[#D7FF00]">
                                 {currentSession.bookingModeDisplay || (currentSession.bookingType === 'PRIVATE' ? 'Private Session' : 'Shared Session')} ({currentSession.numberOfPlayers || 1}p)
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-slate-400">Slot:</span>
-                              <span className="font-mono text-slate-300">
+                              <span className="text-slate-500 dark:text-slate-400">Slot:</span>
+                              <span className="font-mono text-slate-700 dark:text-slate-300">
                                 {currentSession.startTime} - {currentSession.endTime}
                               </span>
                             </div>
@@ -1113,7 +1113,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                         <th className="p-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800 text-slate-300">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                       {activeSessions.slice((activeSessionsPage - 1) * 8, activeSessionsPage * 8).map((session) => {
                         const countdown = formatCountdown(session.endAt);
                         const isGTA6 = session.isGTA6 || (session.game?.name && /GTA/i.test(session.game.name));
@@ -1121,18 +1121,18 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                         const gameTitle = session.gameName || (session.isVenueSelection ? 'Select Game at Venue' : session.game?.name || session.gameTitle || 'Game Not Selected');
                         const bookingMode = session.bookingModeDisplay || (session.bookingType === 'PRIVATE' ? 'Private Session' : 'Shared Session');
                         return (
-                          <tr key={session._id} className="hover:bg-slate-850/50 transition-colors">
-                            <td className="p-3.5 font-mono font-bold text-[#D7FF00]">
+                          <tr key={session._id} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
+                            <td className="p-3.5 font-mono font-bold text-[#851B2B] dark:text-[#D7FF00]">
                               {session.bookingId}
                             </td>
                             <td className="p-3.5">
-                              <p className="font-semibold text-white">{session.customer?.name}</p>
-                              <p className="text-[11px] text-slate-400">{session.customer?.phone}</p>
+                              <p className="font-semibold text-[#171923] dark:text-white">{session.customer?.name}</p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">{session.customer?.phone}</p>
                             </td>
                             <td className="p-3.5">
-                              <span className="font-medium text-slate-200">{session.device?.name}</span>
+                              <span className="font-medium text-[#171923] dark:text-slate-200">{session.device?.name}</span>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-slate-400">{gameTitle}</span>
+                                <span className="text-slate-500 dark:text-slate-400">{gameTitle}</span>
                                 {isGTA6 ? (
                                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
                                     GTA 6
@@ -1217,15 +1217,15 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
 
         {/* TAB 2: WALK-IN BOOKING COUNTER POS */}
         {activeTab === 'walkin' && (
-          <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 max-w-4xl mx-auto space-y-6 shadow-sm">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#851B2B]/15 border border-[#49202C] flex items-center justify-center text-[#D7FF00]">
+                <div className="w-10 h-10 rounded-xl bg-[#851B2B]/15 border border-[#851B2B]/30 dark:border-[#49202C] flex items-center justify-center text-[#851B2B] dark:text-[#D7FF00]">
                   <Plus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white font-heading">Rapid Walk-In Booking POS</h3>
-                  <p className="text-xs text-slate-400">Counter reservation & instant session start</p>
+                  <h3 className="text-base font-bold text-[#171923] dark:text-white font-heading">Rapid Walk-In Booking POS</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Counter reservation & instant session start</p>
                 </div>
               </div>
 
@@ -1233,7 +1233,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
               <button
                 type="button"
                 onClick={() => setQuickRegisterOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-[#FFF4E8] border border-slate-700 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-[#FFF4E8] border border-slate-300 dark:border-slate-700 transition-colors flex items-center gap-1.5"
               >
                 <UserPlus className="w-3.5 h-3.5" /> + New Customer
               </button>
@@ -1242,30 +1242,30 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
             <form onSubmit={handleCreateWalkIn} className="space-y-5">
               {/* Step 1: Customer Selection */}
               <div className="relative z-30">
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   1. Customer (Search by Phone, Name, or ID) <span className="text-rose-400">*</span>
                 </label>
                 {walkInSelectedCustomer ? (
                   <div className="space-y-3">
-                    <div className="p-3.5 rounded-xl bg-[#851B2B]/15 border border-[#49202C] flex items-center justify-between">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#851B2B]/15 border border-slate-200 dark:border-[#49202C] flex items-center justify-between shadow-sm">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-white text-sm">{walkInSelectedCustomer.name}</span>
-                          <span className="font-mono text-xs text-[#D7FF00] font-semibold">
+                          <span className="font-bold text-[#171923] dark:text-white text-sm">{walkInSelectedCustomer.name}</span>
+                          <span className="font-mono text-xs text-[#851B2B] dark:text-[#D7FF00] font-semibold">
                             ({walkInSelectedCustomer.phone})
                           </span>
                           {walkInSelectedCustomer.membership?.status === 'ACTIVE' && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40">
                               ★ Active Member
                             </span>
                           )}
                           {walkInSelectedCustomer.accountType === 'GUEST' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
                               GUEST
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                           ID: {walkInSelectedCustomer.customerId || walkInSelectedCustomer._id} &bull; {walkInSelectedCustomer.email}
                         </p>
                       </div>
@@ -1367,7 +1367,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                   </div>
                 ) : (
                   <div className="relative">
-                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 dark:text-slate-500" />
                     <input
                       type="text"
                       value={walkInCustomerQuery}
@@ -1387,12 +1387,12 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                         }
                       }}
                       placeholder="Type customer phone, name, email, or customer ID (e.g. 9876543210)..."
-                      className="w-full pl-9 pr-9 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
+                      className="w-full pl-9 pr-9 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-[#171923] dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
                     />
 
                     {/* Loading Spinner / Clear Icon */}
                     {walkInSearchingCustomer ? (
-                      <Loader2 className="absolute right-3 top-2.5 w-4 h-4 text-[#D7FF00] animate-spin" />
+                      <Loader2 className="absolute right-3 top-2.5 w-4 h-4 text-[#851B2B] dark:text-[#D7FF00] animate-spin" />
                     ) : walkInCustomerQuery ? (
                       <button
                         type="button"
@@ -1401,7 +1401,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                           setWalkInCustomerResults([]);
                           setWalkInHasSearched(false);
                         }}
-                        className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-white"
                         title="Clear search"
                       >
                         <X className="w-4 h-4" />
@@ -1410,7 +1410,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
 
                     {/* Autocomplete Dropdown */}
                     {walkInCustomerResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-56 overflow-y-auto rounded-xl bg-[#171014] border border-[#49202C] shadow-2xl divide-y divide-slate-800">
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-56 overflow-y-auto rounded-xl bg-white dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] shadow-2xl divide-y divide-slate-100 dark:divide-slate-800">
                         {walkInCustomerResults.map((cust) => (
                           <button
                             type="button"
@@ -1421,28 +1421,28 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                               setWalkInCustomerQuery('');
                               setWalkInHasSearched(false);
                             }}
-                            className="w-full p-2.5 text-left text-xs hover:bg-[#851B2B]/20 transition-colors flex items-center justify-between group"
+                            className="w-full p-2.5 text-left text-xs hover:bg-slate-50 dark:hover:bg-[#851B2B]/20 transition-colors flex items-center justify-between group"
                           >
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-white group-hover:text-[#D7FF00] transition-colors">{cust.name}</span>
-                                <span className="text-[#C7A5A8] font-mono">({cust.phone})</span>
+                                <span className="font-semibold text-[#171923] dark:text-white group-hover:text-[#851B2B] dark:group-hover:text-[#D7FF00] transition-colors">{cust.name}</span>
+                                <span className="text-slate-500 dark:text-[#C7A5A8] font-mono">({cust.phone})</span>
                                 {cust.membership?.status === 'ACTIVE' && (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40">
                                     ★ Member
                                   </span>
                                 )}
                                 {cust.accountType === 'GUEST' && (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-400">
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
                                     Guest
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
                                 {cust.customerId || cust._id} {cust.email ? `• ${cust.email}` : ''}
                               </p>
                             </div>
-                            <span className="text-[11px] text-[#D7FF00] font-mono font-bold group-hover:translate-x-0.5 transition-transform">
+                            <span className="text-[11px] text-[#851B2B] dark:text-[#D7FF00] font-mono font-bold group-hover:translate-x-0.5 transition-transform">
                               Select &rarr;
                             </span>
                           </button>
@@ -1452,9 +1452,9 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
 
                     {/* No Results Fallback Dropdown with 1-click Quick Register */}
                     {!walkInSearchingCustomer && walkInHasSearched && walkInCustomerResults.length === 0 && walkInCustomerQuery.trim().length >= 2 && (
-                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl bg-[#171014] border border-[#49202C] shadow-2xl p-3 text-center space-y-2">
-                        <p className="text-xs text-slate-300">
-                          No existing profile found for &ldquo;<span className="text-white font-semibold">{walkInCustomerQuery}</span>&rdquo;
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl bg-white dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] shadow-2xl p-3 text-center space-y-2">
+                        <p className="text-xs text-slate-700 dark:text-slate-300">
+                          No existing profile found for &ldquo;<span className="text-[#171923] dark:text-white font-semibold">{walkInCustomerQuery}</span>&rdquo;
                         </p>
                         <button
                           type="button"
@@ -1530,8 +1530,8 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                       onClick={() => setWalkInSelectedGame(null)}
                       className={`p-2 rounded-xl text-xs font-medium border text-left transition-all ${
                         !walkInSelectedGame
-                          ? 'bg-[#851B2B]/25 border-[#851B2B] text-white font-bold'
-                          : 'bg-slate-900 border-slate-800 text-slate-400'
+                          ? 'bg-[#851B2B] text-white font-bold border-[#851B2B] shadow-sm'
+                          : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       🎮 Open PS5 Title
@@ -1561,19 +1561,21 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                           className={`p-2 rounded-xl text-xs font-medium border text-left transition-all ${
                             isSelected
                               ? isExclusive
-                                ? 'bg-rose-500/20 border-rose-400 text-rose-300 font-bold'
-                                : 'bg-[#851B2B]/25 border-[#851B2B] text-white font-bold'
-                              : 'bg-slate-900 border-slate-800 text-slate-300'
+                                ? 'bg-rose-50 dark:bg-rose-500/20 border-rose-500 text-rose-800 dark:text-rose-300 font-bold shadow-sm'
+                                : 'bg-rose-50 dark:bg-[#851B2B]/25 border-[#851B2B] text-[#851B2B] dark:text-white font-bold shadow-sm'
+                              : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[#171923] dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-850'
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="truncate">{g.name}</span>
+                            <span className={`truncate font-semibold ${isSelected ? (isExclusive ? 'text-rose-800 dark:text-rose-300' : 'text-[#851B2B] dark:text-white') : 'text-[#171923] dark:text-slate-200'}`}>
+                              {g.name}
+                            </span>
                             <div className="flex items-center gap-1">
-                              <span className="text-[9px] px-1 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
+                              <span className="text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 font-mono">
                                 {g.minPlayers === g.maxPlayers ? `${g.maxPlayers}P` : `${g.minPlayers || 1}-${g.maxPlayers || 4}P`}
                               </span>
                               {isExclusive && (
-                                <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/30 text-rose-300 font-mono">
+                                <span className="text-[9px] px-1 py-0.2 rounded bg-rose-100 dark:bg-rose-500/30 text-rose-700 dark:text-rose-300 font-mono font-bold">
                                   ₹150
                                 </span>
                               )}
@@ -1761,8 +1763,8 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                     onClick={() => setBookingFilterStatus(st)}
                     className={`px-3 py-1.5 rounded-xl border transition-all whitespace-nowrap ${
                       bookingFilterStatus === st
-                        ? 'bg-[#851B2B] text-[#FFF4E8] border-[#851B2B] font-bold'
-                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                        ? 'bg-[#851B2B] text-white border-[#851B2B] font-bold shadow-sm'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-[#171923] dark:hover:text-white'
                     }`}
                   >
                     {st === '' ? 'All Today' : st.replace(/_/g, ' ')}
@@ -1771,32 +1773,32 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
               </div>
 
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
+                <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                 <input
                   type="text"
                   value={bookingSearchQuery}
                   onChange={(e) => setBookingSearchQuery(e.target.value)}
                   placeholder="Filter booking, customer, phone..."
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-[#171923] dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
                 />
               </div>
             </div>
 
             {/* Bookings Table */}
             {filteredTodayBookings.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center">
-                <Calendar className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-slate-300">No reservations found matching filters</p>
+              <div className="p-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
+                <Calendar className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No reservations found matching filters</p>
               </div>
             ) : (
               <>
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl overflow-hidden">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm overflow-hidden">
                   {/* Mobile Swipe Hint */}
-                  <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-slate-950 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
+                  <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                     <span className="flex items-center gap-1.5">
-                      <span className="text-[#D7FF00] font-bold">↔</span> Swipe horizontally to view full booking details
+                      <span className="text-[#851B2B] dark:text-[#D7FF00] font-bold">↔</span> Swipe horizontally to view full booking details
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[#D7FF00] text-[9px] font-bold">Scrollable</span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[#851B2B] dark:text-[#D7FF00] text-[9px] font-bold">Scrollable</span>
                   </div>
                   <div
                     className="overflow-x-auto touch-auto overscroll-x-contain w-full table-scrollbar"
@@ -1806,7 +1808,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                     }}
                   >
                     <table className="w-full text-left text-xs min-w-[800px]">
-                  <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                  <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900/95 backdrop-blur text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[11px]">
                     <tr>
                       <th className="p-3.5">Booking ID</th>
                       <th className="p-3.5">Customer</th>
@@ -1817,28 +1819,28 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                       <th className="p-3.5 text-right">Counter Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800 text-slate-300">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                     {filteredTodayBookings.slice((todayBookingsPage - 1) * 8, todayBookingsPage * 8).map((b) => (
-                      <tr key={b._id} className="hover:bg-slate-850/50 transition-colors">
-                        <td className="p-3.5 font-mono font-bold text-[#D7FF00]">
+                      <tr key={b._id} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
+                        <td className="p-3.5 font-mono font-bold text-[#851B2B] dark:text-[#D7FF00]">
                           {b.bookingId}
                           {b.isWalkIn && (
-                            <span className="block text-[9px] font-sans text-amber-400">Walk-In</span>
+                            <span className="block text-[9px] font-sans text-amber-600 dark:text-amber-400 font-semibold">Walk-In</span>
                           )}
                         </td>
                         <td className="p-3.5">
-                          <p className="font-semibold text-white">{b.customer?.name}</p>
-                          <p className="text-[11px] text-slate-400">{b.customer?.phone}</p>
+                          <p className="font-semibold text-[#171923] dark:text-white">{b.customer?.name}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">{b.customer?.phone}</p>
                         </td>
                         <td className="p-3.5">
-                          <span className="font-medium text-slate-200">{b.device?.name}</span>
-                          <p className="text-slate-400 text-[11px]">{b.game?.name || 'Open Title'}</p>
+                          <span className="font-medium text-[#171923] dark:text-slate-200">{b.device?.name}</span>
+                          <p className="text-slate-500 dark:text-slate-400 text-[11px]">{b.game?.name || 'Open Title'}</p>
                         </td>
-                        <td className="p-3.5 font-mono">
+                        <td className="p-3.5 font-mono text-slate-700 dark:text-slate-300">
                           {b.startTime} ({b.duration}h)
                         </td>
                         <td className="p-3.5">
-                          <p className="font-mono text-slate-200">
+                          <p className="font-mono text-[#171923] dark:text-slate-200 font-semibold">
                             ₹{(b.totalAmount || 0) / 100}
                           </p>
                           {b.balanceRemaining > 0 ? (
@@ -1938,27 +1940,27 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-white font-heading uppercase tracking-wider flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-rose-400" /> Pending Counter Balances ({pendingPayments.length})
+                <h3 className="text-sm font-bold text-[#171923] dark:text-white font-heading uppercase tracking-wider flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-rose-600 dark:text-rose-400" /> Pending Counter Balances ({pendingPayments.length})
                 </h3>
-                <p className="text-xs text-slate-400">Reservations with unpaid or partial payment balance</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Reservations with unpaid or partial payment balance</p>
               </div>
             </div>
 
             {pendingPayments.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center">
-                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-slate-300">All customer dues are completely settled!</p>
+              <div className="p-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 dark:text-emerald-400 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">All customer dues are completely settled!</p>
               </div>
             ) : (
               <>
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl overflow-hidden">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm overflow-hidden">
                   {/* Mobile Swipe Hint */}
-                  <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-slate-950 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
+                  <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                     <span className="flex items-center gap-1.5">
-                      <span className="text-[#D7FF00] font-bold">↔</span> Swipe horizontally to view full booking details
+                      <span className="text-[#851B2B] dark:text-[#D7FF00] font-bold">↔</span> Swipe horizontally to view full booking details
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[#D7FF00] text-[9px] font-bold">Scrollable</span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[#851B2B] dark:text-[#D7FF00] text-[9px] font-bold">Scrollable</span>
                   </div>
                   <div
                     className="overflow-x-auto touch-auto overscroll-x-contain w-full table-scrollbar"
@@ -1968,7 +1970,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                     }}
                   >
                     <table className="w-full text-left text-xs min-w-[800px]">
-                  <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                  <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900/95 backdrop-blur text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[11px]">
                     <tr>
                       <th className="p-3.5">Booking ID</th>
                       <th className="p-3.5">Customer</th>
@@ -1980,22 +1982,22 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                       <th className="p-3.5 text-right">Counter Collection</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800 text-slate-300">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                     {pendingPayments.slice((pendingPaymentsPage - 1) * 8, pendingPaymentsPage * 8).map((b) => (
-                      <tr key={b._id} className="hover:bg-slate-850/50">
-                        <td className="p-3.5 font-mono font-bold text-[#D7FF00]">{b.bookingId}</td>
+                      <tr key={b._id} className="hover:bg-slate-50 dark:hover:bg-slate-850/50">
+                        <td className="p-3.5 font-mono font-bold text-[#851B2B] dark:text-[#D7FF00]">{b.bookingId}</td>
                         <td className="p-3.5">
-                          <p className="font-semibold text-white">{b.customer?.name}</p>
-                          <p className="text-[11px] text-slate-400">{b.customer?.phone}</p>
+                          <p className="font-semibold text-[#171923] dark:text-white">{b.customer?.name}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">{b.customer?.phone}</p>
                         </td>
                         <td className="p-3.5">
-                          <span className="font-medium text-slate-200">{b.device?.name}</span>
-                          <span className="text-slate-400 block text-[11px]">{b.game?.name || 'Open Title'}</span>
+                          <span className="font-medium text-[#171923] dark:text-slate-200">{b.device?.name}</span>
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{b.game?.name || 'Open Title'}</span>
                         </td>
-                        <td className="p-3.5 font-mono">
+                        <td className="p-3.5 font-mono text-slate-700 dark:text-slate-300">
                           {b.bookingDate} @ {b.startTime}
                         </td>
-                        <td className="p-3.5 font-mono font-semibold text-slate-200">
+                        <td className="p-3.5 font-mono font-semibold text-[#171923] dark:text-slate-200">
                           ₹{(b.totalAmount || 0) / 100}
                         </td>
                         <td className="p-3.5 font-mono text-emerald-400 font-semibold">

@@ -10,6 +10,7 @@ import MembershipSubscription from '../models/MembershipSubscription.js';
 import MembershipPlan from '../models/MembershipPlan.js';
 import ActivityLog from '../models/ActivityLog.js';
 import { ROLES } from '../config/constants.js';
+import { isUserPrimaryAdmin } from '../middlewares/rbac.js';
 import {
   sendWelcomeEmail,
   sendPasswordResetConfirmationEmail,
@@ -330,6 +331,22 @@ export const updateUserDetails = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    // Guard Primary Administrator profile from being modified by others
+    if (isUserPrimaryAdmin(user) && req.user._id.toString() !== user._id.toString() && !isUserPrimaryAdmin(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the Primary Administrator can modify the Primary Administrator account profile.',
+      });
+    }
+
+    // Primary Admin account must remain active
+    if (isUserPrimaryAdmin(user) && accountStatus && accountStatus.toUpperCase() !== 'ACTIVE') {
+      return res.status(400).json({
+        success: false,
+        message: 'The Primary Administrator account cannot be deactivated or suspended.',
+      });
+    }
+
     const originalData = {
       name: user.name,
       phone: user.phone,
@@ -488,6 +505,24 @@ export const changeUserRole = async (req, res) => {
     }
 
     const previousRole = user.role;
+
+    // Safeguard: Guard Primary Administrator from being demoted
+    if (isUserPrimaryAdmin(user) && role !== ROLES.ADMIN) {
+      return res.status(400).json({
+        success: false,
+        message: 'The Primary Administrator account cannot be demoted. Ownership must be transferred first.',
+      });
+    }
+
+    // Safeguard: Only Primary Administrator can assign or revoke the Administrator role
+    if (previousRole === ROLES.ADMIN || role === ROLES.ADMIN) {
+      if (!isUserPrimaryAdmin(req.user)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only the Primary Administrator has permission to assign or revoke Administrator privileges.',
+        });
+      }
+    }
 
     // Safeguard: Check if demoting an administrator
     if (previousRole === ROLES.ADMIN && role !== ROLES.ADMIN) {
@@ -1292,11 +1327,21 @@ export const deleteUser = async (req, res) => {
     }
 
     // 2. Guard primary administrator account
-    if (user.email === 'admin@gaminglounge.com' || user.email === 'admin@noahgaming.com') {
+    if (isUserPrimaryAdmin(user)) {
       return res.status(400).json({
         success: false,
-        message: 'The primary system administrator account cannot be deleted.',
+        message: 'The primary system administrator account cannot be deleted. Primary ownership must be transferred first.',
       });
+    }
+
+    // 2b. Only Primary Administrator can delete another administrator
+    if (user.role === ROLES.ADMIN) {
+      if (!isUserPrimaryAdmin(req.user)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only the Primary Administrator has permission to delete administrator accounts.',
+        });
+      }
     }
 
     // 3. Guard against deleting the last remaining active admin

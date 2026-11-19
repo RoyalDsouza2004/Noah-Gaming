@@ -11,7 +11,7 @@ export const GameCard = ({ game, onViewDetails, onBook }) => {
   const metacriticScore = game.ratings?.metacritic?.score;
 
   return (
-    <div className="game-card-item group relative rounded-2xl bg-[#260D17]/90 border border-[#49202C] hover:border-[#851B2B] transition-all duration-300 hover:shadow-xl hover:shadow-[#851B2B]/20 flex flex-col justify-between overflow-hidden">
+    <div className="game-card-item group relative rounded-2xl bg-white dark:bg-[#260D17]/90 border border-slate-200 dark:border-[#49202C] hover:border-[#851B2B] dark:hover:border-[#851B2B] transition-all duration-300 hover:shadow-xl hover:shadow-[#851B2B]/20 flex flex-col justify-between overflow-hidden shadow-sm">
       {/* Top Media / Artwork Container */}
       <div className="relative aspect-[16/10] sm:aspect-[4/3] w-full overflow-hidden bg-slate-950">
         {coverUrl ? (
@@ -32,7 +32,7 @@ export const GameCard = ({ game, onViewDetails, onBook }) => {
         )}
 
         {/* Gradient Overlay */}
-        <div className="game-card-overlay absolute inset-0 bg-gradient-to-t from-[#260D17] via-transparent to-black/40 pointer-events-none" />
+        <div className="game-card-overlay absolute inset-0 bg-gradient-to-t from-white/90 dark:from-[#260D17] via-transparent to-black/30 pointer-events-none" />
 
         {/* Badges in Artwork */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
@@ -78,32 +78,32 @@ export const GameCard = ({ game, onViewDetails, onBook }) => {
       <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
         <div className="space-y-1.5">
           {/* Genre and Platform row */}
-          <div className="flex items-center justify-between text-[11px] text-[#C7A5A8]">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#851B2B]/30 text-[#FFF4E8] font-heading uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-[#C7A5A8]">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-100 dark:bg-[#851B2B]/30 text-[#851B2B] dark:text-[#FFF4E8] font-heading uppercase tracking-wider">
               {genres[0] || 'Gaming'}
             </span>
-            <span className="text-[10px] font-mono font-medium text-slate-400">
+            <span className="text-[10px] font-mono font-medium text-slate-500 dark:text-slate-400">
               {platforms.find((p) => p.toLowerCase().includes('playstation')) || 'PS5 Station'}
             </span>
           </div>
 
           {/* Title */}
-          <h4 className="font-bold text-[#FFF4E8] text-base font-heading group-hover:text-[#D7FF00] transition-colors line-clamp-1">
+          <h4 className="font-bold text-[#171923] dark:text-[#FFF4E8] text-base font-heading group-hover:text-[#851B2B] dark:group-hover:text-[#D7FF00] transition-colors line-clamp-1">
             {game.name}
           </h4>
 
           {/* Description */}
-          <p className="text-xs text-[#C7A5A8] line-clamp-2 leading-relaxed">
+          <p className="text-xs text-[#414858] dark:text-[#C7A5A8] line-clamp-2 leading-relaxed">
             {game.description || 'Experience intense local multiplayer or single-player adventures at NOAH GAMING.'}
           </p>
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 border-t border-[#49202C] flex items-center gap-2">
+        <div className="pt-3 border-t border-slate-200 dark:border-[#49202C] flex items-center gap-2">
           <button
             type="button"
             onClick={() => onViewDetails && onViewDetails(game)}
-            className="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-[#FFF4E8] hover:text-[#D7FF00] border border-slate-700/80 font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
+            className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-[#FFF4E8] hover:text-[#851B2B] dark:hover:text-[#D7FF00] border border-slate-300 dark:border-slate-700/80 font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
           >
             <Eye className="w-3.5 h-3.5" /> Details
           </button>
