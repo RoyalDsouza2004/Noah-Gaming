@@ -336,7 +336,7 @@ export const MobileBottomNav = ({
       style={{
         backgroundColor: isDark
           ? 'rgba(90, 24, 40, 0.78)'
-          : 'color-mix(in oklab, white 65%, transparent)',
+          : 'rgba(255, 255, 255, 0.52)',
         backdropFilter: isDark ? 'blur(24px) saturate(190%)' : 'blur(22px) saturate(180%)',
         WebkitBackdropFilter: isDark ? 'blur(24px) saturate(190%)' : 'blur(22px) saturate(180%)',
         WebkitTapHighlightColor: 'transparent',
@@ -352,7 +352,7 @@ export const MobileBottomNav = ({
       className={`fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 w-[calc(100%-1.5rem)] max-w-md z-[60] md:hidden rounded-full px-1.5 py-1 select-none transition-all ${
         isDark
           ? 'bg-[#5A1828]/78 border border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),inset_0_-1px_0_rgba(0,0,0,0.25),0_16px_36px_-12px_rgba(0,0,0,0.65),0_0_20px_-3px_rgba(90,24,40,0.45)]'
-          : 'bg-white/65 border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,.85),0_12px_35px_-15px_rgba(0,0,0,.22)]'
+          : 'bg-white/50 border border-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_12px_32px_-8px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.08)]'
       }`}
     >
       <nav ref={navRef} className="relative w-full flex items-center justify-around">
@@ -361,7 +361,7 @@ export const MobileBottomNav = ({
           className={`mobile-nav-indicator absolute rounded-full pointer-events-none transition-all duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isDark
               ? 'bg-gradient-to-br from-white/22 to-[#851B2B]/45 border border-white/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_4px_12px_rgba(0,0,0,0.3)]'
-              : 'bg-white/65 border border-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_8px_rgba(0,0,0,.06)]'
+              : 'bg-white/60 border border-white/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(0,0,0,0.06)]'
           }`}
           style={{
             left: `${indicatorStyle.left}px`,
@@ -427,10 +427,10 @@ export const MobileBottomNav = ({
                       isActive
                         ? isDark
                           ? 'text-white scale-110 nav-icon-active'
-                          : 'text-[#171923] scale-110'
+                          : 'text-[#171923] scale-110 nav-icon-active'
                         : isDark
                         ? 'text-white/80 hover:text-white nav-icon-inactive'
-                        : 'text-[#414858]'
+                        : 'text-[#414858] hover:text-[#171923] nav-icon-inactive'
                     }`}
                   />
                 )}
@@ -441,10 +441,10 @@ export const MobileBottomNav = ({
                   isActive
                     ? isDark
                       ? 'font-black font-heading text-white scale-105 nav-label-active'
-                      : 'font-black font-heading text-[#171923] scale-105'
+                      : 'font-black font-heading text-[#171923] scale-105 nav-label-active'
                     : isDark
                     ? 'font-semibold text-white/80 hover:text-white nav-label-inactive'
-                    : 'font-semibold text-[#414858]'
+                    : 'font-semibold text-[#414858] hover:text-[#171923] nav-label-inactive'
                 }`}
               >
                 {item.label}
