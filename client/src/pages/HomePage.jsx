@@ -271,13 +271,12 @@ export const HomePage = ({
                       )}
                     </div>
                     <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                        device.status === 'ACTIVE'
-                          ? 'bg-[#45C987]/15 text-[#45C987] border border-[#45C987]/30'
-                          : device.status === 'MAINTENANCE'
+                      className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${device.status === 'ACTIVE'
+                        ? 'bg-[#45C987]/15 text-[#45C987] border border-[#45C987]/30'
+                        : device.status === 'MAINTENANCE'
                           ? 'bg-[#F5B942]/15 text-[#F5B942] border border-[#F5B942]/30'
                           : 'bg-[#851B2B]/20 text-[#C7A5A8] border border-[#49202C]'
-                      }`}
+                        }`}
                     >
                       {device.status === 'ACTIVE' ? 'Available' : device.status}
                     </span>
@@ -400,11 +399,10 @@ export const HomePage = ({
                 key={cat}
                 type="button"
                 onClick={() => setSelectedGameCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                  selectedGameCategory === cat
-                    ? 'bg-[#851B2B] text-[#FFF4E8] shadow-sm'
-                    : 'bg-[#260D17] text-[#C7A5A8] hover:text-[#FFF4E8] border border-[#49202C]'
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${selectedGameCategory === cat
+                  ? 'bg-[#851B2B] text-[#FFF4E8] shadow-sm'
+                  : 'bg-[#260D17] text-[#C7A5A8] hover:text-[#FFF4E8] border border-[#49202C]'
+                  }`}
               >
                 {cat}
               </button>
@@ -498,7 +496,7 @@ export const HomePage = ({
           {/* GTA 6 Exclusive */}
           <div className="p-6 rounded-2xl bg-[#260D17] border border-[#851B2B] space-y-4 flex flex-col justify-between shadow-xl shadow-[#851B2B]/20">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#851B2B] text-[#D7FF00] text-[11px] font-bold">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#851B2B] !text-white text-[11px] font-bold">
                 Exclusive Title: GTA 6 Suite
               </div>
               <div className="flex items-baseline gap-1">
@@ -555,11 +553,10 @@ export const HomePage = ({
             return (
               <div
                 key={plan._id}
-                className={`membership-plan-card p-5 rounded-2xl bg-[#260D17] border transition-all flex flex-col justify-between ${
-                  isVip
-                    ? 'border-[#F5B942]/60 shadow-xl shadow-[#F5B942]/10'
-                    : 'border-[#49202C] hover:border-[#851B2B]/60'
-                }`}
+                className={`membership-plan-card p-5 rounded-2xl bg-[#260D17] border transition-all flex flex-col justify-between ${isVip
+                  ? 'border-[#F5B942]/60 shadow-xl shadow-[#F5B942]/10'
+                  : 'border-[#49202C] hover:border-[#851B2B]/60'
+                  }`}
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
