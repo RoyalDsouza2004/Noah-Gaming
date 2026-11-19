@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { userManagementApi } from '../api/userManagement.js';
 import { emailApi } from '../api/email.js';
@@ -40,22 +40,30 @@ export const AuthModal = () => {
     completeOtpAssistance,
     register,
     setAuthData,
+    // Centralized challenge state from AuthContext
+    otpChallengeData,
+    setOtpChallengeData,
+    otpCooldown,
+    setOtpCooldown,
+    challengeRemainingSeconds,
+    setChallengeRemainingSeconds,
+    assistanceRequested,
+    setAssistanceRequested,
+    assistanceStatus,
+    setAssistanceStatus,
+    rejectionReason,
+    setRejectionReason,
   } = useAuth();
 
   // Login form state
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Customer 2FA & Registration OTP challenge state
-  const [otpChallengeData, setOtpChallengeData] = useState(null);
+  // Customer OTP input & local operation state
   const [otpCode, setOtpCode] = useState('');
-  const [otpCooldown, setOtpCooldown] = useState(0);
-  const [challengeRemainingSeconds, setChallengeRemainingSeconds] = useState(300);
   const [submittingOtp, setSubmittingOtp] = useState(false);
-  const [assistanceRequested, setAssistanceRequested] = useState(false);
-  const [assistanceStatus, setAssistanceStatus] = useState('PENDING'); // PENDING, AWAITING_ADMIN_ASSISTANCE, APPROVED, REJECTED, EXPIRED
-  const [rejectionReason, setRejectionReason] = useState('');
   const [requestingAssistance, setRequestingAssistance] = useState(false);
+  const checkingStatusRef = useRef(false);
 
   // Register form state
   const [registerName, setRegisterName] = useState('');
@@ -98,51 +106,79 @@ export const AuthModal = () => {
       setForgotCooldown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [setOtpCooldown, setChallengeRemainingSeconds]);
 
-  // Polling for Admin Assistance Approval
+  // Check approval status: can be called by polling timer or user manual button
+  const checkApprovalStatusNow = useCallback(
+    async (silent = false) => {
+      if (!otpChallengeData?.challengeId || checkingStatusRef.current) return;
+      try {
+        checkingStatusRef.current = true;
+        const res = await getOtpAssistanceStatus(otpChallengeData.challengeId);
+        if (res?.success && res.data) {
+          if (res.data.status === 'APPROVED' && res.data.approvalToken) {
+            setAssistanceStatus('APPROVED');
+            showToast.success('Administrator approved your verification! Completing authentication...');
+            const compRes = await completeOtpAssistance(otpChallengeData.challengeId, res.data.approvalToken);
+            if (compRes?.success) {
+              setAuthModalOpen(false);
+              showToast.success(`Welcome to NOAH GAMING, ${compRes.user?.name || 'Gamer'}!`);
+              if (compRes.user?.role === 'admin') {
+                window.location.hash = '#admin';
+              } else if (compRes.user?.role === 'receptionist') {
+                window.location.hash = '#receptionist';
+              } else {
+                window.location.hash = '#home';
+              }
+            } else {
+              setErrorMessage(compRes?.message || 'Failed to complete authentication.');
+            }
+          } else if (res.data.status === 'REJECTED') {
+            setAssistanceStatus('REJECTED');
+            setRejectionReason(res.data.rejectionReason || 'Identity verification could not be confirmed.');
+            if (!silent) showToast.error('Your verification request was rejected by the administrator.');
+          } else if (res.data.status === 'EXPIRED') {
+            setAssistanceStatus('EXPIRED');
+            if (!silent) showToast.error('Verification challenge has expired.');
+          } else if (!silent) {
+            showToast.info('Verification is still pending review by the administrator.');
+          }
+        }
+      } catch (err) {
+        if (!silent) showToast.error(err.message || 'Error checking approval status.');
+      } finally {
+        checkingStatusRef.current = false;
+      }
+    },
+    [
+      otpChallengeData?.challengeId,
+      getOtpAssistanceStatus,
+      completeOtpAssistance,
+      setAuthModalOpen,
+      setAssistanceStatus,
+      setErrorMessage,
+      setRejectionReason,
+    ]
+  );
+
+  // Polling for Admin Assistance Approval (checks immediately and every 2 seconds)
   useEffect(() => {
     let interval = null;
-    if (
+    const isAwaiting =
       (authModalTab === 'login2FA' || authModalTab === 'registerOTP') &&
       assistanceRequested &&
       assistanceStatus === 'AWAITING_ADMIN_ASSISTANCE' &&
-      otpChallengeData?.challengeId
-    ) {
-      interval = setInterval(async () => {
-        try {
-          const res = await getOtpAssistanceStatus(otpChallengeData.challengeId);
-          if (res?.success && res.data) {
-            if (res.data.status === 'APPROVED' && res.data.approvalToken) {
-              setAssistanceStatus('APPROVED');
-              clearInterval(interval);
-              showToast.success('Administrator approved your verification! Completing authentication...');
-              const compRes = await completeOtpAssistance(otpChallengeData.challengeId, res.data.approvalToken);
-              if (compRes?.success) {
-                setAuthModalOpen(false);
-                showToast.success(`Welcome to NOAH GAMING, ${compRes.user?.name || 'Gamer'}!`);
-                if (compRes.user?.role === 'admin') {
-                  window.location.hash = '#admin';
-                } else if (compRes.user?.role === 'receptionist') {
-                  window.location.hash = '#receptionist';
-                }
-              } else {
-                setErrorMessage(compRes?.message || 'Failed to complete authentication.');
-              }
-            } else if (res.data.status === 'REJECTED') {
-              setAssistanceStatus('REJECTED');
-              setRejectionReason(res.data.rejectionReason || 'Identity verification could not be confirmed.');
-              clearInterval(interval);
-            } else if (res.data.status === 'EXPIRED') {
-              setAssistanceStatus('EXPIRED');
-              clearInterval(interval);
-            }
-          }
-        } catch (err) {
-          console.warn('Status poll error:', err.message);
-        }
-      }, 3000);
+      otpChallengeData?.challengeId;
+
+    if (isAwaiting) {
+      // Immediate status check
+      checkApprovalStatusNow(true);
+      // High-frequency poll (2s)
+      interval = setInterval(() => {
+        checkApprovalStatusNow(true);
+      }, 2000);
     }
+
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -151,9 +187,7 @@ export const AuthModal = () => {
     assistanceRequested,
     assistanceStatus,
     otpChallengeData?.challengeId,
-    completeOtpAssistance,
-    getOtpAssistanceStatus,
-    setAuthModalOpen,
+    checkApprovalStatusNow,
   ]);
 
   // Check URL hash for #reset-password?token=...
@@ -195,21 +229,7 @@ export const AuthModal = () => {
 
     // If customer requires 2FA or pending registration verification:
     if (result.requires2FA || result.requiresOtpVerification) {
-      const isRegistration = result.purpose === 'REGISTRATION';
-      setOtpChallengeData({
-        challengeId: result.data?.challengeId,
-        maskedEmail: result.data?.maskedEmail,
-        maskedPhone: result.data?.maskedPhone,
-        emailDeliveryStatus: result.data?.emailDeliveryStatus || 'PENDING',
-        purpose: isRegistration ? 'REGISTRATION' : 'LOGIN_2FA',
-      });
       setOtpCode('');
-      setOtpCooldown(result.data?.resendCooldownSeconds || 60);
-      setChallengeRemainingSeconds(result.data?.expiresInSeconds || 300);
-      setAssistanceRequested(false);
-      setAssistanceStatus('PENDING');
-      setRejectionReason('');
-      setAuthModalTab(isRegistration ? 'registerOTP' : 'login2FA');
       showToast.info('Verification code dispatched to your registered email.');
       return;
     }
@@ -224,6 +244,8 @@ export const AuthModal = () => {
         window.location.hash = '#admin';
       } else if (result.user?.role === 'receptionist') {
         window.location.hash = '#receptionist';
+      } else {
+        window.location.hash = '#home';
       }
     }
   };
@@ -251,6 +273,8 @@ export const AuthModal = () => {
           window.location.hash = '#admin';
         } else if (res.user?.role === 'receptionist') {
           window.location.hash = '#receptionist';
+        } else {
+          window.location.hash = '#home';
         }
       } else {
         setErrorMessage(res.message || 'Verification failed');
@@ -275,14 +299,6 @@ export const AuthModal = () => {
         : await resendLogin2FA(otpChallengeData.challengeId);
 
       if (res.success) {
-        setOtpChallengeData((prev) => ({
-          ...prev,
-          challengeId: res.data?.challengeId || prev.challengeId,
-          maskedEmail: res.data?.maskedEmail || prev.maskedEmail,
-          emailDeliveryStatus: res.data?.emailDeliveryStatus || prev.emailDeliveryStatus,
-        }));
-        setOtpCooldown(res.data?.resendCooldownSeconds || 60);
-        setChallengeRemainingSeconds(res.data?.expiresInSeconds || 300);
         showToast.success('A fresh verification code has been dispatched to your email.');
       } else {
         showToast.error(res.message || 'Failed to resend verification code');
@@ -302,11 +318,6 @@ export const AuthModal = () => {
       setErrorMessage('');
       const res = await requestOtpAssistance(otpChallengeData.challengeId);
       if (res.success) {
-        setAssistanceRequested(true);
-        setAssistanceStatus('AWAITING_ADMIN_ASSISTANCE');
-        if (res.data?.expiresInSeconds) {
-          setChallengeRemainingSeconds(res.data.expiresInSeconds);
-        }
         showToast.info('Verification request sent to Administrator. Waiting for approval...');
       } else {
         showToast.error(res.message || 'Failed to request Admin assistance');
@@ -333,21 +344,25 @@ export const AuthModal = () => {
     setLoading(false);
 
     if (result.requiresOtpVerification) {
-      setOtpChallengeData({
-        challengeId: result.data?.challengeId,
-        maskedEmail: result.data?.maskedEmail,
-        maskedPhone: result.data?.maskedPhone,
-        emailDeliveryStatus: result.data?.emailDeliveryStatus || 'PENDING',
-        purpose: 'REGISTRATION',
-      });
       setOtpCode('');
-      setOtpCooldown(result.data?.resendCooldownSeconds || 60);
-      setChallengeRemainingSeconds(result.data?.expiresInSeconds || 300);
-      setAssistanceRequested(false);
-      setAssistanceStatus('PENDING');
-      setRejectionReason('');
-      setAuthModalTab('registerOTP');
       showToast.info('Verification code sent to your registered email.');
+      return;
+    }
+
+    if (result.requiresConversion) {
+      setConversionData({
+        userId: result.data?.userId,
+        phone: result.data?.phone || registerPhone,
+        name: registerName || result.data?.name,
+        email: registerEmail || result.data?.email,
+        maskedPhone: result.data?.maskedPhone || `XXXXXX${registerPhone.slice(-4)}`,
+        maskedEmail: result.data?.maskedEmail,
+      });
+      setConvertPassword(registerPassword);
+      setConvertOtp('');
+      setConvertCooldown(result.data?.resendCooldownSeconds || 60);
+      setAuthModalTab('convertGuest');
+      showToast.success('Existing guest profile found! Enter email OTP to convert your account.');
       return;
     }
 
@@ -565,6 +580,8 @@ export const AuthModal = () => {
               ? 'TWO-FACTOR VERIFICATION'
               : authModalTab === 'register'
               ? 'JOIN NOAH GAMING'
+              : authModalTab === 'registerOTP'
+              ? 'VERIFY YOUR REGISTRATION'
               : authModalTab === 'convertGuest'
               ? 'CLAIM YOUR PROFILE'
               : 'RESET PASSWORD'}
@@ -576,6 +593,8 @@ export const AuthModal = () => {
               ? 'Enter the 6-digit security code sent to your email'
               : authModalTab === 'register'
               ? 'Join NOAH GAMING for instant online session bookings'
+              : authModalTab === 'registerOTP'
+              ? 'Enter the 6-digit activation code sent to your email to complete registration'
               : authModalTab === 'convertGuest'
               ? 'Verify your email OTP to connect existing bookings and stats'
               : 'Enter verification OTP to set a new password'}
@@ -806,7 +825,7 @@ export const AuthModal = () => {
 
               {/* Assistance Status: AWAITING_ADMIN_ASSISTANCE */}
               {assistanceRequested && assistanceStatus === 'AWAITING_ADMIN_ASSISTANCE' && (
-                <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-xs text-cyan-200 space-y-2 animate-fadeIn">
+                <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-xs text-cyan-200 space-y-2.5 animate-fadeIn">
                   <div className="flex items-center gap-2 font-bold text-cyan-300">
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
@@ -815,7 +834,7 @@ export const AuthModal = () => {
                     <span>Admin Assistance Requested</span>
                   </div>
                   <p className="text-[11px] text-cyan-200/90 leading-relaxed">
-                    Your verification request has been sent to the Admin Console. Please wait for an administrator to review and approve your session.
+                    Your verification request has been sent to the Admin Console. The system is listening for administrator approval and will log you in automatically.
                   </p>
                   <div className="flex items-center justify-between pt-1 text-[11px] text-cyan-300/80 font-mono border-t border-cyan-500/20">
                     <span className="flex items-center gap-1.5">
@@ -827,6 +846,13 @@ export const AuthModal = () => {
                       {(challengeRemainingSeconds % 60).toString().padStart(2, '0')}
                     </span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => checkApprovalStatusNow(false)}
+                    className="w-full py-2 px-3 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-500/40 text-cyan-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all mt-1"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Check Approval Status Now
+                  </button>
                 </div>
               )}
 

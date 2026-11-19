@@ -21,7 +21,7 @@ import {
 } from '../controllers/auth.controller.js';
 import { authenticate } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validator.js';
-import { authLimiter } from '../middlewares/rateLimiter.js';
+import { authLimiter, apiLimiter } from '../middlewares/rateLimiter.js';
 
 const router = Router();
 
@@ -139,11 +139,12 @@ router.post(
   requestOtpAssistance
 );
 
-router.get('/otp-assistance/status/:challengeId', authLimiter, getOtpAssistanceStatus);
+// Status polling uses apiLimiter (200 req/min) so repeated client polling does NOT exhaust authLimiter
+router.get('/otp-assistance/status/:challengeId', apiLimiter, getOtpAssistanceStatus);
 
 router.post(
   '/otp-assistance/complete',
-  authLimiter,
+  apiLimiter,
   [
     body('challengeId').trim().notEmpty().withMessage('Challenge identifier is required'),
     body('approvalToken').trim().notEmpty().withMessage('Approval token is required'),
