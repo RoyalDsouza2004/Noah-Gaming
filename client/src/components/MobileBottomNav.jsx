@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   House,
   Gamepad2,
@@ -271,11 +271,47 @@ export const MobileBottomNav = ({
     ];
   }
 
+  // Refs for tracking position and width of active item for the gliding glass indicator
+  const navRef = useRef(null);
+  const itemRefs = useRef({});
+  const [indicatorStyle, setIndicatorStyle] = useState({
+    left: 0,
+    width: 0,
+    top: 4,
+    height: 44,
+    ready: false,
+  });
+
+  useEffect(() => {
+    const updateIndicator = () => {
+      const activeEl = itemRefs.current[activeItemId];
+      const navEl = navRef.current;
+      if (activeEl && navEl) {
+        const activeRect = activeEl.getBoundingClientRect();
+        const navRect = navEl.getBoundingClientRect();
+        setIndicatorStyle({
+          left: Math.round(activeRect.left - navRect.left + 2),
+          width: Math.round(activeRect.width - 4),
+          top: 3,
+          height: Math.round(navRect.height - 6),
+          ready: true,
+        });
+      }
+    };
+
+    updateIndicator();
+    // Re-calculate on window resize, scroll or orientation changes
+    window.addEventListener('resize', updateIndicator);
+    const timeout = setTimeout(updateIndicator, 50);
+    return () => {
+      window.removeEventListener('resize', updateIndicator);
+      clearTimeout(timeout);
+    };
+  }, [activeItemId, role, navItems.length]);
+
   const handleItemClick = (e, item) => {
-    // Prevent event bubbling without preventing default button click delivery
     e.stopPropagation();
 
-    // If item requires authentication and user is not logged in
     if (!user && (item.id === 'bookings' || item.id === 'profile')) {
       if (openLoginModal) openLoginModal();
       return;
@@ -296,8 +332,9 @@ export const MobileBottomNav = ({
       aria-label="Mobile Bottom Navigation"
       aria-hidden={!isVisible}
       style={{
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        backgroundColor: 'color-mix(in oklab, white 65%, transparent)',
+        backdropFilter: 'blur(22px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(22px) saturate(180%)',
         WebkitTapHighlightColor: 'transparent',
         transform: isVisible
           ? 'translate3d(-50%, 0, 0)'
@@ -308,9 +345,22 @@ export const MobileBottomNav = ({
           'transform 230ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out',
         willChange: 'transform, opacity',
       }}
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 w-[calc(100%-1.5rem)] max-w-md z-[60] md:hidden rounded-full bg-white/75 dark:bg-[#1a0e14]/75 supports-[not-(backdrop-filter:blur(0))]:bg-white/95 dark:supports-[not-(backdrop-filter:blur(0))]:bg-[#1a0e14]/95 border border-white/80 border-t-white/95 border-b-slate-300/40 dark:border-white/15 dark:border-t-white/25 dark:border-b-black/40 shadow-[0_10px_35px_rgba(0,0,0,0.08),0_1px_2px_rgba(255,255,255,0.9)_inset] dark:shadow-[0_14px_40px_rgba(0,0,0,0.6),0_1px_1px_rgba(255,255,255,0.12)_inset] px-1.5 py-1.5 select-none"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 w-[calc(100%-1.5rem)] max-w-md z-[60] md:hidden rounded-full bg-white/65 border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,.85),0_12px_35px_-15px_rgba(0,0,0,.22)] px-1.5 py-1 select-none"
     >
-      <nav className="w-full flex items-center justify-around">
+      <nav ref={navRef} className="relative w-full flex items-center justify-around">
+        {/* Animated Gliding Translucent White Active Selection Indicator */}
+        <div
+          className="absolute rounded-full pointer-events-none transition-all duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] bg-white/65 border border-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_8px_rgba(0,0,0,.06)]"
+          style={{
+            left: `${indicatorStyle.left}px`,
+            width: `${indicatorStyle.width}px`,
+            top: `${indicatorStyle.top}px`,
+            height: `${indicatorStyle.height}px`,
+            opacity: indicatorStyle.ready ? 1 : 0,
+            zIndex: 1,
+          }}
+        />
+
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeItemId === item.id;
@@ -320,6 +370,7 @@ export const MobileBottomNav = ({
           return (
             <button
               key={item.id}
+              ref={(el) => (itemRefs.current[item.id] = el)}
               type="button"
               onClick={(e) => handleItemClick(e, item)}
               aria-label={item.label}
@@ -329,24 +380,16 @@ export const MobileBottomNav = ({
                 touchAction: 'manipulation',
                 outline: 'none',
               }}
-              className="flex-1 flex flex-col items-center justify-center py-1 px-0.5 relative transition-transform active:scale-90 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none select-none min-h-[46px]"
+              className="flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 relative z-10 transition-transform active:scale-95 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none select-none min-h-[46px]"
             >
-              <div
-                className={`flex items-center justify-center transition-all duration-150 ${
-                  isActive
-                    ? 'w-10 h-10 rounded-full bg-[#851B2B] text-white shadow-[0_4px_14px_rgba(133,27,43,0.35)] border border-[#851B2B]/70 dark:bg-[#851B2B]/65 dark:border-[#851B2B]/80 dark:shadow-[0_0_16px_rgba(133,27,43,0.5)] scale-105'
-                    : 'w-10 h-10 rounded-full'
-                }`}
-              >
+              <div className="flex items-center justify-center w-8 h-6 transition-all duration-200">
                 {isProfileItem && currentUser ? (
                   <div
-                    className={`w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-bold shrink-0 border transition-all relative ${
-                      isActive
-                        ? 'border-white dark:border-[#D7FF00] shadow-[0_0_10px_rgba(215,255,0,0.6)]'
-                        : 'border-slate-300 dark:border-white/40'
-                    } bg-gradient-to-br from-[#851B2B] to-[#A51F35] text-[#FFF4E8]`}
+                    className={`w-6 h-6 rounded-full overflow-hidden flex items-center justify-center font-bold shrink-0 border transition-all relative ${
+                      isActive ? 'border-[#171923] shadow-sm scale-110' : 'border-slate-400'
+                    } bg-gradient-to-br from-[#851B2B] to-[#A51F35] text-white`}
                   >
-                    <span className="font-heading font-black text-[10.5px] text-[#FFF4E8]">
+                    <span className="font-heading font-black text-[9.5px] text-white">
                       {currentUser.name?.charAt(0).toUpperCase() || 'U'}
                     </span>
                     {profilePic && (
@@ -362,10 +405,8 @@ export const MobileBottomNav = ({
                   </div>
                 ) : (
                   <Icon
-                    className={`transition-colors duration-150 ${
-                      isActive
-                        ? 'w-5 h-5 text-white dark:text-[#D7FF00]'
-                        : 'w-5 h-5 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white/90'
+                    className={`w-5 h-5 transition-transform duration-200 ${
+                      isActive ? 'text-[#171923] scale-110' : 'text-[#414858]'
                     }`}
                   />
                 )}
@@ -374,8 +415,8 @@ export const MobileBottomNav = ({
               <span
                 className={`text-[9.5px] sm:text-[10px] tracking-tight mt-0.5 transition-all select-none ${
                   isActive
-                    ? 'font-bold font-heading scale-105 text-[#851B2B] dark:text-[#D7FF00]'
-                    : 'font-medium text-slate-500 dark:text-white/65'
+                    ? 'font-black font-heading text-[#171923] scale-105'
+                    : 'font-semibold text-[#414858]'
                 }`}
               >
                 {item.label}
