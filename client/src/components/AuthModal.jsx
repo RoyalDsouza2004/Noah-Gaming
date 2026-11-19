@@ -25,6 +25,8 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Search,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const AuthModal = () => {

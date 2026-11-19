@@ -31,6 +31,7 @@ import {
   Banknote,
   Smartphone,
   Crown,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const isGameMultiplayer = (game) => {

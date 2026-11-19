@@ -57,6 +57,7 @@ import {
   Sparkles,
   LogOut,
   KeyRound,
+  ShieldCheck,
 } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { showToast } from '../../utils/toast.js';
