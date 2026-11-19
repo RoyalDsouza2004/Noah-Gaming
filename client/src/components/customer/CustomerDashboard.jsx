@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userProfileApi } from '../../api/userProfile.js';
+import { userManagementApi } from '../../api/userManagement.js';
 import { membershipApi } from '../../api/membership.js';
 import { paymentApi } from '../../api/payment.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -14,6 +15,8 @@ import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { PushNotificationSettings } from '../notifications/PushNotificationSettings.jsx';
 import ProfilePictureUpload from './ProfilePictureUpload.jsx';
 import { ThemeToggle } from '../common/ThemeToggle.jsx';
+import { SixDigitOtpInput } from '../common/SixDigitOtpInput.jsx';
+import { maskEmail } from '../../utils/mask.js';
 import { showToast } from '../../utils/toast.js';
 import {
   User,
@@ -43,6 +46,10 @@ import {
   ShieldCheck,
   Zap,
   Sparkles,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Mail,
   Flame,
   Check,
   LogOut,
@@ -148,9 +155,24 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
   const [profileForm, setProfileForm] = useState({ name: '', phone: '', profilePicture: '' });
   const [profileSaving, setProfileSaving] = useState(false);
 
-  // Password Form
+  // Password Form & Recovery State
+  const [passwordMode, setPasswordMode] = useState('change'); // 'change' | 'forgot'
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
+
+  // Profile Forgot Password OTP state
+  const [profileForgotStep, setProfileForgotStep] = useState('init'); // 'init' | 'otp'
+  const [profileForgotOtp, setProfileForgotOtp] = useState('');
+  const [profileForgotNewPassword, setProfileForgotNewPassword] = useState('');
+  const [profileForgotConfirmPassword, setProfileForgotConfirmPassword] = useState('');
+  const [showProfileForgotNew, setShowProfileForgotNew] = useState(false);
+  const [showProfileForgotConfirm, setShowProfileForgotConfirm] = useState(false);
+  const [profileForgotCooldown, setProfileForgotCooldown] = useState(0);
+  const [profileForgotMaskedEmail, setProfileForgotMaskedEmail] = useState('');
+  const [profileForgotSaving, setProfileForgotSaving] = useState(false);
 
   // Fetch Dashboard & User Data
   const fetchDashboardData = async () => {
@@ -241,6 +263,11 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
       showToast.error('New passwords do not match');
       return;
     }
+    if (passwordForm.newPassword.length < 6) {
+      setActionError('New password must be at least 6 characters long');
+      showToast.error('New password must be at least 6 characters long');
+      return;
+    }
     setPasswordSaving(true);
     setActionError('');
     try {
@@ -259,6 +286,94 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
       showToast.error(err.message || 'Failed to change password');
     } finally {
       setPasswordSaving(false);
+    }
+  };
+
+  // Cooldown countdown for profile forgot password OTP
+  useEffect(() => {
+    if (profileForgotCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setProfileForgotCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [profileForgotCooldown]);
+
+  // Handle Profile Forgot Password: Send OTP to registered email
+  const handleProfileForgotRequestOtp = async () => {
+    const emailToUse = user?.email || customer?.email;
+    if (!emailToUse) {
+      showToast.error('No registered email found for this profile. Please contact staff.');
+      return;
+    }
+    setProfileForgotSaving(true);
+    setActionError('');
+    try {
+      const res = await userManagementApi.requestOnlineForgotPasswordOtp(emailToUse);
+      if (res?.success) {
+        const masked = res.data?.maskedEmail || maskEmail(emailToUse);
+        setProfileForgotMaskedEmail(masked);
+        setProfileForgotCooldown(res.data?.resendCooldownSeconds || 60);
+        setProfileForgotStep('otp');
+        showToast.success(`Verification code dispatched to ${masked}!`);
+      } else {
+        setActionError(res?.message || 'Failed to dispatch reset code');
+        showToast.error(res?.message || 'Failed to dispatch reset code');
+      }
+    } catch (err) {
+      setActionError(err.message || 'Failed to dispatch reset code');
+      showToast.error(err.message || 'Failed to dispatch reset code');
+    } finally {
+      setProfileForgotSaving(false);
+    }
+  };
+
+  // Handle Profile Forgot Password: Verify OTP & Save New Password
+  const handleProfileForgotSubmit = async (e) => {
+    e.preventDefault();
+    setActionError('');
+    const emailToUse = user?.email || customer?.email;
+    if (!profileForgotOtp || profileForgotOtp.trim().length !== 6) {
+      setActionError('Please enter the complete 6-digit verification code.');
+      showToast.error('Please enter the complete 6-digit verification code.');
+      return;
+    }
+    if (!profileForgotNewPassword || profileForgotNewPassword.length < 6) {
+      setActionError('New password must be at least 6 characters long.');
+      showToast.error('New password must be at least 6 characters long.');
+      return;
+    }
+    if (profileForgotNewPassword !== profileForgotConfirmPassword) {
+      setActionError('New passwords do not match.');
+      showToast.error('New passwords do not match.');
+      return;
+    }
+
+    setProfileForgotSaving(true);
+    try {
+      const res = await userManagementApi.verifyOnlineForgotPasswordOtp({
+        identifier: emailToUse,
+        otp: profileForgotOtp.trim(),
+        newPassword: profileForgotNewPassword,
+      });
+
+      if (res?.success) {
+        showToast.success('Password updated successfully!');
+        setActionSuccess('Password updated successfully!');
+        setProfileForgotStep('init');
+        setProfileForgotOtp('');
+        setProfileForgotNewPassword('');
+        setProfileForgotConfirmPassword('');
+        setPasswordMode('change');
+        setTimeout(() => setActionSuccess(''), 5000);
+      } else {
+        setActionError(res?.message || 'Failed to update password');
+        showToast.error(res?.message || 'Failed to update password');
+      }
+    } catch (err) {
+      setActionError(err.message || 'Failed to update password');
+      showToast.error(err.message || 'Failed to update password');
+    } finally {
+      setProfileForgotSaving(false);
     }
   };
 
@@ -1200,65 +1315,343 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
               </form>
             </div>
 
-            {/* Change Password Form */}
+            {/* Security & Password Section */}
             <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-              <h3 className="text-base font-bold font-heading text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-purple-400" />
-                Security & Password
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-800">
+                <h3 className="text-base font-bold font-heading text-white flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-rose-400" />
+                  Security & Password
+                </h3>
 
-              <form onSubmit={handleChangePassword} className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">Current Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={passwordForm.currentPassword}
-                    onChange={(e) =>
-                      setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">New Password</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={passwordForm.newPassword}
-                    onChange={(e) =>
-                      setPasswordForm({ ...passwordForm, newPassword: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">Confirm New Password</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
-                  />
-                </div>
-
-                <div className="pt-2 flex justify-end">
+                {/* Sub-tab Switcher: Change Password vs Forgot Password */}
+                <div className="flex p-1 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold">
                   <button
-                    type="submit"
-                    disabled={passwordSaving}
-                    className="px-5 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-purple-500/20"
+                    type="button"
+                    onClick={() => {
+                      setPasswordMode('change');
+                      setActionError('');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                      passwordMode === 'change'
+                        ? 'bg-[#851B2B] text-white shadow font-bold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
                   >
-                    {passwordSaving ? 'Updating Password...' : 'Change Password'}
+                    Change Password
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasswordMode('forgot');
+                      setActionError('');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                      passwordMode === 'forgot'
+                        ? 'bg-[#851B2B] text-white shadow font-bold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Forgot Password?
                   </button>
                 </div>
-              </form>
+              </div>
+
+              {/* Mode A: Change Password (knows current password) */}
+              {passwordMode === 'change' && (
+                <form onSubmit={handleChangePassword} className="space-y-3.5 text-xs">
+                  <p className="text-[11px] text-slate-400">
+                    To change your password, please confirm your existing password and choose a secure new one.
+                  </p>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-semibold">Current Password *</label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        required
+                        value={passwordForm.currentPassword}
+                        onChange={(e) =>
+                          setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                        }
+                        className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-[#851B2B]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showCurrentPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-semibold">New Password (min 6 characters) *</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        value={passwordForm.newPassword}
+                        onChange={(e) =>
+                          setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                        }
+                        className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-[#851B2B]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-semibold">Confirm New Password *</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) =>
+                          setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                        }
+                        className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-[#851B2B]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {passwordForm.newPassword &&
+                    passwordForm.confirmPassword &&
+                    passwordForm.newPassword !== passwordForm.confirmPassword && (
+                      <p className="text-xs text-rose-400 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Passwords do not match.
+                      </p>
+                    )}
+
+                  <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPasswordMode('forgot');
+                        setActionError('');
+                      }}
+                      className="text-xs text-[#D7FF00] hover:underline text-left font-medium"
+                    >
+                      Forgot your current password? Reset via Email OTP &rarr;
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={
+                        passwordSaving ||
+                        !passwordForm.currentPassword ||
+                        !passwordForm.newPassword ||
+                        passwordForm.newPassword.length < 6 ||
+                        passwordForm.newPassword !== passwordForm.confirmPassword
+                      }
+                      className="px-5 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#701529] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-md shadow-[#851B2B]/20 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      {passwordSaving ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> Updating...
+                        </>
+                      ) : (
+                        'Change Password'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Mode B: Forgot Password (Email OTP Recovery inside Profile) */}
+              {passwordMode === 'forgot' && (
+                <div className="space-y-4 text-xs">
+                  {profileForgotStep === 'init' ? (
+                    <div className="space-y-3.5">
+                      <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                        <p className="text-slate-300 font-semibold flex items-center gap-1.5">
+                          <Mail className="w-4 h-4 text-rose-400" /> Password Recovery via Email OTP
+                        </p>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          Forgot your current password? We will dispatch a 6-digit verification code to your registered email:
+                        </p>
+                        <p className="text-xs font-bold font-mono text-[#D7FF00] pt-0.5">
+                          {maskEmail(user?.email || customer?.email)}
+                        </p>
+                      </div>
+
+                      <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPasswordMode('change');
+                            setActionError('');
+                          }}
+                          className="text-xs text-slate-400 hover:text-white"
+                        >
+                          &larr; Back to Change Password
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleProfileForgotRequestOtp}
+                          disabled={profileForgotSaving || profileForgotCooldown > 0}
+                          className="px-5 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#701529] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-md shadow-[#851B2B]/20 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        >
+                          {profileForgotSaving ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> Sending Code...
+                            </>
+                          ) : profileForgotCooldown > 0 ? (
+                            `Resend in ${profileForgotCooldown}s`
+                          ) : (
+                            'Send Reset OTP'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleProfileForgotSubmit} className="space-y-3.5">
+                      <div className="p-3 bg-[#1F1018] border border-[#851B2B]/40 rounded-xl text-center">
+                        <p className="text-slate-400 text-[11px]">Verification code dispatched to:</p>
+                        <p className="text-xs font-bold font-mono text-[#D7FF00] mt-0.5">
+                          {profileForgotMaskedEmail || maskEmail(user?.email || customer?.email)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-400 mb-1.5 font-semibold text-center">
+                          6-Digit Verification Code *
+                        </label>
+                        <SixDigitOtpInput
+                          value={profileForgotOtp}
+                          onChange={setProfileForgotOtp}
+                          disabled={profileForgotSaving}
+                          variant="rose"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-0.5">
+                        <button
+                          type="button"
+                          onClick={handleProfileForgotRequestOtp}
+                          disabled={profileForgotSaving || profileForgotCooldown > 0}
+                          className="text-[#D7FF00] hover:underline font-semibold disabled:opacity-50 flex items-center gap-1 text-[11px]"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${profileForgotSaving ? 'animate-spin' : ''}`} />
+                          {profileForgotCooldown > 0 ? `Resend code in ${profileForgotCooldown}s` : 'Resend Code'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileForgotStep('init');
+                            setProfileForgotOtp('');
+                          }}
+                          className="text-slate-400 hover:text-white text-[11px] underline"
+                        >
+                          Request again
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-400 mb-1 font-semibold">New Password (min 6 characters) *</label>
+                        <div className="relative">
+                          <input
+                            type={showProfileForgotNew ? 'text' : 'password'}
+                            required
+                            minLength={6}
+                            value={profileForgotNewPassword}
+                            onChange={(e) => setProfileForgotNewPassword(e.target.value)}
+                            className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-[#851B2B]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowProfileForgotNew(!showProfileForgotNew)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                          >
+                            {showProfileForgotNew ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-400 mb-1 font-semibold">Confirm New Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showProfileForgotConfirm ? 'text' : 'password'}
+                            required
+                            minLength={6}
+                            value={profileForgotConfirmPassword}
+                            onChange={(e) => setProfileForgotConfirmPassword(e.target.value)}
+                            className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-[#851B2B]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowProfileForgotConfirm(!showProfileForgotConfirm)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                          >
+                            {showProfileForgotConfirm ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {profileForgotNewPassword &&
+                        profileForgotConfirmPassword &&
+                        profileForgotNewPassword !== profileForgotConfirmPassword && (
+                          <p className="text-xs text-rose-400 flex items-center gap-1">
+                            <AlertTriangle className="w-3.5 h-3.5" /> Passwords do not match.
+                          </p>
+                        )}
+
+                      <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPasswordMode('change');
+                            setProfileForgotStep('init');
+                            setProfileForgotOtp('');
+                            setActionError('');
+                          }}
+                          className="text-xs text-slate-400 hover:text-white"
+                        >
+                          &larr; Cancel & Return
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={
+                            profileForgotSaving ||
+                            profileForgotOtp.length !== 6 ||
+                            !profileForgotNewPassword ||
+                            profileForgotNewPassword.length < 6 ||
+                            profileForgotNewPassword !== profileForgotConfirmPassword
+                          }
+                          className="px-5 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#701529] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-md shadow-[#851B2B]/20 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        >
+                          {profileForgotSaving ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> Updating...
+                            </>
+                          ) : (
+                            'Verify & Update Password'
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

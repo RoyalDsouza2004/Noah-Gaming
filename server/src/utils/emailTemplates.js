@@ -11,6 +11,8 @@
  * - Border: #49202C
  */
 
+import { getFrontendUrl } from './url.js';
+
 export function wrapInNoahLayout({ title, previewText = '', contentHtml }) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -190,7 +192,7 @@ export function getWelcomeEmail({ name, email, phone }) {
     </p>
 
     <div style="text-align: center;">
-      <a href="${process.env.CORS_ORIGIN || 'http://localhost:5173'}#bookings" class="btn">Book a Station Now &rarr;</a>
+      <a href="${getFrontendUrl()}#bookings" class="btn">Book a Station Now &rarr;</a>
     </div>
   `;
 
@@ -201,7 +203,7 @@ export function getWelcomeEmail({ name, email, phone }) {
       previewText: `Welcome to NOAH GAMING! Your player account is now active.`,
       contentHtml: content,
     }),
-    text: `Welcome to NOAH GAMING, ${name}!\n\nYour player profile (${email}) is active. Book your gaming station at ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`,
+    text: `Welcome to NOAH GAMING, ${name}!\n\nYour player profile (${email}) is active. Book your gaming station at ${getFrontendUrl()}`,
   };
 }
 
@@ -317,7 +319,7 @@ export function getBookingCancellationEmail({ booking, customer, reason }) {
     </p>
 
     <div style="text-align: center;">
-      <a href="${process.env.CORS_ORIGIN || 'http://localhost:5173'}#bookings" class="btn">Make a New Booking &rarr;</a>
+      <a href="${getFrontendUrl()}#bookings" class="btn">Make a New Booking &rarr;</a>
     </div>
   `;
 
@@ -490,7 +492,7 @@ export function getMembershipExpiryReminderEmail({ customer, plan, expiresAt, da
     </p>
 
     <div style="text-align: center;">
-      <a href="${process.env.CORS_ORIGIN || 'http://localhost:5173'}#passes" class="btn">Renew Pass Online &rarr;</a>
+      <a href="${getFrontendUrl()}#passes" class="btn">Renew Pass Online &rarr;</a>
     </div>
   `;
 
@@ -501,7 +503,7 @@ export function getMembershipExpiryReminderEmail({ customer, plan, expiresAt, da
       previewText: `Your NOAH GAMING membership pass expires on ${expiresDateStr}. Renew now to keep your benefits.`,
       contentHtml: content,
     }),
-    text: `Notice: Your ${plan?.name} membership expires on ${expiresDateStr}. Renew online at ${process.env.CORS_ORIGIN || 'http://localhost:5173'}#passes`,
+    text: `Notice: Your ${plan?.name} membership expires on ${expiresDateStr}. Renew online at ${getFrontendUrl()}#passes`,
   };
 }
 
@@ -568,7 +570,7 @@ export function getPasswordResetConfirmationEmail({ name }) {
     </p>
 
     <div style="text-align: center;">
-      <a href="${process.env.CORS_ORIGIN || 'http://localhost:5173'}" class="btn">Sign In to Your Account &rarr;</a>
+      <a href="${getFrontendUrl()}" class="btn">Sign In to Your Account &rarr;</a>
     </div>
   `;
 

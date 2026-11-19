@@ -10,12 +10,15 @@ import {
   sendPasswordResetConfirmationEmail,
   sendOtpEmail,
 } from '../services/email.service.js';
+import { getFrontendUrl, getPasswordResetUrl } from '../utils/url.js';
 
-function maskEmail(email) {
-  if (!email || !email.includes('@')) return 'your registered email';
-  const [local, domain] = email.split('@');
-  if (local.length <= 2) return `${local[0]}***@${domain}`;
-  return `${local[0]}***${local[local.length - 1]}@${domain}`;
+export function maskEmail(email) {
+  if (!email || typeof email !== 'string' || !email.includes('@')) return 'your registered email';
+  const [local, domain] = email.trim().toLowerCase().split('@');
+  if (local.length <= 1) return `*@${domain}`;
+  if (local.length === 2) return `${local[0]}***@${domain}`;
+  if (local.length <= 4) return `${local.slice(0, 2)}***@${domain}`;
+  return `${local.slice(0, 3)}***@${domain}`;
 }
 
 function maskPhone(phone) {
@@ -1577,22 +1580,49 @@ export const verifyConversionOtpOnline = async (req, res) => {
 export const forgotPasswordRequestOtp = async (req, res) => {
   try {
     const { identifier } = req.body;
-    if (!identifier) {
+    if (!identifier || !String(identifier).trim()) {
       return res.status(400).json({ success: false, message: 'Please provide your mobile number or email.' });
     }
 
-    const clean = identifier.trim();
-    const cleanPhone = clean.replace(/\D/g, '');
+    const clean = String(identifier).trim();
+    const isEmail = clean.includes('@');
     const cleanEmail = clean.toLowerCase();
 
-    const user = await User.findOne({
-      $or: [{ phone: cleanPhone }, { email: cleanEmail }],
-    });
+    // Normalize phone number (strip non-digits, normalize 10-digit, 11-digit with 0, 12-digit with 91)
+    const rawDigits = clean.replace(/\D/g, '');
+    let cleanPhone = rawDigits;
+    if (rawDigits.length === 12 && rawDigits.startsWith('91')) {
+      cleanPhone = rawDigits.slice(2);
+    } else if (rawDigits.length === 11 && rawDigits.startsWith('0')) {
+      cleanPhone = rawDigits.slice(1);
+    }
+
+    let user = null;
+    if (isEmail) {
+      user = await User.findOne({ email: cleanEmail });
+    } else {
+      user = await User.findOne({
+        $or: [
+          { phone: cleanPhone },
+          { phone: rawDigits },
+          { phone: `+91${cleanPhone}` },
+          { phone: `+91 ${cleanPhone}` },
+        ],
+      });
+    }
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'No customer account found with this mobile number or email.',
+        message: 'No registered customer account found with this identifier. Please verify your email or mobile number.',
+      });
+    }
+
+    // Role-based check: Staff/Admin accounts must use administrative reset mechanisms
+    if (user.role && user.role !== ROLES.CUSTOMER) {
+      return res.status(403).json({
+        success: false,
+        message: 'Staff and administrative accounts must use the official password reset link or contact system administration.',
       });
     }
 
@@ -1664,17 +1694,16 @@ export const forgotPasswordRequestOtp = async (req, res) => {
       userRole: user.role,
       action: 'PASSWORD_RESET_OTP_SENT',
       category: 'AUTH',
-      details: { email: user.email, phone: user.phone },
+      details: { email: user.email },
       ipAddress: req.ip || '127.0.0.1',
     });
 
+    // Masked destination email only
     res.status(200).json({
       success: true,
       message: `Password reset verification code sent to ${maskEmail(user.email)}.`,
       data: {
         userId: user._id,
-        phone: user.phone,
-        maskedPhone: maskPhone(user.phone),
         maskedEmail: maskEmail(user.email),
         resendCooldownSeconds: 60,
         expiresInSeconds: 300,
@@ -1689,39 +1718,122 @@ export const forgotPasswordRequestOtp = async (req, res) => {
 // Customer Online: Forgot Password OTP Verify & Reset
 export const forgotPasswordVerifyOtp = async (req, res) => {
   try {
-    const { identifier, otp, newPassword } = req.body;
-    if (!identifier || !otp || !newPassword) {
+    const { identifier, otp, newPassword, resetToken } = req.body;
+    if (!identifier || !String(identifier).trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Mobile/email, OTP, and new password are required.',
+        message: 'Mobile number or email is required.',
       });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({
+    const clean = String(identifier).trim();
+    const isEmail = clean.includes('@');
+    const cleanEmail = clean.toLowerCase();
+    const rawDigits = clean.replace(/\D/g, '');
+    let cleanPhone = rawDigits;
+    if (rawDigits.length === 12 && rawDigits.startsWith('91')) {
+      cleanPhone = rawDigits.slice(2);
+    } else if (rawDigits.length === 11 && rawDigits.startsWith('0')) {
+      cleanPhone = rawDigits.slice(1);
+    }
+
+    let user = null;
+    if (isEmail) {
+      user = await User.findOne({ email: cleanEmail }).select('+password');
+    } else {
+      user = await User.findOne({
+        $or: [
+          { phone: cleanPhone },
+          { phone: rawDigits },
+          { phone: `+91${cleanPhone}` },
+          { phone: `+91 ${cleanPhone}` },
+        ],
+      }).select('+password');
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+
+    // Role check: Staff/Admin accounts must use administrative reset mechanisms
+    if (user.role && user.role !== ROLES.CUSTOMER) {
+      return res.status(403).json({
         success: false,
-        message: 'Password must be at least 6 characters long.',
+        message: 'Staff and administrative accounts must use the official password reset link.',
       });
     }
 
-    const cleanOtp = otp.trim();
+    // Branch A: Resetting password using verified resetToken (Multi-step Step 3)
+    if (resetToken && newPassword) {
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters long.',
+        });
+      }
+
+      const hashedToken = crypto.createHash('sha256').update(String(resetToken).trim()).digest('hex');
+      const verifiedRecord = await OtpVerification.findOne({
+        userId: user._id,
+        purpose: 'PASSWORD_RESET',
+        verified: true,
+        used: false,
+        approvalToken: hashedToken,
+        expiresAt: { $gt: new Date() },
+      }).sort({ createdAt: -1 });
+
+      if (!verifiedRecord) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password reset verification has expired or is invalid. Please request a new code.',
+        });
+      }
+
+      user.password = newPassword;
+      await user.save();
+
+      verifiedRecord.used = true;
+      verifiedRecord.status = 'CONSUMED';
+      await verifiedRecord.save();
+
+      await ActivityLog.create({
+        userId: user._id,
+        userName: user.name,
+        userRole: user.role,
+        action: 'CUSTOMER_PASSWORD_RESET_SUCCESS',
+        category: 'AUTH',
+        customerId: user._id,
+        description: `Customer '${user.name}' reset password online via email OTP challenge`,
+        details: { userId: user._id, email: user.email },
+        ipAddress: req.ip || '127.0.0.1',
+      });
+
+      if (user.email) {
+        sendPasswordResetConfirmationEmail({ user }).catch((err) =>
+          console.error('[OTP Reset Confirmation Email Error]:', err.message)
+        );
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Password reset successfully! You can now log in with your new password.',
+      });
+    }
+
+    // For OTP verification: validate OTP format
+    if (!otp) {
+      return res.status(400).json({
+        success: false,
+        message: '6-digit verification code is required.',
+      });
+    }
+
+    const cleanOtp = String(otp).trim();
     if (!/^\d{6}$/.test(cleanOtp)) {
       return res.status(400).json({
         success: false,
         message: 'Verification code must be exactly 6 digits.',
       });
-    }
-
-    const clean = identifier.trim();
-    const cleanPhone = clean.replace(/\D/g, '');
-    const cleanEmail = clean.toLowerCase();
-
-    const user = await User.findOne({
-      $or: [{ phone: cleanPhone }, { email: cleanEmail }],
-    }).select('+password');
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Account not found.' });
     }
 
     const record = await OtpVerification.findOne({
@@ -1777,35 +1889,62 @@ export const forgotPasswordVerifyOtp = async (req, res) => {
       });
     }
 
-    // 4. Invalidate OTP upon success
-    record.verified = true;
-    record.used = true;
-    await record.save();
+    // Branch B: Single-step verify & set new password (when newPassword is provided along with otp)
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters long.',
+        });
+      }
 
-    user.password = newPassword;
-    await user.save();
+      record.verified = true;
+      record.used = true;
+      record.status = 'CONSUMED';
+      await record.save();
 
-    await ActivityLog.create({
-      userId: user._id,
-      userName: user.name,
-      userRole: user.role,
-      action: 'CUSTOMER_PASSWORD_RESET_SUCCESS',
-      category: 'AUTH',
-      customerId: user._id,
-      description: `Customer '${user.name}' (${user.phone}) reset password online via email OTP`,
-      details: { userId: user._id, phone: user.phone },
-      ipAddress: req.ip || '127.0.0.1',
-    });
+      user.password = newPassword;
+      await user.save();
 
-    if (user.email) {
-      sendPasswordResetConfirmationEmail({ user }).catch((err) =>
-        console.error('[OTP Reset Confirmation Email Error]:', err.message)
-      );
+      await ActivityLog.create({
+        userId: user._id,
+        userName: user.name,
+        userRole: user.role,
+        action: 'CUSTOMER_PASSWORD_RESET_SUCCESS',
+        category: 'AUTH',
+        customerId: user._id,
+        description: `Customer '${user.name}' reset password online via email OTP`,
+        details: { userId: user._id, email: user.email },
+        ipAddress: req.ip || '127.0.0.1',
+      });
+
+      if (user.email) {
+        sendPasswordResetConfirmationEmail({ user }).catch((err) =>
+          console.error('[OTP Reset Confirmation Email Error]:', err.message)
+        );
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Password reset successfully! You can now log in with your new password.',
+      });
     }
 
-    res.status(200).json({
+    // Branch C: Verify OTP alone (Step 2) -> generate secure resetToken for Step 3
+    const generatedToken = crypto.randomBytes(32).toString('hex');
+    const hashedApproval = crypto.createHash('sha256').update(generatedToken).digest('hex');
+
+    record.verified = true;
+    record.approvalToken = hashedApproval;
+    await record.save();
+
+    return res.status(200).json({
       success: true,
-      message: 'Password reset successfully! You can now log in with your new password.',
+      message: 'Verification code verified successfully. Please enter your new password.',
+      data: {
+        resetToken: generatedToken,
+        maskedEmail: maskEmail(user.email),
+      },
     });
   } catch (err) {
     console.error('[forgotPasswordVerifyOtp Error]', err);
@@ -1836,8 +1975,8 @@ export const requestPasswordResetEmail = async (req, res) => {
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    const resetUrl = `${clientUrl}#reset-password?token=${resetToken}`;
+    // Use centralized getPasswordResetUrl pointing to production deployed frontend or local dev
+    const resetUrl = getPasswordResetUrl(resetToken, req);
 
     // Dispatch email
     sendPasswordResetEmail({

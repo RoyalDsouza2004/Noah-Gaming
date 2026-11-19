@@ -4,10 +4,12 @@ import Payment from '../models/Payment.js';
 import MembershipUsage from '../models/MembershipUsage.js';
 import MembershipSubscription from '../models/MembershipSubscription.js';
 import Notification from '../models/Notification.js';
+import ActivityLog from '../models/ActivityLog.js';
 import bcrypt from 'bcryptjs';
 import { formatISTDate } from '../utils/timeSlots.js';
 import * as notificationService from '../services/notification.service.js';
 import { deleteCloudinaryAsset } from '../services/cloudinary.service.js';
+import { sendPasswordResetConfirmationEmail } from '../services/email.service.js';
 
 /**
  * GET /api/users/profile
@@ -215,6 +217,24 @@ export const changePassword = async (req, res) => {
 
     user.password = newPassword;
     await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      userRole: user.role,
+      action: 'CUSTOMER_PASSWORD_CHANGED_PROFILE',
+      category: 'AUTH',
+      customerId: user._id,
+      description: `Customer '${user.name}' changed account password from profile security settings`,
+      details: { userId: user._id, email: user.email },
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    if (user.email) {
+      sendPasswordResetConfirmationEmail({ user }).catch((err) =>
+        console.error('[Profile Password Change Confirmation Email Error]:', err.message)
+      );
+    }
 
     res.status(200).json({
       success: true,
