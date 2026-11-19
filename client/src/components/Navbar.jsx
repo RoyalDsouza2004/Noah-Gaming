@@ -146,18 +146,18 @@ export const Navbar = ({
             </button>
           )}
 
-          {/* 3. Book Session CTA (Primary High-Contrast Neon Lime CTA for customers, sm-only for staff) */}
+          {/* 3. Book Session CTA (Primary High-Contrast Burgundy Brand CTA with crisp white text & icons) */}
           <button
             type="button"
             onClick={onOpenBooking}
-            className={`h-9 px-2.5 sm:px-4 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black font-heading text-xs tracking-wider uppercase transition-all shadow-md shadow-[#D7FF00]/20 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] shrink-0 ${
+            className={`h-9 px-2.5 sm:px-4 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-black font-heading text-xs tracking-wider uppercase transition-all shadow-md shadow-[#851B2B]/25 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] shrink-0 ${
               isAuthenticated && (isReceptionist || isAdmin) ? 'hidden sm:flex' : 'flex'
             }`}
             title="Book a gaming station session"
           >
-            <Gamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#171014] shrink-0" />
-            <span className="hidden sm:inline">Book Session</span>
-            <span className="sm:hidden font-bold">Book</span>
+            <Gamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white shrink-0" />
+            <span className="hidden sm:inline text-white">Book Session</span>
+            <span className="sm:hidden font-bold text-white">Book</span>
           </button>
 
           {/* 4. Staff POS Command Shortcut (Authorized Receptionist or Admin) */}

@@ -886,9 +886,9 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 });
                 setDeviceModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold text-xs uppercase tracking-wider font-heading"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20"
             >
-              <Plus className="w-4 h-4" /> Add Device
+              <Plus className="w-4 h-4 text-white" /> <span className="text-white">Add Device</span>
             </button>
           </div>
 
@@ -1058,9 +1058,9 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                   });
                   setGameModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold text-xs uppercase tracking-wider font-heading"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20"
               >
-                <Plus className="w-4 h-4" /> Add New Game
+                <Plus className="w-4 h-4 text-white" /> <span className="text-white">Add New Game</span>
               </button>
             </div>
           </div>
@@ -1324,9 +1324,9 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 setCategoryForm({ name: '', description: '', status: 'ACTIVE' });
                 setCategoryModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold text-xs uppercase tracking-wider font-heading"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20"
             >
-              <Plus className="w-4 h-4" /> Add Category
+              <Plus className="w-4 h-4 text-white" /> <span className="text-white">Add Category</span>
             </button>
           </div>
 
@@ -1758,7 +1758,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-[#D7FF00] text-[#171014] font-bold rounded-lg font-heading">
+                <button type="submit" className="px-5 py-2 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold rounded-lg font-heading shadow-md shadow-[#851B2B]/20">
                   Save Device
                 </button>
               </div>
@@ -2135,7 +2135,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-[#D7FF00] text-[#171014] font-bold rounded-lg font-heading">
+                <button type="submit" className="px-5 py-2 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold rounded-lg font-heading shadow-md shadow-[#851B2B]/20">
                   Save Game
                 </button>
               </div>
@@ -2180,7 +2180,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-[#D7FF00] text-[#171014] font-bold rounded-lg font-heading">
+                <button type="submit" className="px-5 py-2 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold rounded-lg font-heading shadow-md shadow-[#851B2B]/20">
                   Save
                 </button>
               </div>
@@ -2261,7 +2261,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-[#D7FF00] text-[#171014] font-bold rounded-lg font-heading">
+                <button type="submit" className="px-5 py-2 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold rounded-lg font-heading shadow-md shadow-[#851B2B]/20">
                   Save Rule
                 </button>
               </div>

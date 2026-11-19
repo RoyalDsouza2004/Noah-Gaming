@@ -493,12 +493,14 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 }
               }}
               disabled={!selectedDevice}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold font-heading text-xs uppercase tracking-wider transition-all shadow-md shadow-[#851B2B]/20 disabled:opacity-50"
             >
-              {selectedDevice?.deviceType === 'POOL'
-                ? 'Continue to Date & Time Slots'
-                : 'Continue to Game Selection'}{' '}
-              <ArrowRight className="w-4 h-4" />
+              <span className="text-white">
+                {selectedDevice?.deviceType === 'POOL'
+                  ? 'Continue to Date & Time Slots'
+                  : 'Continue to Game Selection'}
+              </span>{' '}
+              <ArrowRight className="w-4 h-4 text-white" />
             </button>
           </div>
         </div>
@@ -706,9 +708,9 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               <button
                 onClick={() => setStep(3)}
                 disabled={!isVenueSelection && !selectedGame}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-md shadow-[#851B2B]/20 disabled:opacity-50"
               >
-                Continue to Date & Time Slots <ArrowRight className="w-4 h-4" />
+                <span className="text-white">Continue to Date & Time Slots</span> <ArrowRight className="w-4 h-4 text-white" />
               </button>
             </div>
           </div>
@@ -1310,7 +1312,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 disabled={submitting || !selectedSlot}
                 className={`w-full py-3 rounded-xl font-bold font-heading text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${
                   isMembershipFullyCovered
-                    ? 'bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] shadow-[#D7FF00]/20'
+                    ? 'bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white shadow-[#851B2B]/20'
                     : 'bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-slate-950 shadow-emerald-500/20'
                 }`}
               >
@@ -1456,7 +1458,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
             {onClose && (
               <button
                 onClick={onClose}
-                className="px-6 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold text-xs uppercase tracking-wider font-heading"
+                className="px-6 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20"
               >
                 Close & View Lounge
               </button>

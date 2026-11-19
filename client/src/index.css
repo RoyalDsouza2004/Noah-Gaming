@@ -251,45 +251,20 @@ html:not(.light) svg text[fill="#94a3b8"] {
 
 /* ========================================================================= */
 /* CRITICAL: MOBILE BOTTOM NAVIGATION PRESERVATION SHIELD                   */
-/* Untouched in both light and dark mode: preserves exact original styling   */
+/* Untouched in both light and dark mode: preserves white frosted glass pill */
 /* ========================================================================= */
-html.light #mobile-bottom-nav {
-  background-color: rgba(23, 16, 20, 0.9) !important;
-  border-color: rgba(133, 27, 43, 0.4) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), 0 1px 2px rgba(255, 255, 255, 0.06) inset !important;
-  color: #FFF4E8 !important;
+#mobile-bottom-nav {
+  background-color: color-mix(in oklab, white 65%, transparent) !important;
+  backdrop-filter: blur(22px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 12px 35px -15px rgba(0, 0, 0, 0.22) !important;
 }
-html.light #mobile-bottom-nav nav {
+#mobile-bottom-nav nav {
   background: transparent !important;
 }
-html.light #mobile-bottom-nav button {
+#mobile-bottom-nav button {
   background: transparent !important;
-}
-html.light #mobile-bottom-nav .bg-\[\#851B2B\]\/55 {
-  background-color: rgba(133, 27, 43, 0.55) !important;
-  border-color: rgba(133, 27, 43, 0.7) !important;
-  box-shadow: 0 0 14px rgba(133, 27, 43, 0.45) !important;
-}
-html.light #mobile-bottom-nav .text-white\/75 {
-  color: rgba(255, 255, 255, 0.75) !important;
-}
-html.light #mobile-bottom-nav .text-white\/80 {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-html.light #mobile-bottom-nav .text-\[\#D7FF00\] {
-  color: #D7FF00 !important;
-}
-html.light #mobile-bottom-nav .text-\[\#FFF4E8\] {
-  color: #FFF4E8 !important;
-}
-html.light #mobile-bottom-nav .border-\[\#D7FF00\] {
-  border-color: #D7FF00 !important;
-}
-html.light #mobile-bottom-nav .border-\[\#FFF4E8\]\/50 {
-  border-color: rgba(255, 244, 232, 0.5) !important;
-}
-html.light #mobile-bottom-nav .bg-gradient-to-br {
-  background: linear-gradient(to bottom right, #851B2B, #A51F35) !important;
 }
 
 /* ========================================================================= */
@@ -814,8 +789,8 @@ html.light .membership-plan-card button {
 }
 
 html.light .membership-plan-card button:hover {
-  background: #A51F35 !important;
-  border-color: #A51F35 !important;
+  background: #6E1623 !important;
+  border-color: #6E1623 !important;
   color: #FFFFFF !important;
 }
 
@@ -842,38 +817,38 @@ html.light section .blur-\[140px\] {
   opacity: 0.12 !important;
 }
 
-/* 3. Global Typography & Readability (Excluding Mobile Bottom Nav) */
-html.light .text-white:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-\[\#FFF4E8\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-slate-100:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-slate-200:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-gray-100,
-html.light .text-gray-200 {
+/* 3. Global Typography & Readability (Excluding Mobile Bottom Nav & Primary Action Buttons) */
+html.light .text-white:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\]):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"]):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"]):not(button[class*="from-[#851B2B]"] *):not(button.btn-primary):not(button.btn-primary *):not(button.bg-\[\#D7FF00\]):not(button.bg-\[\#D7FF00\] *),
+html.light .text-\[\#FFF4E8\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\]):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"]):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"]):not(button[class*="from-[#851B2B]"] *):not(button.btn-primary):not(button.btn-primary *):not(button.bg-\[\#D7FF00\]):not(button.bg-\[\#D7FF00\] *),
+html.light .text-slate-100:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *),
+html.light .text-slate-200:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *),
+html.light .text-gray-100:not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *),
+html.light .text-gray-200:not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *) {
   color: #171923 !important;
 }
 
-html.light .text-\[\#C7A5A8\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-slate-300:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-slate-400:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-gray-300,
-html.light .text-gray-400 {
+html.light .text-\[\#C7A5A8\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *),
+html.light .text-slate-300:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *),
+html.light .text-slate-400:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *),
+html.light .text-gray-300:not(button.bg-\[\#851B2B\] *),
+html.light .text-gray-400:not(button.bg-\[\#851B2B\] *) {
   color: #414858 !important;
 }
 
-html.light .text-\[\#D0B9BC\],
-html.light .text-\[\#BCA3A7\],
-html.light .text-slate-500:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-slate-600:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
-html.light .text-gray-500 {
+html.light .text-\[\#D0B9BC\]:not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *),
+html.light .text-\[\#BCA3A7\]:not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *),
+html.light .text-slate-500:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *),
+html.light .text-slate-600:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *),
+html.light .text-gray-500:not(button.bg-\[\#851B2B\] *) {
   color: #626B7A !important;
 }
 
 /* High-contrast brand typography */
-html.light .text-\[\#D7FF00\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *) {
+html.light .text-\[\#D7FF00\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *):not(button.bg-\[\#D7FF00\] *) {
   color: #851B2B !important;
 }
 
-html.light .text-\[\#F5B942\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *) {
+html.light .text-\[\#F5B942\]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(button.bg-\[\#851B2B\] *):not(button[class*="bg-[#851B2B]"] *):not(button[class*="from-[#851B2B]"] *):not(button.bg-\[\#D7FF00\] *) {
   color: #855000 !important;
 }
 
@@ -897,41 +872,192 @@ html.light .gaming-glow-burgundy {
 }
 
 /* 4. Buttons & Primary Controls */
-/* Primary Brand CTA buttons */
-html.light button.bg-\[\#D7FF00\]:not(#mobile-bottom-nav),
-html.light a.bg-\[\#D7FF00\],
-html.light .bg-\[\#D7FF00\]:not(#mobile-bottom-nav) {
+/* NOAH GAMING Primary Burgundy Button System (Root Cause Enforcement) */
+/* Applicable across both Light Mode & Dark Mode, Desktop & Mobile          */
+
+/* Base Primary Action Button Surface & Typography */
+button.bg-\[\#851B2B\],
+button[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]):not(#mobile-bottom-nav *),
+button[class*="from-[#851B2B]"]:not(#mobile-bottom-nav *),
+button[class*="bg-noah-burgundy"]:not(#mobile-bottom-nav *),
+button.btn-primary:not(#mobile-bottom-nav *),
+a.bg-\[\#851B2B\],
+a[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]):not(#mobile-bottom-nav *),
+a[class*="from-[#851B2B]"]:not(#mobile-bottom-nav *),
+a[class*="bg-noah-burgundy"]:not(#mobile-bottom-nav *),
+a.btn-primary:not(#mobile-bottom-nav *),
+[role="button"][class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]):not(#mobile-bottom-nav *),
+[role="button"][class*="from-[#851B2B]"]:not(#mobile-bottom-nav *),
+[role="button"].btn-primary:not(#mobile-bottom-nav *),
+html.light button.bg-\[\#D7FF00\]:not(#mobile-bottom-nav *),
+html.light a.bg-\[\#D7FF00\]:not(#mobile-bottom-nav *),
+html.light [role="button"].bg-\[\#D7FF00\]:not(#mobile-bottom-nav *) {
   background-color: #851B2B !important;
   color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
   border-color: #851B2B !important;
 }
 
-html.light button.bg-\[\#D7FF00\]:hover,
-html.light a.bg-\[\#D7FF00\]:hover {
-  background-color: #A51F35 !important;
-}
-
-html.light button.bg-\[\#851B2B\],
-html.light a.bg-\[\#851B2B\],
-html.light .bg-\[\#851B2B\] {
-  background-color: #851B2B !important;
-  color: #FFFFFF !important;
-}
-
-html.light button.bg-\[\#851B2B\]:hover,
-html.light a.bg-\[\#851B2B\]:hover {
-  background-color: #A51F35 !important;
-}
-
-/* Always keep white text inside brand buttons */
+/* Ensure ALL text nodes & child elements inside primary buttons stay white */
+button.bg-\[\#851B2B\] *,
+button[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]) *:not(#mobile-bottom-nav *),
+button[class*="from-[#851B2B]"] *:not(#mobile-bottom-nav *),
+button[class*="bg-noah-burgundy"] *:not(#mobile-bottom-nav *),
+button.btn-primary *:not(#mobile-bottom-nav *),
+a.bg-\[\#851B2B\] *,
+a[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]) *:not(#mobile-bottom-nav *),
+a[class*="from-[#851B2B]"] *:not(#mobile-bottom-nav *),
+a[class*="bg-noah-burgundy"] *:not(#mobile-bottom-nav *),
+a.btn-primary *:not(#mobile-bottom-nav *),
+[role="button"][class*="bg-[#851B2B]"] *:not(#mobile-bottom-nav *),
+[role="button"][class*="from-[#851B2B]"] *:not(#mobile-bottom-nav *),
+[role="button"].btn-primary *:not(#mobile-bottom-nav *),
 html.light button.bg-\[\#D7FF00\] *:not(#mobile-bottom-nav *),
-html.light a.bg-\[\#D7FF00\] *,
-html.light button.bg-\[\#851B2B\] *,
-html.light a.bg-\[\#851B2B\] *,
-html.light button[class*="from-[#851B2B]"] *,
-html.light a[class*="from-[#851B2B]"] *,
-html.light [class*="bg-gradient-to-r from-[#851B2B]"] * {
+html.light a.bg-\[\#D7FF00\] *:not(#mobile-bottom-nav *),
+html.light [role="button"].bg-\[\#D7FF00\] *:not(#mobile-bottom-nav *) {
   color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+}
+
+/* Ensure ALL SVG icons & paths inside primary buttons stay crisp white */
+button.bg-\[\#851B2B\] svg,
+button.bg-\[\#851B2B\] svg *,
+button[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]) svg,
+button[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]) svg *,
+button[class*="from-[#851B2B]"] svg,
+button[class*="from-[#851B2B]"] svg *,
+button[class*="bg-noah-burgundy"] svg,
+button[class*="bg-noah-burgundy"] svg *,
+button.btn-primary svg,
+button.btn-primary svg *,
+a.bg-\[\#851B2B\] svg,
+a.bg-\[\#851B2B\] svg *,
+a[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]) svg,
+a[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]) svg *,
+a[class*="from-[#851B2B]"] svg,
+a[class*="from-[#851B2B]"] svg *,
+a[class*="bg-noah-burgundy"] svg,
+a[class*="bg-noah-burgundy"] svg *,
+a.btn-primary svg,
+a.btn-primary svg *,
+[role="button"][class*="bg-[#851B2B]"] svg,
+[role="button"][class*="bg-[#851B2B]"] svg *,
+[role="button"][class*="from-[#851B2B]"] svg,
+[role="button"][class*="from-[#851B2B]"] svg *,
+[role="button"].btn-primary svg,
+[role="button"].btn-primary svg *,
+html.light button.bg-\[\#D7FF00\] svg,
+html.light button.bg-\[\#D7FF00\] svg *,
+html.light a.bg-\[\#D7FF00\] svg,
+html.light a.bg-\[\#D7FF00\] svg *,
+html.light [role="button"].bg-\[\#D7FF00\] svg,
+html.light [role="button"].bg-\[\#D7FF00\] svg * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Hover State: Slightly darker burgundy background (#6E1623) with white text & icons */
+button.bg-\[\#851B2B\]:hover,
+button[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]):hover,
+button[class*="from-[#851B2B]"]:hover,
+button[class*="bg-noah-burgundy"]:hover,
+button.btn-primary:hover,
+a.bg-\[\#851B2B\]:hover,
+a[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]):hover,
+a[class*="from-[#851B2B]"]:hover,
+a[class*="bg-noah-burgundy"]:hover,
+a.btn-primary:hover,
+[role="button"][class*="bg-[#851B2B]"]:hover,
+[role="button"][class*="from-[#851B2B]"]:hover,
+[role="button"].btn-primary:hover,
+html.light button.bg-\[\#D7FF00\]:hover,
+html.light a.bg-\[\#D7FF00\]:hover,
+html.light [role="button"].bg-\[\#D7FF00\]:hover {
+  background-color: #6E1623 !important;
+  border-color: #6E1623 !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+}
+
+/* Active and pressed states: maintain white text and icons (#5E121E) */
+button.bg-\[\#851B2B\]:active,
+button[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]):active,
+button[class*="from-[#851B2B]"]:active,
+button[class*="bg-noah-burgundy"]:active,
+button.btn-primary:active,
+a.bg-\[\#851B2B\]:active,
+a[class*="bg-[#851B2B]"]:not([class*="bg-[#851B2B]/10"]):not([class*="bg-[#851B2B]/15"]):not([class*="bg-[#851B2B]/20"]):not([class*="bg-[#851B2B]/25"]):not([class*="bg-[#851B2B]/30"]):not([class*="bg-[#851B2B]/35"]):not([class*="bg-[#851B2B]/40"]):active,
+a[class*="from-[#851B2B]"]:active,
+a[class*="bg-noah-burgundy"]:active,
+a.btn-primary:active,
+[role="button"][class*="bg-[#851B2B]"]:active,
+[role="button"][class*="from-[#851B2B]"]:active,
+[role="button"].btn-primary:active,
+html.light button.bg-\[\#D7FF00\]:active,
+html.light a.bg-\[\#D7FF00\]:active,
+html.light [role="button"].bg-\[\#D7FF00\]:active {
+  background-color: #5E121E !important;
+  border-color: #5E121E !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+}
+
+/* Disabled state: appropriately muted text and background with readable contrast */
+button.bg-\[\#851B2B\]:disabled,
+button.bg-\[\#851B2B\][disabled],
+button.bg-\[\#851B2B\].disabled,
+button[class*="bg-[#851B2B]"]:disabled,
+button[class*="bg-[#851B2B]"][disabled],
+button[class*="from-[#851B2B]"]:disabled,
+button[class*="from-[#851B2B]"][disabled],
+button.btn-primary:disabled,
+button.btn-primary[disabled],
+html.light button.bg-\[\#D7FF00\]:disabled,
+html.light button.bg-\[\#D7FF00\][disabled] {
+  background-color: rgba(133, 27, 43, 0.45) !important;
+  border-color: rgba(133, 27, 43, 0.3) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.75) !important;
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+}
+
+button.bg-\[\#851B2B\]:disabled *,
+button.bg-\[\#851B2B\][disabled] *,
+button[class*="bg-[#851B2B]"]:disabled *,
+button[class*="bg-[#851B2B]"][disabled] *,
+button[class*="from-[#851B2B]"]:disabled *,
+button[class*="from-[#851B2B]"][disabled] *,
+button.btn-primary:disabled *,
+button.btn-primary[disabled] *,
+html.light button.bg-\[\#D7FF00\]:disabled *,
+html.light button.bg-\[\#D7FF00\][disabled] * {
+  color: rgba(255, 255, 255, 0.75) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.75) !important;
+}
+
+button.bg-\[\#851B2B\]:disabled svg,
+button.bg-\[\#851B2B\]:disabled svg *,
+button.bg-\[\#851B2B\][disabled] svg,
+button.bg-\[\#851B2B\][disabled] svg *,
+button[class*="bg-[#851B2B]"]:disabled svg,
+button[class*="bg-[#851B2B]"]:disabled svg *,
+button[class*="bg-[#851B2B]"][disabled] svg,
+button[class*="bg-[#851B2B]"][disabled] svg *,
+button[class*="from-[#851B2B]"]:disabled svg,
+button[class*="from-[#851B2B]"]:disabled svg *,
+button[class*="from-[#851B2B]"][disabled] svg,
+button[class*="from-[#851B2B]"][disabled] svg *,
+button.btn-primary:disabled svg,
+button.btn-primary:disabled svg *,
+button.btn-primary[disabled] svg,
+button.btn-primary[disabled] svg *,
+html.light button.bg-\[\#D7FF00\]:disabled svg,
+html.light button.bg-\[\#D7FF00\]:disabled svg *,
+html.light button.bg-\[\#D7FF00\][disabled] svg,
+html.light button.bg-\[\#D7FF00\][disabled] svg * {
+  color: rgba(255, 255, 255, 0.75) !important;
+  stroke: rgba(255, 255, 255, 0.75) !important;
 }
 
 /* Secondary / Neutral button surfaces */

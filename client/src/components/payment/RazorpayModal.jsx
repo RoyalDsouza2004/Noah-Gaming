@@ -337,10 +337,10 @@ export const RazorpayModal = ({
                 type="button"
                 onClick={handlePay}
                 disabled={processing}
-                className="w-full py-3.5 rounded-xl bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-black font-heading text-sm uppercase tracking-wider shadow-lg shadow-[#D7FF00]/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                className="w-full py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-black font-heading text-sm uppercase tracking-wider shadow-lg shadow-[#851B2B]/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
-                <Lock className="w-4 h-4" />
-                Pay ₹{order.amountInRupees || (order.amount ? order.amount / 100 : 0)} (Test Mode)
+                <Lock className="w-4 h-4 text-white" />
+                <span className="text-white">Pay ₹{order.amountInRupees || (order.amount ? order.amount / 100 : 0)} (Test Mode)</span>
               </button>
 
               <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 font-mono">

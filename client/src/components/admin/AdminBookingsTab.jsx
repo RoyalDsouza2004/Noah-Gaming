@@ -311,9 +311,9 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
           </button>
           <button
             onClick={() => setWalkinModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r bg-[#D7FF00] hover:bg-[#cbf200] text-slate-950 font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20 transition-all"
           >
-            <Plus className="w-4 h-4" /> New Walk-In Booking
+            <Plus className="w-4 h-4 text-white" /> <span className="text-white">New Walk-In Booking</span>
           </button>
           <button
             onClick={fetchBookings}
@@ -430,7 +430,7 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
 
           <button
             type="submit"
-            className="px-4 py-2 bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold text-xs uppercase rounded-lg font-heading"
+            className="px-4 py-2 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase rounded-lg font-heading shadow-md shadow-[#851B2B]/20"
           >
             Filter
           </button>
@@ -904,9 +904,9 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
                 <button
                   type="submit"
                   disabled={walkinSubmitting}
-                  className="px-5 py-2 bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold rounded-lg font-heading flex items-center gap-1.5"
+                  className="px-5 py-2 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold rounded-lg font-heading shadow-md shadow-[#851B2B]/20 flex items-center gap-1.5"
                 >
-                  {walkinSubmitting ? 'Confirming Slot...' : 'Confirm Walk-In'}
+                  <span className="text-white">{walkinSubmitting ? 'Confirming Slot...' : 'Confirm Walk-In'}</span>
                 </button>
               </div>
             </form>

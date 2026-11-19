@@ -125,10 +125,10 @@ export const HomePage = ({
           <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
             <button
               onClick={() => onOpenBooking && onOpenBooking(null)}
-              className="px-7 py-3.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black font-heading text-sm shadow-xl shadow-[#D7FF00]/25 transition-all flex items-center gap-2 hover:scale-[1.03] active:scale-[0.98]"
+              className="px-7 py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-black font-heading text-sm shadow-xl shadow-[#851B2B]/25 transition-all flex items-center gap-2 hover:scale-[1.03] active:scale-[0.98]"
             >
-              <Gamepad2 className="w-5 h-5 text-[#171014]" />
-              Book a Gaming Session <ArrowRight className="w-4 h-4" />
+              <Gamepad2 className="w-5 h-5 text-white" />
+              <span className="text-white">Book a Gaming Session</span> <ArrowRight className="w-4 h-4 text-white" />
             </button>
 
             <button
@@ -237,9 +237,9 @@ export const HomePage = ({
 
           <button
             onClick={() => onOpenBooking && onOpenBooking(null)}
-            className="self-start sm:self-center px-4 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#A51F35] text-[#FFF4E8] font-bold text-xs uppercase tracking-wider font-heading flex items-center gap-2 shadow-md shadow-[#851B2B]/30"
+            className="self-start sm:self-center px-4 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading flex items-center gap-2 shadow-md shadow-[#851B2B]/30"
           >
-            <Gamepad2 className="w-4 h-4 text-[#D7FF00]" /> Check Slot Availability
+            <Gamepad2 className="w-4 h-4 text-white" /> <span className="text-white">Check Slot Availability</span>
           </button>
         </div>
 
@@ -312,9 +312,9 @@ export const HomePage = ({
                     <button
                       type="button"
                       onClick={() => onOpenBooking && onOpenBooking(device)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-[#851B2B] hover:bg-[#A51F35] text-[#FFF4E8] border border-[#851B2B] text-xs font-bold font-heading uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#851B2B]/25"
+                      className="w-full py-2.5 px-3 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white border border-[#851B2B] text-xs font-bold font-heading uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#851B2B]/25"
                     >
-                      <Gamepad2 className="w-3.5 h-3.5 text-[#D7FF00]" /> Reserve This Station
+                      <Gamepad2 className="w-3.5 h-3.5 text-white" /> <span className="text-white">Reserve This Station</span>
                     </button>
                   ) : (
                     <button
@@ -365,9 +365,9 @@ export const HomePage = ({
             {gta6Game?.status === 'ACTIVE' ? (
               <button
                 onClick={() => onOpenBooking && onOpenBooking(devices[0])}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#A51F35] text-[#FFF4E8] font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-[#851B2B]/30 transition-all flex items-center justify-center gap-2 border border-[#851B2B]"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-[#851B2B]/30 transition-all flex items-center justify-center gap-2 border border-[#851B2B]"
               >
-                <Flame className="w-4 h-4 text-[#F5B942]" /> Book GTA 6 Suite
+                <Flame className="w-4 h-4 text-white" /> <span className="text-white">Book GTA 6 Suite</span>
               </button>
             ) : (
               <div className="px-5 py-3 rounded-xl bg-[#171014] border border-[#49202C] text-xs font-semibold text-[#C7A5A8] uppercase tracking-wider text-center">
@@ -516,7 +516,7 @@ export const HomePage = ({
             </div>
             <button
               onClick={() => onOpenBooking && onOpenBooking(devices[0])}
-              className="w-full py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black text-xs uppercase tracking-wider font-heading shadow-md shadow-[#D7FF00]/20"
+              className="w-full py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20"
             >
               Reserve GTA 6 Suite
             </button>
@@ -603,13 +603,9 @@ export const HomePage = ({
 
                 <button
                   onClick={() => onOpenMembershipPlans && onOpenMembershipPlans()}
-                  className={`mt-6 w-full py-2.5 px-3 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                    isVip
-                      ? 'bg-[#F5B942] hover:bg-[#e5aa35] text-[#171014] shadow-md shadow-[#F5B942]/20 font-black'
-                      : 'bg-[#851B2B] hover:bg-[#A51F35] text-[#FFF4E8] border border-[#851B2B]'
-                  }`}
+                  className="mt-6 w-full py-2.5 px-3 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white border border-[#851B2B] shadow-md shadow-[#851B2B]/20"
                 >
-                  <Crown className="w-3.5 h-3.5" /> Get This Pass
+                  <Crown className="w-3.5 h-3.5 text-white" /> <span className="text-white">Get This Pass</span>
                 </button>
               </div>
             );

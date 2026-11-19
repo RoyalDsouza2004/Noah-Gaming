@@ -1732,15 +1732,15 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                 <button
                   type="submit"
                   disabled={walkInSubmitting || !walkInSelectedCustomer || !walkInSelectedDevice}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold font-heading uppercase tracking-wider bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] transition-all shadow-lg shadow-[#851B2B]/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold font-heading uppercase tracking-wider bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white transition-all shadow-lg shadow-[#851B2B]/20 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {walkInSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Processing Walk-In...
+                      <Loader2 className="w-4 h-4 animate-spin text-white" /> <span className="text-white">Processing Walk-In...</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4" /> Confirm Walk-In & Start Session
+                      <CheckCircle2 className="w-4 h-4 text-white" /> <span className="text-white">Confirm Walk-In & Start Session</span>
                     </>
                   )}
                 </button>

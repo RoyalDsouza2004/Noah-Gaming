@@ -95,7 +95,7 @@ export const ConfirmModal = ({
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg disabled:opacity-50 flex items-center gap-2 ${
               isDanger
                 ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/30'
-                : 'bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] shadow-[#D7FF00]/20'
+                : 'bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white shadow-[#851B2B]/20'
             }`}
           >
             {isLoading ? 'Processing...' : confirmText}

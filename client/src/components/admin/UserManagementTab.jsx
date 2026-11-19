@@ -1442,15 +1442,15 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                 <button
                   type="submit"
                   disabled={submittingConvert || convertOtp.length !== 6 || !convertPassword}
-                  className="px-5 py-2.5 rounded-xl font-bold font-heading uppercase tracking-wider bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] transition-all shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl font-bold font-heading uppercase tracking-wider bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white transition-all shadow-lg shadow-[#851B2B]/20 flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {submittingConvert ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying...
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> <span className="text-white">Verifying...</span>
                     </>
                   ) : (
                     <>
-                      <UserCheck className="w-4 h-4" /> Complete Conversion
+                      <UserCheck className="w-4 h-4 text-white" /> <span className="text-white">Complete Conversion</span>
                     </>
                   )}
                 </button>

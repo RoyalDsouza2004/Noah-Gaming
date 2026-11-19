@@ -785,7 +785,7 @@ export const AdminMembershipsTab = () => {
 
               <button
                 onClick={fetchAllData}
-                className="px-3 py-2 bg-[#D7FF00] text-[#171014] font-bold rounded-xl text-xs font-heading"
+                className="px-3 py-2 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold rounded-xl text-xs font-heading shadow-md shadow-[#851B2B]/20"
               >
                 Filter
               </button>
@@ -926,12 +926,12 @@ export const AdminMembershipsTab = () => {
                       type="button"
                       onClick={() => handleSearchCustomersForOffline()}
                       disabled={offlineCustomerSearching}
-                      className="px-4 py-2 bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold rounded-xl font-heading text-xs uppercase flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-4 py-2 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold rounded-xl font-heading text-xs uppercase flex items-center gap-1.5 shadow-md shadow-[#851B2B]/20 disabled:opacity-50"
                     >
                       {offlineCustomerSearching ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                       ) : (
-                        <Search className="w-3.5 h-3.5" />
+                        <Search className="w-3.5 h-3.5 text-white" />
                       )}
                       <span>Search</span>
                     </button>

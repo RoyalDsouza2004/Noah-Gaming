@@ -355,18 +355,12 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
                           handleStartPurchase(plan);
                         }}
                         disabled={processing}
-                        className={`w-full py-2.5 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                          isVIP
-                            ? 'bg-gradient-to-r from-[#851B2B] to-[#A51F35] hover:brightness-110 text-white shadow-md shadow-[#851B2B]/20'
-                            : isUnlim
-                            ? 'bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] shadow-md shadow-[#D7FF00]/20'
-                            : 'bg-[#260D17] hover:bg-[#851B2B]/40 text-[#FFF4E8] border border-[#49202C]'
-                        }`}
+                        className="w-full py-2.5 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white shadow-md shadow-[#851B2B]/20"
                       >
                         {processing && selectedPlan?._id === plan._id ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-[#D7FF00]" />
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
                         ) : (
-                          'Get Membership'
+                          <span className="text-white">Get Membership</span>
                         )}
                       </button>
                     </div>

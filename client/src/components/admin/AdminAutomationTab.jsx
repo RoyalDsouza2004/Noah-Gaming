@@ -168,14 +168,14 @@ export const AdminAutomationTab = () => {
             type="button"
             onClick={handleTriggerCycle}
             disabled={triggering}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D7FF00] text-[#171014] font-bold text-xs shadow-lg shadow-[#851B2B]/20 hover:bg-[#cbf200] transition-all font-heading disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs shadow-lg shadow-[#851B2B]/20 transition-all font-heading disabled:opacity-50"
           >
             {triggering ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
+              <RefreshCw className="w-4 h-4 animate-spin text-white" />
             ) : (
-              <Play className="w-4 h-4" />
+              <Play className="w-4 h-4 text-white" />
             )}
-            Run Automation Cycle Now
+            <span className="text-white">Run Automation Cycle Now</span>
           </button>
         </div>
       </div>
@@ -318,10 +318,10 @@ export const AdminAutomationTab = () => {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#D7FF00] text-[#171014] font-bold text-xs shadow-lg shadow-[#D7FF00]/20 hover:bg-[#cbf200] transition-all font-heading disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs shadow-lg shadow-[#851B2B]/20 transition-all font-heading disabled:opacity-50"
           >
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            Save Automation Settings
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : <CheckCircle2 className="w-4 h-4 text-white" />}
+            <span className="text-white">Save Automation Settings</span>
           </button>
         </div>
       </form>

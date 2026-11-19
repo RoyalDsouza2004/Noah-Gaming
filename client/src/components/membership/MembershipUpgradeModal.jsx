@@ -241,7 +241,7 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
               </p>
               <button
                 onClick={onClose}
-                className="mt-4 px-5 py-2.5 bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider rounded-xl"
+                className="mt-4 px-5 py-2.5 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold font-heading text-xs uppercase tracking-wider rounded-xl shadow-md shadow-[#851B2B]/20"
               >
                 Return to Dashboard
               </button>
