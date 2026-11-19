@@ -19,6 +19,7 @@ export const Navbar = ({
   onOpenReceptionistDashboard,
   onOpenAdminDashboard,
   onOpenNotifications,
+  onOpenProfile,
   unreadCount = 0,
   activeNav = 'home',
 }) => {
@@ -58,7 +59,7 @@ export const Navbar = ({
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 md:left-64 h-16 z-30 bg-[#171014]/95 backdrop-blur-md border-b border-[#49202C]">
+    <header className="fixed top-0 right-0 left-0 md:left-64 h-16 z-30 bg-white/95 dark:bg-[#171014]/95 backdrop-blur-md border-b border-[#E2E5EC] dark:border-[#49202C] transition-colors duration-200">
       <div className="w-full h-full px-3 sm:px-6 flex items-center justify-between gap-3">
         {/* ========================================================= */}
         {/* LEFT: Mobile Logo (Mobile only) or Active Section (Desktop) */}
@@ -71,19 +72,19 @@ export const Navbar = ({
             className="flex md:hidden items-center gap-2 group shrink-0 focus:outline-none"
             title="NOAH GAMING Home"
           >
-            <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-0.5 shrink-0 overflow-hidden">
+            <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-white dark:bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/20 border border-[#851B2B]/40 p-0.5 shrink-0 overflow-hidden">
               <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
             </div>
             <div className="flex flex-col justify-center leading-none">
               <div className="flex items-center gap-1 leading-tight">
-                <span className="text-xs xs:text-sm font-black tracking-wider text-[#FFF4E8] font-heading">
+                <span className="text-xs xs:text-sm font-black tracking-wider text-[#171923] dark:text-[#FFF4E8] font-heading">
                   NOAH
                 </span>
-                <span className="text-xs xs:text-sm font-black tracking-wider text-[#D7FF00] font-heading">
+                <span className="text-xs xs:text-sm font-black tracking-wider text-[#851B2B] dark:text-[#D7FF00] font-heading">
                   GAMING
                 </span>
               </div>
-              <span className="hidden xs:block text-[8px] font-bold text-[#C7A5A8] tracking-widest uppercase mt-0.5">
+              <span className="hidden xs:block text-[8px] font-bold text-[#626B7A] dark:text-[#C7A5A8] tracking-widest uppercase mt-0.5">
                 {isAdmin ? 'ADMIN' : isReceptionist ? 'FRONT DESK' : 'LOUNGE'}
               </span>
             </div>
@@ -91,11 +92,11 @@ export const Navbar = ({
 
           {/* Desktop Active Section / Lounge Status indicator */}
           <div className="hidden md:flex items-center gap-2.5 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-[#45C987] shadow-sm shadow-[#45C987]/50 animate-pulse shrink-0" />
-            <h1 className="text-xs lg:text-sm font-bold font-heading text-[#FFF4E8] tracking-wide truncate">
+            <span className="w-2 h-2 rounded-full bg-[#176B3A] dark:bg-[#45C987] shadow-sm shadow-[#45C987]/50 animate-pulse shrink-0" />
+            <h1 className="text-xs lg:text-sm font-bold font-heading text-[#171923] dark:text-[#FFF4E8] tracking-wide truncate">
               {getPageTitle(activeNav)}
             </h1>
-            <span className="hidden xl:inline-block text-[10px] px-2 py-0.5 rounded-full bg-[#260D17] border border-[#49202C] text-[#C7A5A8] font-mono">
+            <span className="hidden xl:inline-block text-[10px] px-2 py-0.5 rounded-full bg-[#F0F2F6] dark:bg-[#260D17] border border-[#E2E5EC] dark:border-[#49202C] text-[#414858] dark:text-[#C7A5A8] font-mono">
               {(() => {
                 const todayHours = operatingStatus?.todaySchedule || operatingStatus?.today;
                 if (!todayHours?.openTime || !todayHours?.closeTime) return 'Open 10 AM – 11 PM';
@@ -115,17 +116,17 @@ export const Navbar = ({
         {/* RIGHT: Actions: Notifications (mobile), Book, POS, Login  */}
         {/* ========================================================= */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* 1. Mobile Top-Right Notification Bell (Strict Part 7.1 B Rule) */}
+          {/* 1. Mobile Top-Right Notification Bell */}
           <button
             type="button"
             onClick={onOpenNotifications}
-            className="flex md:hidden relative h-9 w-9 items-center justify-center rounded-xl bg-[#260D17] hover:bg-[#381322] border border-[#49202C] text-[#C7A5A8] hover:text-[#D7FF00] transition-colors shrink-0"
+            className="flex md:hidden relative h-9 w-9 items-center justify-center rounded-xl bg-white dark:bg-[#260D17] hover:bg-[#F1F3F7] dark:hover:bg-[#381322] border border-[#E2E5EC] dark:border-[#49202C] text-[#414858] dark:text-[#C7A5A8] hover:text-[#851B2B] dark:hover:text-[#D7FF00] shadow-sm transition-colors shrink-0"
             title="Open Notification Center"
             aria-label="Notifications"
           >
-            <Bell className="w-4 h-4 text-[#FFF4E8]" />
+            <Bell className="w-4 h-4 text-current" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#D7FF00] text-[#171014] text-[9px] font-black font-mono flex items-center justify-center shadow-sm animate-pulse">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#851B2B] dark:bg-[#D7FF00] text-white dark:text-[#171014] text-[9px] font-black font-mono flex items-center justify-center shadow-sm animate-pulse">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -136,11 +137,11 @@ export const Navbar = ({
             <button
               type="button"
               onClick={triggerInstall}
-              className="hidden sm:flex h-9 px-2 sm:px-2.5 rounded-xl border border-[#49202C] bg-[#260D17] hover:bg-[#381322] text-xs font-semibold text-[#C7A5A8] hover:text-[#FFF4E8] transition-all items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-sm shrink-0 active:scale-95"
+              className="hidden sm:flex h-9 px-2 sm:px-2.5 rounded-xl border border-[#E2E5EC] dark:border-[#49202C] bg-white dark:bg-[#260D17] hover:bg-[#F1F3F7] dark:hover:bg-[#381322] text-xs font-semibold text-[#414858] dark:text-[#C7A5A8] hover:text-[#171923] dark:hover:text-[#FFF4E8] transition-all items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-sm shrink-0 active:scale-95"
               title="Install NOAH GAMING App to your device"
               aria-label="Install App"
             >
-              <Download className="w-3.5 h-3.5 text-[#D7FF00] shrink-0" />
+              <Download className="w-3.5 h-3.5 text-[#851B2B] dark:text-[#D7FF00] shrink-0" />
               <span className="text-[11px] sm:text-xs font-semibold">Install</span>
             </button>
           )}
@@ -169,10 +170,10 @@ export const Navbar = ({
                 touchAction: 'manipulation',
                 outline: 'none',
               }}
-              className="flex h-9 px-2 sm:px-3 rounded-xl bg-[#851B2B]/35 hover:bg-[#851B2B]/50 border border-[#851B2B] text-xs font-bold text-[#FFF4E8] transition-all items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-sm shadow-[#851B2B]/20 shrink-0 active:scale-95 outline-none focus:outline-none"
+              className="flex h-9 px-2 sm:px-3 rounded-xl bg-[#851B2B]/15 dark:bg-[#851B2B]/35 hover:bg-[#851B2B]/25 dark:hover:bg-[#851B2B]/50 border border-[#851B2B]/40 dark:border-[#851B2B] text-xs font-bold text-[#851B2B] dark:text-[#FFF4E8] transition-all items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-sm shrink-0 active:scale-95 outline-none focus:outline-none"
               title="Open Front Desk Reception POS & Live Sessions"
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#F5B942] shrink-0" />
+              <Sparkles className="w-3.5 h-3.5 text-[#851B2B] dark:text-[#F5B942] shrink-0" />
               <span className="hidden xs:inline">Front Desk POS</span>
               <span className="xs:hidden">POS</span>
             </button>
@@ -183,7 +184,7 @@ export const Navbar = ({
             <button
               type="button"
               onClick={onOpenAdminDashboard}
-              className="hidden lg:flex h-9 px-2.5 sm:px-3 rounded-xl bg-[#F5B942]/15 hover:bg-[#F5B942]/25 border border-[#F5B942]/40 text-xs font-bold text-[#F5B942] transition-colors items-center gap-1.5 whitespace-nowrap shadow-sm shrink-0"
+              className="hidden lg:flex h-9 px-2.5 sm:px-3 rounded-xl bg-[#855000]/10 dark:bg-[#F5B942]/15 hover:bg-[#855000]/20 dark:hover:bg-[#F5B942]/25 border border-[#855000]/30 dark:border-[#F5B942]/40 text-xs font-bold text-[#855000] dark:text-[#F5B942] transition-colors items-center gap-1.5 whitespace-nowrap shadow-sm shrink-0"
               title="Open Lounge Administrator Management Suite"
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
@@ -191,13 +192,37 @@ export const Navbar = ({
             </button>
           )}
 
-          {/* 6. Logout / Login */}
+          {/* 6. Profile Icon & Settings Shortcut (Authenticated) */}
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={onOpenProfile || (() => { window.location.hash = '#profile'; })}
+              title="Open Player Profile & Theme Settings"
+              className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-[#260D17] hover:bg-[#F1F3F7] dark:hover:bg-[#381322] border border-[#E2E5EC] dark:border-[#49202C] text-[#414858] dark:text-[#C7A5A8] hover:text-[#851B2B] dark:hover:text-[#FFF4E8] shadow-sm transition-all shrink-0 overflow-hidden active:scale-95"
+              aria-label="Player Profile & Settings"
+            >
+              {user?.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt={user.name || 'Profile'}
+                  className="w-full h-full object-cover rounded-xl"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <User className="w-4 h-4 text-current" />
+              )}
+            </button>
+          )}
+
+          {/* 7. Logout / Login */}
           {isAuthenticated ? (
             <button
               type="button"
               onClick={logout}
               title="Log out of session"
-              className="h-9 w-9 rounded-xl flex items-center justify-center bg-[#260D17] hover:bg-[#851B2B]/30 border border-[#49202C] text-[#C7A5A8] hover:text-[#F06A76] transition-colors shrink-0"
+              className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-[#260D17] hover:bg-rose-50 dark:hover:bg-[#851B2B]/30 border border-[#E2E5EC] dark:border-[#49202C] text-[#626B7A] dark:text-[#C7A5A8] hover:text-rose-600 dark:hover:text-[#F06A76] shadow-sm transition-all shrink-0 active:scale-95"
               aria-label="Log Out"
             >
               <LogOut className="w-4 h-4" />
@@ -207,14 +232,14 @@ export const Navbar = ({
               <button
                 type="button"
                 onClick={openLoginModal}
-                className="h-9 px-2.5 sm:px-3 text-xs font-semibold text-[#FFF4E8] hover:bg-[#260D17] rounded-xl transition-colors whitespace-nowrap shrink-0"
+                className="h-9 px-2.5 sm:px-3 text-xs font-semibold text-[#171923] dark:text-[#FFF4E8] hover:bg-[#F1F3F7] dark:hover:bg-[#260D17] rounded-xl transition-colors whitespace-nowrap shrink-0"
               >
                 Log In
               </button>
               <button
                 type="button"
                 onClick={openRegisterModal}
-                className="hidden sm:inline-flex h-9 px-3 sm:px-3.5 text-xs font-bold bg-[#851B2B] hover:bg-[#A51F35] text-[#FFF4E8] rounded-xl font-heading shadow-md shadow-[#851B2B]/25 transition-all whitespace-nowrap items-center justify-center shrink-0"
+                className="hidden sm:inline-flex h-9 px-3 sm:px-3.5 text-xs font-bold bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white rounded-xl font-heading shadow-md shadow-[#851B2B]/25 transition-all whitespace-nowrap items-center justify-center shrink-0"
               >
                 Register
               </button>

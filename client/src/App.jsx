@@ -533,6 +533,7 @@ function AppContent() {
           onOpenReceptionistDashboard={() => handleOpenReceptionistDashboard('live')}
           onOpenAdminDashboard={() => handleOpenAdminDashboard('overview')}
           onOpenNotifications={() => handleNavigate('notifications')}
+          onOpenProfile={() => handleNavigate('profile')}
           unreadCount={unreadCount}
           activeNav={activeNav}
         />
