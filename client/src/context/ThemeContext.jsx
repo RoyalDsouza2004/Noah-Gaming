@@ -1,21 +1,39 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const ThemeContext = createContext(null);
 
 export const THEME_STORAGE_KEY = 'noah_theme';
 
+const getSystemTheme = () => {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'dark';
+};
+
+const resolveTheme = (pref) => {
+  if (pref === 'system') {
+    return getSystemTheme();
+  }
+  return pref === 'light' ? 'light' : 'dark';
+};
+
 export const ThemeProvider = ({ children }) => {
-  const [theme, setThemeState] = useState(() => {
+  // 1. Initial preference: light, dark, or system (defaults to 'system' if not set)
+  const [themePreference, setPreferenceState] = useState(() => {
     try {
       const saved = localStorage.getItem(THEME_STORAGE_KEY);
-      if (saved === 'light' || saved === 'dark') {
+      if (saved === 'light' || saved === 'dark' || saved === 'system') {
         return saved;
       }
     } catch (e) {}
-    return 'dark'; // Dark mode is default
+    return 'system'; // System default for new users or if no preference is saved
   });
 
-  const applyTheme = (newTheme, withTransition = false) => {
+  // 2. Active resolved theme ('light' or 'dark')
+  const [resolvedTheme, setResolvedTheme] = useState(() => resolveTheme(themePreference));
+
+  const applyTheme = useCallback((newTheme, withTransition = false) => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
@@ -44,40 +62,74 @@ export const ThemeProvider = ({ children }) => {
         root.classList.remove('theme-transition');
       }, 250);
     }
+  }, []);
+
+  // Sync DOM on mount and when resolved theme changes
+  useEffect(() => {
+    applyTheme(resolvedTheme, false);
+  }, [resolvedTheme, applyTheme]);
+
+  // Listen to OS prefers-color-scheme when preference is 'system'
+  useEffect(() => {
+    if (themePreference !== 'system') return;
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const handleChange = (e) => {
+      const newSystemTheme = e.matches ? 'dark' : 'light';
+      setResolvedTheme(newSystemTheme);
+      applyTheme(newSystemTheme, true);
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleChange);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else if (mediaQuery.removeListener) {
+        mediaQuery.removeListener(handleChange);
+      }
+    };
+  }, [themePreference, applyTheme]);
+
+  const setThemePreference = (newPref) => {
+    if (newPref !== 'light' && newPref !== 'dark' && newPref !== 'system') return;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, newPref);
+    } catch (e) {}
+    setPreferenceState(newPref);
+    const active = resolveTheme(newPref);
+    setResolvedTheme(active);
+    applyTheme(active, true);
   };
 
-  useEffect(() => {
-    applyTheme(theme, false);
-  }, [theme]);
+  const setTheme = (prefOrTheme) => {
+    setThemePreference(prefOrTheme);
+  };
 
   const toggleTheme = () => {
-    setThemeState((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      try {
-        localStorage.setItem(THEME_STORAGE_KEY, next);
-      } catch (e) {}
-      applyTheme(next, true);
-      return next;
-    });
-  };
-
-  const setTheme = (newTheme) => {
-    if (newTheme !== 'dark' && newTheme !== 'light') return;
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-    } catch (e) {}
-    applyTheme(newTheme, true);
-    setThemeState(newTheme);
+    // Cycles manually between dark and light
+    const next = resolvedTheme === 'dark' ? 'light' : 'dark';
+    setThemePreference(next);
   };
 
   return (
     <ThemeContext.Provider
       value={{
-        theme,
-        isDark: theme === 'dark',
-        isLight: theme === 'light',
-        toggleTheme,
+        theme: resolvedTheme,
+        resolvedTheme,
+        themePreference,
+        isDark: resolvedTheme === 'dark',
+        isLight: resolvedTheme === 'light',
+        isSystem: themePreference === 'system',
+        setThemePreference,
         setTheme,
+        toggleTheme,
       }}
     >
       {children}

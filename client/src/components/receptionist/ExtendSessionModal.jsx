@@ -424,7 +424,7 @@ export const ExtendSessionModal = ({ session, onClose, onSuccess }) => {
             <button
               type="submit"
               disabled={submitting || (preview && !preview.canExtend)}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-slate-950 bg-[#D7FF00] hover:bg-[#c8ee00] transition-all shadow-lg shadow-[#851B2B]/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-white bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] transition-all shadow-lg shadow-[#851B2B]/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>

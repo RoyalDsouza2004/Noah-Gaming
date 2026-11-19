@@ -630,7 +630,7 @@ export const ReceiptModal = ({ paymentId, bookingId, onClose }) => {
                 <button
                   onClick={handlePrint}
                   disabled={printing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white dark:bg-[#D7FF00] dark:hover:bg-[#c8ee00] dark:text-[#171014] text-xs font-black font-heading transition-colors shadow-md shadow-slate-900/10 dark:shadow-[#D7FF00]/20 disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white text-xs font-bold font-heading transition-colors shadow-md shadow-[#851B2B]/20 disabled:opacity-50"
                   title="Print or Save as PDF"
                 >
                   {printing ? (

@@ -1192,7 +1192,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
                   <button
                     type="submit"
                     disabled={profileSaving}
-                    className="px-5 py-2.5 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider"
+                    className="px-5 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-md shadow-[#851B2B]/20 transition-all flex items-center gap-1.5"
                   >
                     {profileSaving ? 'Saving Changes...' : 'Save Profile Details'}
                   </button>

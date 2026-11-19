@@ -188,7 +188,7 @@ export const QuickRegisterModal = ({ onClose, onSuccess, initialQuery = '' }) =>
                 <button
                   type="button"
                   onClick={handleSelectExisting}
-                  className="w-full py-1.5 px-3 rounded-lg text-xs font-bold font-heading uppercase bg-[#D7FF00] hover:bg-[#c8ee00] text-slate-950 transition-colors flex items-center justify-center gap-1.5 shadow-md"
+                  className="w-full py-1.5 px-3 rounded-lg text-xs font-bold font-heading uppercase bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-[#851B2B]/20"
                 >
                   <UserCheck className="w-3.5 h-3.5" /> Select Existing Profile ({existingUser.name})
                 </button>

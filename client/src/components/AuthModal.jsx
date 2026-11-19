@@ -542,7 +542,7 @@ export const AuthModal = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black rounded-xl shadow-lg shadow-[#D7FF00]/20 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -610,7 +610,7 @@ export const AuthModal = () => {
             <button
               type="submit"
               disabled={submittingLogin2FA || login2FAOtp.length !== 6}
-              className="w-full py-2.5 px-4 bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black rounded-xl shadow-lg shadow-[#D7FF00]/20 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {submittingLogin2FA ? (
                 <>
@@ -713,7 +713,7 @@ export const AuthModal = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black rounded-xl shadow-lg shadow-[#D7FF00]/20 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+              className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
             >
               {loading ? 'Creating Account...' : 'Complete Registration'}
               <ArrowRight className="w-4 h-4" />
@@ -795,7 +795,7 @@ export const AuthModal = () => {
             <button
               type="submit"
               disabled={submittingConversion || convertOtp.length !== 6 || !convertPassword}
-              className="w-full py-2.5 px-4 bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black rounded-xl shadow-lg shadow-[#D7FF00]/20 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {submittingConversion ? (
                 <>
@@ -956,7 +956,7 @@ export const AuthModal = () => {
             <button
               type="submit"
               disabled={submittingTokenReset || !tokenNewPassword || tokenNewPassword.length < 6}
-              className="w-full py-2.5 px-4 bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-black rounded-xl shadow-lg shadow-[#D7FF00]/20 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold rounded-xl shadow-lg shadow-[#851B2B]/25 transition-all font-heading flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {submittingTokenReset ? (
                 <>

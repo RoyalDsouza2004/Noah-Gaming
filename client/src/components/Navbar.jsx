@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { usePwa } from '../context/PwaContext.jsx';
-import { ThemeToggle } from './common/ThemeToggle.jsx';
 import { scheduleApi } from '../api/schedule.js';
 import {
   Gamepad2,
@@ -191,9 +190,6 @@ export const Navbar = ({
               <span>Admin Suite</span>
             </button>
           )}
-
-          {/* 5b. Theme Toggle (Mobile and Desktop) */}
-          <ThemeToggle className="flex h-9 w-9 p-0 shrink-0" />
 
           {/* 6. Logout / Login */}
           {isAuthenticated ? (

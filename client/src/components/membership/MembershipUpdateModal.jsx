@@ -195,7 +195,7 @@ export const MembershipUpdateModal = ({
                   onClose();
                   if (onOpenUpgrade) onOpenUpgrade(subscription);
                 }}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md shadow-[#D7FF00]/10"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md shadow-[#851B2B]/20"
               >
                 <TrendingUp className="w-4 h-4" />
                 Upgrade to Higher Tier (Prorated)

@@ -472,10 +472,10 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
             <button
               type="button"
               onClick={() => handleSelectTab('walkin')}
-              className="h-9 px-2 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-[#171014] bg-[#D7FF00] hover:bg-[#c8ee00] transition-all shadow-sm flex items-center gap-1 active:scale-95"
+              className="h-9 px-2 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-white bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] transition-all shadow-md shadow-[#851B2B]/20 flex items-center gap-1 active:scale-95"
               title="New Walk-In Session"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 text-white" />
               <span className="text-[11px]">Walk-In</span>
             </button>
 
@@ -574,9 +574,9 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                 touchAction: 'manipulation',
                 outline: 'none',
               }}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-[#171014] bg-[#D7FF00] hover:bg-[#c8ee00] transition-all shadow-md shadow-[#D7FF00]/20 flex items-center gap-1.5 active:scale-95 select-none outline-none focus:outline-none"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-white bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] transition-all shadow-md shadow-[#851B2B]/20 flex items-center gap-1.5 active:scale-95 select-none outline-none focus:outline-none"
             >
-              <Plus className="w-4 h-4 text-[#171014]" /> Walk-In POS
+              <Plus className="w-4 h-4 text-white" /> Walk-In POS
             </button>
 
             {/* Admin Switch Back to Suite */}

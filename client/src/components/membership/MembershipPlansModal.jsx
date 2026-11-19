@@ -419,7 +419,7 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
                 type="button"
                 onClick={handleConfirmPayment}
                 disabled={processing}
-                className="w-full py-3.5 rounded-xl bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-black font-heading text-xs uppercase tracking-wider shadow-lg shadow-[#D7FF00]/25 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-[#851B2B]/25 transition-all flex items-center justify-center gap-2"
               >
                 {processing ? (
                   <>

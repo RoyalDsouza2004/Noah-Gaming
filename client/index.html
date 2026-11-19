@@ -25,14 +25,23 @@
       (function() {
         try {
           var saved = localStorage.getItem('noah_theme');
-          var theme = saved === 'light' ? 'light' : 'dark';
+          var isDark = true;
+          if (saved === 'dark') {
+            isDark = true;
+          } else if (saved === 'light') {
+            isDark = false;
+          } else {
+            // 'system' or not set (system default)
+            isDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : true;
+          }
+          var theme = isDark ? 'dark' : 'light';
           var doc = document.documentElement;
           doc.classList.remove('light', 'dark');
           doc.classList.add(theme);
           doc.setAttribute('data-theme', theme);
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) {
-            meta.setAttribute('content', theme === 'light' ? '#E87524' : '#851B2B');
+            meta.setAttribute('content', theme === 'light' ? '#F5F6FA' : '#851B2B');
           }
         } catch (e) {}
       })();

@@ -156,7 +156,7 @@ export const MembershipRenewalModal = ({
             </div>
             <button
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl bg-[#D7FF00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider"
+              className="px-6 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-md shadow-[#851B2B]/20 transition-all"
             >
               Done
             </button>
@@ -239,7 +239,7 @@ export const MembershipRenewalModal = ({
                 type="button"
                 onClick={handleStartRenewal}
                 disabled={processing}
-                className="flex-1 py-3 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-[#D7FF00]/10 flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+                className="flex-1 py-3 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-[#851B2B]/20 flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
               >
                 {processing ? (
                   <>

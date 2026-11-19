@@ -1402,7 +1402,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                 });
                 setPricingModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold text-xs uppercase tracking-wider font-heading"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20 transition-all"
             >
               <Plus className="w-4 h-4" /> Add Pricing Rule
             </button>
@@ -1519,7 +1519,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
               <div className="flex items-end">
                 <button
                   type="submit"
-                  className="w-full py-2 px-4 rounded-lg bg-[#D7FF00] hover:bg-[#cbf200] text-[#171014] font-bold text-xs uppercase tracking-wider font-heading"
+                  className="w-full py-2 px-4 rounded-lg bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20 transition-all"
                 >
                   Calculate Quote
                 </button>
