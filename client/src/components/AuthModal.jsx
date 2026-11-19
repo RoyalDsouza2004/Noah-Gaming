@@ -61,6 +61,7 @@ export const AuthModal = () => {
   // Login form state
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Customer OTP input & local operation state
   const [otpCode, setOtpCode] = useState('');
@@ -73,6 +74,7 @@ export const AuthModal = () => {
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPhone, setRegisterPhone] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   // Conversion state (Guest to Registered)
   const [conversionData, setConversionData] = useState(null);
@@ -758,13 +760,21 @@ export const AuthModal = () => {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C7A5A8]" />
                 <input
-                  type="password"
+                  type={showLoginPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-[#FFF4E8] placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"
+                  className="w-full pl-9 pr-10 py-2.5 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-[#FFF4E8] placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C7A5A8] hover:text-[#FFF4E8] p-1 transition-colors"
+                  aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -1077,14 +1087,22 @@ export const AuthModal = () => {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C7A5A8]" />
                 <input
-                  type="password"
+                  type={showRegisterPassword ? 'text' : 'password'}
                   required
                   minLength={6}
                   placeholder="••••••••"
                   value={registerPassword}
                   onChange={(e) => setRegisterPassword(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-[#FFF4E8] placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"
+                  className="w-full pl-9 pr-10 py-2 bg-[#171014] border border-[#49202C] rounded-xl text-sm text-[#FFF4E8] placeholder-[#C7A5A8]/50 focus:outline-none focus:border-[#851B2B]"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C7A5A8] hover:text-[#FFF4E8] p-1 transition-colors"
+                  aria-label={showRegisterPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showRegisterPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 

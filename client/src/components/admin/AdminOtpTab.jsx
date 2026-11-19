@@ -49,16 +49,6 @@ export const AdminOtpTab = () => {
   const [historyPurposeFilter, setHistoryPurposeFilter] = useState('ALL');
 
   // Modal States
-  const [approvalModalItem, setApprovalModalItem] = useState(null);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [adminNote, setAdminNote] = useState('');
-  const [submittingApproval, setSubmittingApproval] = useState(false);
-
-  const [rejectionModalItem, setRejectionModalItem] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [submittingRejection, setSubmittingRejection] = useState(false);
-
   const [deliveryInspectItem, setDeliveryInspectItem] = useState(null);
 
   // Fetch Pending Requests
@@ -127,69 +117,7 @@ export const AdminOtpTab = () => {
     return () => clearInterval(interval);
   }, [autoRefresh, activeSubTab, fetchPendingRequests]);
 
-  // Handle Approve Submit
-  const handleApproveSubmit = async (e) => {
-    e.preventDefault();
-    if (!approvalModalItem || !adminPassword.trim()) {
-      showToast.error('Please enter your administrator password to confirm.');
-      return;
-    }
-
-    try {
-      setSubmittingApproval(true);
-      const res = await adminOtpApi.approveRequest(
-        approvalModalItem.challengeId,
-        adminPassword.trim(),
-        adminNote.trim()
-      );
-
-      if (res?.success) {
-        showToast.success(`Verification approved for ${approvalModalItem.userName}!`);
-        setApprovalModalItem(null);
-        setAdminPassword('');
-        setAdminNote('');
-        fetchPendingRequests();
-      } else {
-        showToast.error(res?.message || 'Approval failed');
-      }
-    } catch (err) {
-      showToast.error(err.message || 'Approval failed');
-    } finally {
-      setSubmittingApproval(false);
-    }
-  };
-
-  // Handle Reject Submit
-  const handleRejectSubmit = async (e) => {
-    e.preventDefault();
-    if (!rejectionModalItem) return;
-
-    try {
-      setSubmittingRejection(true);
-      const res = await adminOtpApi.rejectRequest(
-        rejectionModalItem.challengeId,
-        rejectionReason.trim()
-      );
-
-      if (res?.success) {
-        showToast.success(`Verification rejected for ${rejectionModalItem.userName}.`);
-        setRejectionModalItem(null);
-        setRejectionReason('');
-        fetchPendingRequests();
-      } else {
-        showToast.error(res?.message || 'Rejection failed');
-      }
-    } catch (err) {
-      showToast.error(err.message || 'Rejection failed');
-    } finally {
-      setSubmittingRejection(false);
-    }
-  };
-
   // Stats calculation
-  const awaitingCount = pendingRequests.filter(
-    (r) => r.status === 'AWAITING_ADMIN_ASSISTANCE' && !r.isExpired
-  ).length;
   const deliveryFailedCount = pendingRequests.filter(
     (r) => r.emailDeliveryStatus === 'FAILED' || r.emailDeliveryStatus === 'NOT_CONFIGURED'
   ).length;
@@ -205,16 +133,11 @@ export const AdminOtpTab = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold font-heading text-white">
-                OTP Management & Fallback
+                OTP Manager
               </h2>
-              {awaitingCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-black animate-pulse flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> {awaitingCount} Awaiting Review
-                </span>
-              )}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Secure emergency identity approval for customer registration and login 2FA when email delivery is restricted.
+              Monitor active OTP verification challenges, track email delivery health, and inspect verification attempts.
             </p>
           </div>
         </div>
@@ -231,10 +154,10 @@ export const AdminOtpTab = () => {
             }`}
           >
             <Clock className="w-3.5 h-3.5 text-[#D7FF00]" />
-            <span>Pending Requests</span>
-            {awaitingCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-400 text-black font-mono font-bold">
-                {awaitingCount}
+            <span>Active OTP Challenges</span>
+            {pendingRequests.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono font-bold">
+                {pendingRequests.length}
               </span>
             )}
           </button>
@@ -249,7 +172,7 @@ export const AdminOtpTab = () => {
             }`}
           >
             <FileText className="w-3.5 h-3.5 text-[#D7FF00]" />
-            <span>Verification History</span>
+            <span>Verification Audit History</span>
           </button>
         </div>
       </div>
@@ -262,21 +185,7 @@ export const AdminOtpTab = () => {
             <div className="p-4 rounded-xl bg-[#171014] border border-[#49202C] flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Assistance Awaiting
-                </p>
-                <p className="text-2xl font-black font-heading text-amber-400 mt-0.5">
-                  {awaitingCount}
-                </p>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#171014] border border-[#49202C] flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Active Challenges
+                  Active OTP Challenges
                 </p>
                 <p className="text-2xl font-black font-heading text-white mt-0.5">
                   {pendingRequests.filter((r) => !r.isExpired).length}
@@ -298,6 +207,20 @@ export const AdminOtpTab = () => {
               </div>
               <div className="w-10 h-10 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
                 <Mail className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#171014] border border-[#49202C] flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Recent Challenges (12h)
+                </p>
+                <p className="text-2xl font-black font-heading text-slate-300 mt-0.5">
+                  {pendingRequests.length}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-[#260D17] border border-[#49202C] flex items-center justify-center text-[#D7FF00]">
+                <KeyRound className="w-5 h-5" />
               </div>
             </div>
           </div>
@@ -335,10 +258,8 @@ export const AdminOtpTab = () => {
                 className="px-3 py-2 bg-[#260D17] border border-[#49202C] rounded-xl text-xs text-white focus:outline-none focus:border-[#851B2B]"
               >
                 <option value="ALL">All Statuses</option>
-                <option value="AWAITING_ADMIN_ASSISTANCE">Awaiting Assistance</option>
                 <option value="PENDING">Pending (Customer Entry)</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
+                <option value="CONSUMED">Verified & Consumed</option>
                 <option value="EXPIRED">Expired</option>
               </select>
 
@@ -388,7 +309,7 @@ export const AdminOtpTab = () => {
                   <th className="py-3 px-4">Challenge Purpose</th>
                   <th className="py-3 px-4">Validity Timer</th>
                   <th className="py-3 px-4">Email Delivery</th>
-                  <th className="py-3 px-4">Assistance Status</th>
+                  <th className="py-3 px-4">Verification Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -535,70 +456,35 @@ export const AdminOtpTab = () => {
                           )}
                         </td>
 
-                        {/* Assistance Status */}
+                        {/* Verification Status */}
                         <td className="py-3.5 px-4">
-                          {isAwaiting ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
-                              <span className="w-2 h-2 rounded-full bg-amber-400" />
-                              Awaiting Approval
-                            </span>
-                          ) : record.status === 'APPROVED' ? (
+                          {record.status === 'CONSUMED' || record.verified ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Approved
-                            </span>
-                          ) : record.status === 'REJECTED' ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold text-rose-400 bg-rose-500/15 border border-rose-500/30">
-                              <XCircle className="w-3.5 h-3.5" /> Rejected
-                            </span>
-                          ) : record.status === 'CONSUMED' ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold text-slate-400 bg-slate-800">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Verified
                             </span>
+                          ) : record.isExpired ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold text-slate-400 bg-slate-800">
+                              <Clock className="w-3.5 h-3.5" /> Expired
+                            </span>
                           ) : (
-                            <span className="text-xs text-slate-400 font-mono">
-                              Normal Code Entry
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold text-blue-300 bg-blue-500/15 border border-blue-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                              Pending Code Entry
                             </span>
                           )}
                         </td>
 
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {record.canApprove && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setApprovalModalItem(record);
-                                  setAdminPassword('');
-                                  setAdminNote('');
-                                }}
-                                className="px-3 py-1.5 rounded-lg bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold text-xs transition-all shadow-md flex items-center gap-1"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                                <span>Approve</span>
-                              </button>
-                            )}
-
-                            {record.canReject && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setRejectionModalItem(record);
-                                  setRejectionReason('');
-                                }}
-                                className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold text-xs transition-all flex items-center gap-1"
-                              >
-                                <XCircle className="w-3.5 h-3.5" />
-                                <span>Reject</span>
-                              </button>
-                            )}
-
-                            {!record.canApprove && !record.canReject && (
-                              <span className="text-[11px] text-slate-500 font-mono italic">
-                                Resolved
-                              </span>
-                            )}
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryInspectItem(record)}
+                            className="px-3 py-1.5 rounded-lg bg-[#260D17] hover:bg-[#380C19] text-[#D7FF00] border border-[#49202C] font-semibold text-xs transition-all flex items-center gap-1 ml-auto"
+                            title="Inspect email delivery details"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Inspect</span>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -778,214 +664,7 @@ export const AdminOtpTab = () => {
         </div>
       )}
 
-      {/* ---------------- MODAL 1: APPROVAL CONFIRMATION & ADMIN PASSWORD RE-AUTH ---------------- */}
-      {approvalModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg rounded-2xl bg-[#171014] border border-[#49202C] shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#49202C]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold font-heading text-white">
-                    Approve Verification Request
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Administrator authorization required
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setApprovalModalItem(null)}
-                className="p-1 rounded-lg hover:bg-[#260D17] text-slate-400 hover:text-white"
-              >
-                &times;
-              </button>
-            </div>
-
-            {/* Explanation Warning */}
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="leading-relaxed">
-                <strong>Important:</strong> Approving this request allows the customer to complete verification immediately without entering an email OTP code. Verify their identity beforehand.
-              </div>
-            </div>
-
-            {/* Customer Details Summary */}
-            <div className="p-3.5 rounded-xl bg-[#260D17] border border-[#49202C] text-xs space-y-1.5 font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Customer Name:</span>
-                <span className="text-white font-bold">{approvalModalItem.userName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Email Address:</span>
-                <span className="text-white">{approvalModalItem.email}</span>
-              </div>
-              {approvalModalItem.phone && (
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Mobile Number:</span>
-                  <span className="text-white">{approvalModalItem.phone}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-slate-400">Challenge Purpose:</span>
-                <span className="text-[#D7FF00] font-bold">{approvalModalItem.purpose}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Email Delivery:</span>
-                <span
-                  className={
-                    approvalModalItem.emailDeliveryStatus === 'ACCEPTED'
-                      ? 'text-emerald-400'
-                      : 'text-rose-400'
-                  }
-                >
-                  {approvalModalItem.emailDeliveryStatus}
-                </span>
-              </div>
-            </div>
-
-            <form onSubmit={handleApproveSubmit} className="space-y-4">
-              {/* Admin Password (Required) */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
-                  Confirm Administrator Password *
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type={showAdminPassword ? 'text' : 'password'}
-                    required
-                    placeholder="Enter your admin password to authorize"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full pl-9 pr-10 py-2.5 bg-[#260D17] border border-[#49202C] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowAdminPassword(!showAdminPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                  >
-                    {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Admin Note / Reason */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
-                  Verification Note / Reason
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Identity verified via phone or in-person at counter"
-                  value={adminNote}
-                  onChange={(e) => setAdminNote(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#260D17] border border-[#49202C] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#851B2B]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setApprovalModalItem(null)}
-                  disabled={submittingApproval}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingApproval || !adminPassword.trim()}
-                  className="px-5 py-2 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold text-xs transition-all shadow-md font-heading flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  {submittingApproval ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Authorizing...
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="w-4 h-4" /> Approve Identity Verification
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ---------------- MODAL 2: REJECTION DIALOG ---------------- */}
-      {rejectionModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md rounded-2xl bg-[#171014] border border-[#49202C] shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#49202C]">
-              <div className="flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-rose-500" />
-                <h3 className="text-base font-bold font-heading text-white">
-                  Reject Verification Request
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setRejectionModalItem(null)}
-                className="p-1 rounded-lg hover:bg-[#260D17] text-slate-400 hover:text-white"
-              >
-                &times;
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Rejecting verification for <span className="font-bold text-white">{rejectionModalItem.userName}</span> ({rejectionModalItem.email}). The customer will be notified and will need to request a new verification challenge.
-            </p>
-
-            <form onSubmit={handleRejectSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
-                  Rejection Reason
-                </label>
-                <textarea
-                  rows="3"
-                  placeholder="e.g. Identity could not be confirmed, or request not recognized."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  className="w-full p-2.5 bg-[#260D17] border border-[#49202C] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setRejectionModalItem(null)}
-                  disabled={submittingRejection}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingRejection}
-                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all shadow-md font-heading flex items-center gap-1.5"
-                >
-                  {submittingRejection ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Rejecting...
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-4 h-4" /> Confirm Rejection
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ---------------- MODAL 3: EMAIL DELIVERY INSPECTION ---------------- */}
+      {/* ---------------- MODAL: EMAIL DELIVERY INSPECTION ---------------- */}
       {deliveryInspectItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-lg rounded-2xl bg-[#171014] border border-[#49202C] shadow-2xl p-6 space-y-4">
@@ -1034,7 +713,7 @@ export const AdminOtpTab = () => {
               </div>
 
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                Because email delivery failed, the customer is prompted on their screen to request Admin Assistance. You can approve their request directly using the <strong>Approve</strong> button.
+                If the customer requests Admin Assistance, their request is routed directly to the dedicated <strong>Verification Assistance</strong> section for administrator review and approval.
               </p>
             </div>
 
