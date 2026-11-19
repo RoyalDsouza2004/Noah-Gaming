@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { usePwa } from '../context/PwaContext.jsx';
+import { ThemeToggle } from './common/ThemeToggle.jsx';
 import { scheduleApi } from '../api/schedule.js';
 import {
   Gamepad2,
@@ -192,7 +193,10 @@ export const Navbar = ({
             </button>
           )}
 
-          {/* 6. Profile Icon & Settings Shortcut (Authenticated) */}
+          {/* 6. Theme Toggle (Light / Dark Mode Switch) */}
+          <ThemeToggle className="flex h-9 w-9 p-0 rounded-xl shrink-0" />
+
+          {/* 7. Profile Icon & Settings Shortcut (Authenticated) */}
           {isAuthenticated && (
             <button
               type="button"
@@ -216,7 +220,7 @@ export const Navbar = ({
             </button>
           )}
 
-          {/* 7. Logout / Login */}
+          {/* 8. Logout / Login */}
           {isAuthenticated ? (
             <button
               type="button"

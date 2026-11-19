@@ -195,7 +195,7 @@ export const ThemeToggle = ({
     );
   }
 
-  // Compact Icon Button variant (for sidebars or quick toggles)
+  // Compact Icon Button variant (for headers, sidebars or quick toggles)
   return (
     <button
       type="button"
@@ -207,10 +207,12 @@ export const ThemeToggle = ({
         touchAction: 'manipulation',
         outline: 'none',
       }}
-      className={`relative h-9 px-2.5 sm:px-3 rounded-xl border transition-all flex items-center justify-center gap-2 select-none active:scale-95 group focus:outline-none ${
+      className={`relative h-9 ${
+        showLabel ? 'px-3 gap-2' : 'w-9 p-0'
+      } rounded-xl border transition-all flex items-center justify-center select-none active:scale-95 group focus:outline-none shrink-0 ${
         isDark
-          ? 'bg-[#260D17] hover:bg-[#381322] border-[#49202C] text-[#C7A5A8] hover:text-[#FFF4E8] max-sm:-translate-x-[4px]'
-          : 'bg-[#FFFFFF] hover:bg-[#F1F3F7] border-[#E2E5EC] text-[#414858] hover:text-[#851B2B] shadow-sm max-sm:-translate-x-[2px]'
+          ? 'bg-[#260D17] hover:bg-[#381322] border-[#49202C] text-[#C7A5A8] hover:text-[#FFF4E8]'
+          : 'bg-[#FFFFFF] hover:bg-[#F1F3F7] border-[#E2E5EC] text-[#414858] hover:text-[#851B2B] shadow-sm'
       } ${className}`}
     >
       <div className="relative w-4 h-4 flex items-center justify-center overflow-hidden">
