@@ -14,6 +14,7 @@ import { AdminGameImportModal } from './AdminGameImportModal.jsx';
 import { AdminOperatingHoursTab } from './AdminOperatingHoursTab.jsx';
 import { ThemeToggle } from '../common/ThemeToggle.jsx';
 import { cloudinaryApi } from '../../api/cloudinary.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import {
   Tv,
   Gamepad2,
@@ -52,6 +53,7 @@ import {
   Upload,
   Loader2,
   Sparkles,
+  LogOut,
 } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { showToast } from '../../utils/toast.js';
@@ -60,6 +62,7 @@ import { Pagination } from '../common/Pagination.jsx';
 import { ChevronDown } from 'lucide-react';
 
 export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState(initialTab || 'overview'); // overview, devices, games, categories, pricing, maintenance
   const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -556,22 +559,81 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Admin Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      {/* Admin Mobile Top Header Bar (md:hidden) */}
+      <div className="md:hidden -mx-4 -mt-8 mb-6 sticky top-0 z-30 bg-white/95 dark:bg-[#171014]/95 backdrop-blur-md border-b border-slate-200 dark:border-[#49202C] px-3.5 py-2.5 flex items-center justify-between gap-2 shadow-sm">
+        {/* Brand Area: Compact Stacked NOAH GAMING Logo & Badge */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-0.5 shrink-0 overflow-hidden">
+            <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
+          </div>
+          <div className="flex flex-col justify-center leading-none min-w-0">
+            <div className="flex items-center gap-1 leading-tight">
+              <span className="text-xs font-black tracking-wider text-slate-900 dark:text-[#FFF4E8] font-heading">
+                NOAH
+              </span>
+              <span className="text-xs font-black tracking-wider text-[#851B2B] dark:text-[#D7FF00] font-heading">
+                GAMING
+              </span>
+            </div>
+            <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 font-mono tracking-wider uppercase truncate mt-0.5">
+              ADMIN PANEL
+            </span>
+          </div>
+        </div>
+
+        {/* Action Area: Theme Toggle, POS Shortcut, and Logout Button */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <ThemeToggle className="h-9 w-9 p-0 rounded-xl shrink-0" />
+
+          <button
+            type="button"
+            onClick={() => { window.location.hash = '#receptionist'; }}
+            className="h-9 px-2 rounded-xl bg-[#D7FF00]/15 text-[#851B2B] dark:text-[#D7FF00] border border-[#851B2B]/30 dark:border-[#D7FF00]/40 text-xs font-bold font-heading flex items-center gap-1"
+            title="Switch to Front Desk POS"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#F5B942]" />
+            <span className="text-[11px]">POS</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={logout}
+            className="h-9 w-9 rounded-xl flex items-center justify-center bg-rose-50 dark:bg-[#260D17] hover:bg-rose-100 dark:hover:bg-[#851B2B]/40 border border-rose-200 dark:border-[#49202C] text-rose-600 dark:text-[#F06A76] transition-colors shrink-0"
+            title="Log out of Admin Session"
+            aria-label="Log Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-9 w-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors"
+              title="Close Admin Panel & Return to Lounge"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Admin Desktop Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-3 flex-wrap mb-1">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-400 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500 dark:text-rose-400 uppercase tracking-wider">
               <ShieldAlert className="w-4 h-4" /> Lounge Operations Console
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
               DATABASE: MONGODB ATLAS (CLOUD)
             </span>
           </div>
-          <h1 className="text-3xl font-black font-heading text-white">
+          <h1 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 dark:text-white">
             ADMINISTRATOR <span className="gaming-gradient-text">MANAGEMENT PANEL</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Centralized control over devices, games catalogue, categories, dynamic pricing, and maintenance history.
           </p>
         </div>
@@ -588,10 +650,10 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
               touchAction: 'manipulation',
               outline: 'none',
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#D7FF00]/15 hover:bg-[#D7FF00]/25 text-xs font-bold text-[#D7FF00] border border-[#D7FF00]/40 transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#D7FF00]/15 hover:bg-[#D7FF00]/25 text-xs font-bold text-[#851B2B] dark:text-[#D7FF00] border border-[#851B2B]/30 dark:border-[#D7FF00]/40 transition-all shadow-sm active:scale-95"
             title="Switch to Reception Front Desk POS & Live Station Management"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#D7FF00]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#F5B942]" />
             Front Desk POS
           </button>
 
@@ -607,7 +669,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
           <button
             onClick={fetchAllData}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs text-slate-300 border border-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#D7FF00]' : ''}`} />
             Refresh Data
@@ -616,11 +678,22 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
           {/* Theme Toggle Button */}
           <ThemeToggle className="h-9 px-2.5" />
 
+          {/* Logout Button */}
+          <button
+            type="button"
+            onClick={logout}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-[#260D17] dark:hover:bg-[#851B2B]/40 text-xs font-bold text-rose-600 dark:text-[#F06A76] border border-rose-200 dark:border-[#49202C] transition-colors"
+            title="Log out of Admin Session"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg bg-[#260D17] hover:bg-[#851B2B]/40 text-[#C7A5A8] hover:text-[#FFF4E8] border border-[#49202C] transition-colors"
+              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#260D17] dark:hover:bg-[#851B2B]/40 text-slate-600 dark:text-[#C7A5A8] hover:text-slate-900 dark:hover:text-[#FFF4E8] border border-slate-200 dark:border-[#49202C] transition-colors"
               title="Close Admin Panel & Return to Lounge"
             >
               <X className="w-4 h-4" />

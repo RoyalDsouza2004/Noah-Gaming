@@ -670,7 +670,7 @@ function AppContent() {
 
       {/* Receptionist POS Command Console */}
       {receptionistDashboardOpen && (
-        <div id="receptionist-dashboard-container" className="fixed inset-0 md:left-64 z-40 bg-[#171014] overflow-y-auto overscroll-contain block pb-36 sm:pb-40 md:pb-12">
+        <div id="receptionist-dashboard-container" className="fixed inset-0 md:left-64 z-40 bg-[#F5F6FA] dark:bg-[#171014] overflow-y-auto overscroll-contain block pb-36 sm:pb-40 md:pb-12">
           <ReceptionistDashboard
             initialTab={receptionistInitialTab}
             onTabChange={(newTab) => {
@@ -691,7 +691,7 @@ function AppContent() {
 
       {/* Administrator Command & Management Console */}
       {adminDashboardOpen && (
-        <div id="admin-dashboard-container" className="fixed inset-0 md:left-64 z-40 bg-[#171014] overflow-y-auto overscroll-contain block pb-36 sm:pb-40 md:pb-12">
+        <div id="admin-dashboard-container" className="fixed inset-0 md:left-64 z-40 bg-[#F5F6FA] dark:bg-[#171014] overflow-y-auto overscroll-contain block pb-36 sm:pb-40 md:pb-12">
           <AdminDashboard
             initialTab={adminInitialTab}
             onClose={() => {

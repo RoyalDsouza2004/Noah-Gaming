@@ -47,11 +47,11 @@ import {
   BellRing,
   LayoutDashboard,
   Crown,
+  LogOut,
 } from 'lucide-react';
-import { Pagination } from '../common/Pagination.jsx';
 
 export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChange }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleSelectTab = (tab) => {
@@ -439,33 +439,93 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
   });
 
   return (
-    <div className="w-full bg-[#171014] text-[#FFF4E8] min-h-screen flex flex-col">
+    <div className="w-full bg-[#F5F6FA] dark:bg-[#171014] text-slate-900 dark:text-[#FFF4E8] min-h-screen flex flex-col">
       {/* 1. Header (Normal Document Flow - No Sticky Trap) */}
-      <div ref={dashboardTopRef} className="w-full bg-[#260D17] border-b border-[#49202C] px-4 sm:px-6 py-3.5">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div ref={dashboardTopRef} className="w-full bg-white dark:bg-[#260D17] border-b border-slate-200 dark:border-[#49202C] px-3.5 sm:px-6 py-3">
+        {/* Mobile Header (md:hidden) */}
+        <div className="md:hidden flex items-center justify-between gap-2">
+          {/* Brand Area: Compact Stacked NOAH GAMING Logo & Badge */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-0.5 shrink-0 overflow-hidden">
+              <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
+            </div>
+            <div className="flex flex-col justify-center leading-none min-w-0">
+              <div className="flex items-center gap-1 leading-tight">
+                <span className="text-xs font-black tracking-wider text-slate-900 dark:text-[#FFF4E8] font-heading">
+                  NOAH
+                </span>
+                <span className="text-xs font-black tracking-wider text-[#851B2B] dark:text-[#D7FF00] font-heading">
+                  GAMING
+                </span>
+              </div>
+              <span className="text-[9px] font-bold text-[#851B2B] dark:text-[#F5B942] font-mono tracking-wider uppercase truncate mt-0.5">
+                FRONT DESK POS
+              </span>
+            </div>
+          </div>
+
+          {/* Action Area: Theme Toggle, Walk-In POS, Logout, Close */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ThemeToggle className="h-9 w-9 p-0 rounded-xl shrink-0" />
+
+            <button
+              type="button"
+              onClick={() => handleSelectTab('walkin')}
+              className="h-9 px-2 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-[#171014] bg-[#D7FF00] hover:bg-[#c8ee00] transition-all shadow-sm flex items-center gap-1 active:scale-95"
+              title="New Walk-In Session"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="text-[11px]">Walk-In</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={logout}
+              className="h-9 w-9 rounded-xl flex items-center justify-center bg-rose-50 dark:bg-[#171014] hover:bg-rose-100 dark:hover:bg-[#851B2B]/40 border border-rose-200 dark:border-[#49202C] text-rose-600 dark:text-[#F06A76] transition-colors shrink-0"
+              title="Log out of Front Desk Session"
+              aria-label="Log Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-9 w-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-[#171014] hover:bg-slate-200 dark:hover:bg-[#851B2B]/30 border border-slate-200 dark:border-[#49202C] text-slate-600 dark:text-[#C7A5A8] hover:text-slate-900 dark:hover:text-[#F06A76] transition-colors"
+                title="Close Receptionist Console"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop Header (hidden md:flex) */}
+        <div className="hidden md:flex max-w-7xl mx-auto flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#851B2B] to-[#A51F35] flex items-center justify-center shadow-lg shadow-[#851B2B]/20 text-[#FFF4E8] font-black border border-[#851B2B]">
               <Sparkles className="w-5 h-5 text-[#F5B942]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black text-[#FFF4E8] font-heading tracking-wide">
+                <h1 className="text-lg font-black text-slate-900 dark:text-[#FFF4E8] font-heading tracking-wide">
                   RECEPTION POS & COMMAND
                 </h1>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#45C987]/20 text-[#45C987] border border-[#45C987]/40">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#45C987]/20 text-[#176B3A] dark:text-[#45C987] border border-[#45C987]/40">
                   SHIFT ACTIVE
                 </span>
               </div>
-              <p className="text-xs text-[#C7A5A8]">
-                NOAH GAMING &bull; Front Desk Staff: <span className="text-[#D7FF00] font-semibold">{user?.name}</span>
+              <p className="text-xs text-slate-500 dark:text-[#C7A5A8]">
+                NOAH GAMING &bull; Front Desk Staff: <span className="text-[#851B2B] dark:text-[#D7FF00] font-semibold">{user?.name}</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Live IST Clock */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#171014] border border-[#49202C] text-xs font-mono text-[#D7FF00]">
-              <Clock className="w-3.5 h-3.5 text-[#F5B942]" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] text-xs font-mono text-[#851B2B] dark:text-[#D7FF00]">
+              <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-[#F5B942]" />
               {currentTime.toLocaleTimeString('en-IN', {
                 timeZone: 'Asia/Kolkata',
                 hour: '2-digit',
@@ -479,26 +539,26 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
             {/* Live Lounge Operating Status */}
             {operatingStatus && (
               <div
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#171014] border border-[#49202C] text-xs font-mono"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] text-xs font-mono"
                 title={operatingStatus.todaySchedule?.isClosed ? operatingStatus.todaySchedule?.reason : `Operating: ${operatingStatus.todaySchedule?.openTime || '10:00'} to ${operatingStatus.todaySchedule?.closeTime || '23:00'} IST`}
               >
                 <span
                   className={`w-2 h-2 rounded-full ${
                     operatingStatus.isCurrentlyOpen
-                      ? 'bg-emerald-400 animate-pulse'
-                      : 'bg-rose-400'
+                      ? 'bg-emerald-500 dark:bg-emerald-400 animate-pulse'
+                      : 'bg-rose-500 dark:bg-rose-400'
                   }`}
                 />
                 <span
                   className={`font-bold ${
                     operatingStatus.isCurrentlyOpen
-                      ? 'text-emerald-400'
-                      : 'text-rose-400'
+                      ? 'text-emerald-700 dark:text-emerald-400'
+                      : 'text-rose-700 dark:text-rose-400'
                   }`}
                 >
                   {operatingStatus.isCurrentlyOpen ? 'OPEN' : 'CLOSED'}
                 </span>
-                <span className="text-[#C7A5A8] text-[11px]">
+                <span className="text-slate-500 dark:text-[#C7A5A8] text-[11px]">
                   ({operatingStatus.todaySchedule?.openTime || '10:00'}-{operatingStatus.todaySchedule?.closeTime || '23:00'})
                 </span>
               </div>
@@ -530,10 +590,10 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                   touchAction: 'manipulation',
                   outline: 'none',
                 }}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-[#F5B942] bg-[#F5B942]/10 hover:bg-[#F5B942]/20 border border-[#F5B942]/30 transition-all flex items-center gap-1.5 active:scale-95 select-none outline-none focus:outline-none"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold font-heading uppercase tracking-wider text-amber-700 dark:text-[#F5B942] bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all flex items-center gap-1.5 active:scale-95 select-none outline-none focus:outline-none"
                 title="Return to Lounge Administrator Panel"
               >
-                <LayoutDashboard className="w-3.5 h-3.5 text-[#F5B942]" />
+                <LayoutDashboard className="w-3.5 h-3.5 text-amber-600 dark:text-[#F5B942]" />
                 <span className="hidden xs:inline">Admin Suite</span>
               </button>
             )}
@@ -552,9 +612,20 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                 touchAction: 'manipulation',
                 outline: 'none',
               }}
-              className="p-2 rounded-xl bg-[#171014] hover:bg-[#341220] border border-[#49202C] text-[#C7A5A8] hover:text-[#FFF4E8] transition-colors disabled:opacity-50 active:scale-95 outline-none focus:outline-none"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#171014] dark:hover:bg-[#341220] border border-slate-200 dark:border-[#49202C] text-slate-600 dark:text-[#C7A5A8] hover:text-slate-900 dark:hover:text-[#FFF4E8] transition-colors disabled:opacity-50 active:scale-95 outline-none focus:outline-none"
             >
-              <RefreshCw className={`w-4 h-4 ${loadingStats ? 'animate-spin text-[#D7FF00]' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loadingStats ? 'animate-spin text-[#851B2B] dark:text-[#D7FF00]' : ''}`} />
+            </button>
+
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={logout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-[#171014] dark:hover:bg-[#851B2B]/40 text-xs font-bold text-rose-600 dark:text-[#F06A76] border border-rose-200 dark:border-[#49202C] transition-colors"
+              title="Log out of Front Desk Session"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
             </button>
 
             {onClose && (
@@ -566,7 +637,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                   touchAction: 'manipulation',
                   outline: 'none',
                 }}
-                className="p-2 rounded-xl bg-[#171014] hover:bg-[#851B2B]/30 border border-[#49202C] text-[#C7A5A8] hover:text-[#F06A76] transition-colors active:scale-95 outline-none focus:outline-none"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#171014] dark:hover:bg-[#851B2B]/30 border border-slate-200 dark:border-[#49202C] text-slate-600 dark:text-[#C7A5A8] hover:text-rose-600 dark:hover:text-[#F06A76] transition-colors active:scale-95 outline-none focus:outline-none"
                 title="Close Receptionist Console"
               >
                 <X className="w-4 h-4" />

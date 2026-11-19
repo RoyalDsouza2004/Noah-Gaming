@@ -64,7 +64,7 @@ export const Navbar = ({
         {/* ========================================================= */}
         {/* LEFT: Mobile Logo (Mobile only) or Active Section (Desktop) */}
         {/* ========================================================= */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           {/* Mobile Logo: visible only on mobile (md:hidden) */}
           <a
             href="#home"
@@ -72,15 +72,20 @@ export const Navbar = ({
             className="flex md:hidden items-center gap-2 group shrink-0 focus:outline-none"
             title="NOAH GAMING Home"
           >
-            <div className="w-9 h-9 rounded-full bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-0.5 shrink-0 overflow-hidden">
+            <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-[#171014] flex items-center justify-center shadow-md shadow-[#851B2B]/30 border border-[#851B2B]/60 p-0.5 shrink-0 overflow-hidden">
               <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
             </div>
-            <div className="flex items-baseline leading-none shrink-0">
-              <span className="text-sm xs:text-base font-black tracking-wider text-[#FFF4E8] font-heading">
-                NOAH
-              </span>
-              <span className="text-sm xs:text-base font-black tracking-wider text-[#D7FF00] font-heading ml-1">
-                GAMING
+            <div className="flex flex-col justify-center leading-none">
+              <div className="flex items-center gap-1 leading-tight">
+                <span className="text-xs xs:text-sm font-black tracking-wider text-[#FFF4E8] font-heading">
+                  NOAH
+                </span>
+                <span className="text-xs xs:text-sm font-black tracking-wider text-[#D7FF00] font-heading">
+                  GAMING
+                </span>
+              </div>
+              <span className="hidden xs:block text-[8px] font-bold text-[#C7A5A8] tracking-widest uppercase mt-0.5">
+                {isAdmin ? 'ADMIN' : isReceptionist ? 'FRONT DESK' : 'LOUNGE'}
               </span>
             </div>
           </a>
@@ -127,12 +132,12 @@ export const Navbar = ({
             )}
           </button>
 
-          {/* 2. Install App CTA (Visible on Mobile and Desktop when not installed) */}
-          {!isInstalled && (
+          {/* 2. Install App CTA (Visible on Desktop or Customer view) */}
+          {!isInstalled && !isAdmin && !isReceptionist && (
             <button
               type="button"
               onClick={triggerInstall}
-              className="flex h-9 px-2 sm:px-2.5 rounded-xl border border-[#49202C] bg-[#260D17] hover:bg-[#381322] text-xs font-semibold text-[#C7A5A8] hover:text-[#FFF4E8] transition-all items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-sm shrink-0 active:scale-95"
+              className="hidden sm:flex h-9 px-2 sm:px-2.5 rounded-xl border border-[#49202C] bg-[#260D17] hover:bg-[#381322] text-xs font-semibold text-[#C7A5A8] hover:text-[#FFF4E8] transition-all items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-sm shrink-0 active:scale-95"
               title="Install NOAH GAMING App to your device"
               aria-label="Install App"
             >
@@ -141,11 +146,13 @@ export const Navbar = ({
             </button>
           )}
 
-          {/* 3. Book Session CTA (Primary High-Contrast Neon Lime CTA) */}
+          {/* 3. Book Session CTA (Primary High-Contrast Neon Lime CTA for customers, sm-only for staff) */}
           <button
             type="button"
             onClick={onOpenBooking}
-            className="h-9 px-2.5 sm:px-4 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black font-heading text-xs tracking-wider uppercase transition-all shadow-md shadow-[#D7FF00]/20 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] shrink-0"
+            className={`h-9 px-2.5 sm:px-4 rounded-xl bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] font-black font-heading text-xs tracking-wider uppercase transition-all shadow-md shadow-[#D7FF00]/20 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] shrink-0 ${
+              isAuthenticated && (isReceptionist || isAdmin) ? 'hidden sm:flex' : 'flex'
+            }`}
             title="Book a gaming station session"
           >
             <Gamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#171014] shrink-0" />
@@ -185,8 +192,8 @@ export const Navbar = ({
             </button>
           )}
 
-          {/* 5b. Theme Toggle (Desktop Header) */}
-          <ThemeToggle className="hidden sm:flex" />
+          {/* 5b. Theme Toggle (Mobile and Desktop) */}
+          <ThemeToggle className="flex h-9 w-9 p-0 shrink-0" />
 
           {/* 6. Logout / Login */}
           {isAuthenticated ? (
@@ -195,6 +202,7 @@ export const Navbar = ({
               onClick={logout}
               title="Log out of session"
               className="h-9 w-9 rounded-xl flex items-center justify-center bg-[#260D17] hover:bg-[#851B2B]/30 border border-[#49202C] text-[#C7A5A8] hover:text-[#F06A76] transition-colors shrink-0"
+              aria-label="Log Out"
             >
               <LogOut className="w-4 h-4" />
             </button>

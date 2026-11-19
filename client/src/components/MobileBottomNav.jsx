@@ -296,8 +296,8 @@ export const MobileBottomNav = ({
       aria-label="Mobile Bottom Navigation"
       aria-hidden={!isVisible}
       style={{
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         WebkitTapHighlightColor: 'transparent',
         transform: isVisible
           ? 'translate3d(-50%, 0, 0)'
@@ -308,7 +308,7 @@ export const MobileBottomNav = ({
           'transform 230ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out',
         willChange: 'transform, opacity',
       }}
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 w-[calc(100%-1.5rem)] max-w-md z-[60] md:hidden rounded-full bg-[#171014]/90 border border-[#851B2B]/40 shadow-[0_8px_32px_rgba(0,0,0,0.65),0_1px_2px_rgba(255,255,255,0.06)_inset] px-1.5 py-1.5 select-none"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 w-[calc(100%-1.5rem)] max-w-md z-[60] md:hidden rounded-full bg-white/75 dark:bg-[#1a0e14]/75 supports-[not-(backdrop-filter:blur(0))]:bg-white/95 dark:supports-[not-(backdrop-filter:blur(0))]:bg-[#1a0e14]/95 border border-white/80 border-t-white/95 border-b-slate-300/40 dark:border-white/15 dark:border-t-white/25 dark:border-b-black/40 shadow-[0_10px_35px_rgba(0,0,0,0.08),0_1px_2px_rgba(255,255,255,0.9)_inset] dark:shadow-[0_14px_40px_rgba(0,0,0,0.6),0_1px_1px_rgba(255,255,255,0.12)_inset] px-1.5 py-1.5 select-none"
     >
       <nav className="w-full flex items-center justify-around">
         {navItems.map((item) => {
@@ -334,7 +334,7 @@ export const MobileBottomNav = ({
               <div
                 className={`flex items-center justify-center transition-all duration-150 ${
                   isActive
-                    ? 'w-10 h-10 rounded-full bg-[#851B2B]/55 border border-[#851B2B]/70 shadow-[0_0_14px_rgba(133,27,43,0.45)] scale-105'
+                    ? 'w-10 h-10 rounded-full bg-[#851B2B] text-white shadow-[0_4px_14px_rgba(133,27,43,0.35)] border border-[#851B2B]/70 dark:bg-[#851B2B]/65 dark:border-[#851B2B]/80 dark:shadow-[0_0_16px_rgba(133,27,43,0.5)] scale-105'
                     : 'w-10 h-10 rounded-full'
                 }`}
               >
@@ -342,8 +342,8 @@ export const MobileBottomNav = ({
                   <div
                     className={`w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-bold shrink-0 border transition-all relative ${
                       isActive
-                        ? 'border-[#D7FF00] shadow-[0_0_10px_rgba(215,255,0,0.6)]'
-                        : 'border-[#FFF4E8]/50'
+                        ? 'border-white dark:border-[#D7FF00] shadow-[0_0_10px_rgba(215,255,0,0.6)]'
+                        : 'border-slate-300 dark:border-white/40'
                     } bg-gradient-to-br from-[#851B2B] to-[#A51F35] text-[#FFF4E8]`}
                   >
                     <span className="font-heading font-black text-[10.5px] text-[#FFF4E8]">
@@ -363,7 +363,9 @@ export const MobileBottomNav = ({
                 ) : (
                   <Icon
                     className={`transition-colors duration-150 ${
-                      isActive ? 'w-5 h-5 text-[#D7FF00]' : 'w-5 h-5 text-white/75'
+                      isActive
+                        ? 'w-5 h-5 text-white dark:text-[#D7FF00]'
+                        : 'w-5 h-5 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white/90'
                     }`}
                   />
                 )}
@@ -371,7 +373,9 @@ export const MobileBottomNav = ({
 
               <span
                 className={`text-[9.5px] sm:text-[10px] tracking-tight mt-0.5 transition-all select-none ${
-                  isActive ? 'font-bold font-heading scale-105 text-[#D7FF00]' : 'font-medium text-white/80'
+                  isActive
+                    ? 'font-bold font-heading scale-105 text-[#851B2B] dark:text-[#D7FF00]'
+                    : 'font-medium text-slate-500 dark:text-white/65'
                 }`}
               >
                 {item.label}
