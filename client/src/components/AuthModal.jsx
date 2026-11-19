@@ -577,11 +577,11 @@ export const AuthModal = () => {
             {authModalTab === 'login'
               ? 'WELCOME TO NOAH'
               : authModalTab === 'login2FA'
-              ? 'TWO-FACTOR VERIFICATION'
+              ? 'VERIFY YOUR LOGIN'
               : authModalTab === 'register'
               ? 'JOIN NOAH GAMING'
               : authModalTab === 'registerOTP'
-              ? 'VERIFY YOUR REGISTRATION'
+              ? 'VERIFY YOUR EMAIL'
               : authModalTab === 'convertGuest'
               ? 'CLAIM YOUR PROFILE'
               : 'RESET PASSWORD'}
@@ -590,14 +590,14 @@ export const AuthModal = () => {
             {authModalTab === 'login'
               ? 'Access your gaming profile, passes, and bookings'
               : authModalTab === 'login2FA'
-              ? 'Enter the 6-digit security code sent to your email'
+              ? 'Enter the verification code sent to your email address to securely sign in.'
               : authModalTab === 'register'
               ? 'Join NOAH GAMING for instant online session bookings'
               : authModalTab === 'registerOTP'
-              ? 'Enter the 6-digit activation code sent to your email to complete registration'
+              ? 'Enter the verification code sent to your email address to complete your registration.'
               : authModalTab === 'convertGuest'
               ? 'Verify your email OTP to connect existing bookings and stats'
-              : 'Enter verification OTP to set a new password'}
+              : 'Enter the verification OTP to verify your identity and set a new password.'}
           </p>
         </div>
 
@@ -738,8 +738,8 @@ export const AuthModal = () => {
                   )}
                   <span>
                     {authModalTab === 'registerOTP'
-                      ? 'Registration Verification'
-                      : 'Two-Factor Security Verification'}
+                      ? 'Registration Email Verification'
+                      : 'Login Security Verification'}
                   </span>
                 </div>
                 <span className="font-mono text-[11px] font-bold text-amber-300 flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
@@ -750,8 +750,8 @@ export const AuthModal = () => {
               </div>
               <p className="text-[#C7A5A8]">
                 {authModalTab === 'registerOTP'
-                  ? 'We sent a 6-digit verification code to activate your account at: '
-                  : 'We sent a 6-digit security code to your registered email: '}
+                  ? 'Enter the 6-digit verification code dispatched to: '
+                  : 'Enter the 6-digit security code dispatched to: '}
                 <span className="font-mono text-white font-bold">
                   {otpChallengeData?.maskedEmail || 'your email'}
                 </span>
@@ -759,15 +759,22 @@ export const AuthModal = () => {
               </p>
             </div>
 
-            {/* Email Delivery Warning (if unconfigured or failed) */}
+            {/* Email Delivery Warning: only rendered when provider returns a failure or unconfigured state */}
             {(otpChallengeData?.emailDeliveryStatus === 'FAILED' ||
               otpChallengeData?.emailDeliveryStatus === 'NOT_CONFIGURED') && (
               <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold">Email delivery is currently restricted.</span>
+                  <span className="font-bold">
+                    {otpChallengeData?.emailDeliveryStatus === 'NOT_CONFIGURED'
+                      ? 'Email service is unconfigured on the server.'
+                      : 'Email dispatch encountered a delivery issue.'}
+                  </span>
                   <p className="text-[11px] text-amber-200/80 mt-0.5">
-                    If you do not receive the email code, click <strong>Request Admin Assistance</strong> below to complete verification with lounge staff.
+                    {otpChallengeData?.emailDeliveryError
+                      ? `${otpChallengeData.emailDeliveryError}. `
+                      : ''}
+                    If you do not receive the email code, click <strong>Request Admin Assistance</strong> below to verify your session with lounge staff.
                   </p>
                 </div>
               </div>
