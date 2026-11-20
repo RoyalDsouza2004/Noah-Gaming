@@ -52,6 +52,9 @@
       // Mobile-only gesture zoom prevention (iOS Safari pinch gesture handling)
       (function() {
         try {
+          if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+          }
           if ('ontouchstart' in window || (navigator && navigator.maxTouchPoints > 0)) {
             document.addEventListener('gesturestart', function(e) {
               e.preventDefault();

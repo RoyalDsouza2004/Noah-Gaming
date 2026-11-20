@@ -41,6 +41,16 @@ function AppContent() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Guarantee homepage always initializes cleanly at the top of the viewport
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (!hash || hash === '#home') {
+        window.scrollTo(0, 0);
+      }
+    }
+  }, []);
+
   // Real-time unread notification count for sidebar & mobile header
   useEffect(() => {
     let isMounted = true;

@@ -27,7 +27,7 @@ export const CustomerMembershipSection = ({
   const [allTiersFilter, setAllTiersFilter] = useState('all'); // 'all' | 'monthly' | 'yearly'
 
   // Mobile carousel tracking
-  const [activeMobileIndex, setActiveMobileIndex] = useState(1);
+  const [activeMobileIndex, setActiveMobileIndex] = useState(0);
   const carouselRef = useRef(null);
   const cardRefs = useRef([]);
 
@@ -37,25 +37,16 @@ export const CustomerMembershipSection = ({
   // Filter 3 popular plans for current billing period
   const popularPlans = selectThreePopularPlans(plans, billingPeriod);
 
-  // Center the middle card (index 1) on mobile when mounting or switching period
-  useEffect(() => {
-    if (showAllTiers) return;
-    const targetIdx = popularPlans.length > 1 ? 1 : 0;
-    setActiveMobileIndex(targetIdx);
-
-    const timer = setTimeout(() => {
-      const targetEl = cardRefs.current[targetIdx];
-      if (targetEl && carouselRef.current) {
-        targetEl.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center',
-        });
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [billingPeriod, popularPlans.length, showAllTiers]);
+  // Handle switching billing period (resets carousel scroll without touching window scroll)
+  const handleBillingPeriodChange = (period) => {
+    if (period === billingPeriod) return;
+    setBillingPeriod(period);
+    setActiveMobileIndex(0);
+    const container = carouselRef.current;
+    if (container) {
+      container.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+  };
 
   // Track scroll position on mobile to dynamically elevate the centered card
   const handleCarouselScroll = useCallback(() => {
@@ -85,14 +76,17 @@ export const CustomerMembershipSection = ({
     }
   }, [activeMobileIndex, popularPlans.length]);
 
+  // Scroll ONLY the horizontal carousel container without affecting window scroll
   const scrollToMobileCard = (idx) => {
     setActiveMobileIndex(idx);
+    const container = carouselRef.current;
     const targetEl = cardRefs.current[idx];
-    if (targetEl && carouselRef.current) {
-      targetEl.scrollIntoView({
+    if (targetEl && container) {
+      const targetLeft =
+        targetEl.offsetLeft - (container.clientWidth - targetEl.clientWidth) / 2;
+      container.scrollTo({
+        left: Math.max(0, targetLeft),
         behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
       });
     }
   };
@@ -249,7 +243,6 @@ export const CustomerMembershipSection = ({
 
   return (
     <section
-      id="passes"
       className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8"
       aria-label="NOAH Club Passes & Memberships"
     >
@@ -297,7 +290,7 @@ export const CustomerMembershipSection = ({
               type="button"
               role="tab"
               aria-selected={billingPeriod === 'monthly'}
-              onClick={() => setBillingPeriod('monthly')}
+              onClick={() => handleBillingPeriodChange('monthly')}
               className={`px-5 py-2 rounded-full text-xs font-bold font-heading uppercase tracking-wider transition-all duration-200 ${
                 billingPeriod === 'monthly'
                   ? 'bg-[#851B2B] text-white shadow-md shadow-[#851B2B]/40'
@@ -311,7 +304,7 @@ export const CustomerMembershipSection = ({
               type="button"
               role="tab"
               aria-selected={billingPeriod === 'yearly'}
-              onClick={() => setBillingPeriod('yearly')}
+              onClick={() => handleBillingPeriodChange('yearly')}
               className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-bold font-heading uppercase tracking-wider transition-all duration-200 ${
                 billingPeriod === 'yearly'
                   ? 'bg-[#851B2B] text-white shadow-md shadow-[#851B2B]/40'
@@ -350,7 +343,7 @@ export const CustomerMembershipSection = ({
               <div className="pt-2 flex justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setBillingPeriod('monthly')}
+                  onClick={() => handleBillingPeriodChange('monthly')}
                   className="px-4 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-md shadow-[#851B2B]/20"
                 >
                   Switch to Monthly Passes
