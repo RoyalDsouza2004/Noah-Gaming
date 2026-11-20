@@ -5,6 +5,7 @@ import { membershipApi } from '../api/membership.js';
 import { scheduleApi } from '../api/schedule.js';
 import { GameCard } from '../components/games/GameCard.jsx';
 import { GameDetailsModal } from '../components/games/GameDetailsModal.jsx';
+import { CustomerMembershipSection } from '../components/membership/CustomerMembershipSection.jsx';
 import {
   Gamepad2,
   Tv,
@@ -523,92 +524,12 @@ export const HomePage = ({
       </section>
 
       {/* ========================================================= */}
-      {/* 7. CLUB PASSES & MONTHLY MEMBERSHIPS                       */}
+      {/* 7. CLUB PASSES & MEMBERSHIPS (REDESIGNED 3-PLAN CAROUSEL)  */}
       {/* ========================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#F5B942] uppercase tracking-wider mb-1">
-              <Crown className="w-4 h-4 text-[#F5B942]" /> NOAH Club Passes
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold font-heading text-[#FFF4E8]">
-              Monthly Memberships & Daily Fair-Use Quotas
-            </h2>
-            <p className="text-xs sm:text-sm text-[#C7A5A8] mt-1 max-w-2xl">
-              Frequent gamers save big with our monthly memberships. Enjoy daily included gaming quotas, 100% covered sessions, and priority booking slots.
-            </p>
-          </div>
-
-          <button
-            onClick={() => onOpenMembershipPlans && onOpenMembershipPlans()}
-            className="self-start sm:self-center px-4 py-2.5 rounded-xl bg-[#F5B942] hover:bg-[#e5aa35] text-[#171014] font-black text-xs uppercase tracking-wider font-heading flex items-center gap-2 shadow-md shadow-[#F5B942]/20"
-          >
-            <Crown className="w-4 h-4" /> View All Membership Tiers
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {plans.map((plan) => {
-            const isVip = plan.includesExclusiveGames;
-            return (
-              <div
-                key={plan._id}
-                className={`membership-plan-card p-5 rounded-2xl bg-[#260D17] border transition-all flex flex-col justify-between ${isVip
-                  ? 'border-[#F5B942]/60 shadow-xl shadow-[#F5B942]/10'
-                  : 'border-[#49202C] hover:border-[#851B2B]/60'
-                  }`}
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-[#171014] text-[#C7A5A8] border border-[#49202C]">
-                      {plan.validityDuration} {plan.validityUnit}
-                    </span>
-                    {isVip && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-[#F5B942]/20 text-[#F5B942] border border-[#F5B942]/40 flex items-center gap-1">
-                        <Flame className="w-3 h-3" /> VIP GTA 6
-                      </span>
-                    )}
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-bold text-[#FFF4E8] font-heading">{plan.name}</h4>
-                    <p className="text-xs text-[#C7A5A8] mt-1 line-clamp-2">{plan.description}</p>
-                  </div>
-
-                  <div className="pt-2 border-t border-[#49202C]">
-                    <div className="text-2xl font-black font-heading text-[#FFF4E8]">
-                      ₹{plan.price / 100}
-                      <span className="text-xs font-normal text-[#C7A5A8] font-sans"> / month</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-xs text-[#C7A5A8]">
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-[#45C987] shrink-0" />
-                      <span>Daily Quota: <strong className="text-[#FFF4E8]">{plan.dailyUsageLimit / 60}h / day</strong></span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-[#45C987] shrink-0" />
-                      <span>Max Session: <strong className="text-[#FFF4E8]">{plan.maximumSessionDuration / 60}h</strong></span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-[#45C987] shrink-0" />
-                      <span>{isVip ? 'Includes Exclusive GTA 6' : 'Covers PS5 & Pool Standard'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => onOpenMembershipPlans && onOpenMembershipPlans()}
-                  className="mt-6 w-full py-2.5 px-3 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white border border-[#851B2B] shadow-md shadow-[#851B2B]/20"
-                >
-                  <Crown className="w-3.5 h-3.5 text-white" /> <span className="text-white">Get This Pass</span>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      <CustomerMembershipSection
+        plans={plans}
+        onSelectPlan={(plan) => onOpenMembershipPlans && onOpenMembershipPlans(plan)}
+      />
 
       {/* ========================================================= */}
       {/* 8. LOUNGE LOCATION, OPENING HOURS & CONTACT               */}

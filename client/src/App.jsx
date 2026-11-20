@@ -33,6 +33,7 @@ function AppContent() {
   const [customerDashboardOpen, setCustomerDashboardOpen] = useState(false);
   const [customerDashboardInitialTab, setCustomerDashboardInitialTab] = useState('overview');
   const [membershipPlansOpen, setMembershipPlansOpen] = useState(false);
+  const [selectedPlanForPurchase, setSelectedPlanForPurchase] = useState(null);
   const [receptionistDashboardOpen, setReceptionistDashboardOpen] = useState(false);
   const [receptionistInitialTab, setReceptionistInitialTab] = useState('live');
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
@@ -310,6 +311,18 @@ function AppContent() {
     window.location.hash = tab && tab !== 'live' ? `#receptionist-${tab}` : '#receptionist';
   };
 
+  const handleOpenMembershipPlans = (plan = null) => {
+    setSelectedPlanForPurchase(plan);
+    setMyBookingsOpen(false);
+    setCustomerDashboardOpen(false);
+    setBookingWizardOpen(false);
+    setReceptionistDashboardOpen(false);
+    setAdminDashboardOpen(false);
+    setNotificationsOpen(false);
+    setMembershipPlansOpen(true);
+    window.location.hash = '#passes';
+  };
+
   const handleNavigate = (navId) => {
     setActiveNav(navId);
 
@@ -364,14 +377,7 @@ function AppContent() {
         }
         break;
       case 'passes':
-        setMyBookingsOpen(false);
-        setCustomerDashboardOpen(false);
-        setBookingWizardOpen(false);
-        setReceptionistDashboardOpen(false);
-        setAdminDashboardOpen(false);
-        setNotificationsOpen(false);
-        setMembershipPlansOpen(true);
-        window.location.hash = '#passes';
+        handleOpenMembershipPlans(null);
         break;
       case 'bookings':
         if (!getEffectiveUser()) {
@@ -546,7 +552,7 @@ function AppContent() {
             onOpenBooking={handleOpenBooking}
             onOpenMyBookings={() => handleNavigate('bookings')}
             onOpenCustomerDashboard={() => handleNavigate('profile')}
-            onOpenMembershipPlans={() => handleNavigate('passes')}
+            onOpenMembershipPlans={handleOpenMembershipPlans}
           />
         </main>
 
@@ -657,12 +663,15 @@ function AppContent() {
       {/* Monthly Membership Plans */}
       {membershipPlansOpen && (
         <MembershipPlansModal
+          initialPlanId={selectedPlanForPurchase?._id || selectedPlanForPurchase?.id}
           onClose={() => {
             setMembershipPlansOpen(false);
+            setSelectedPlanForPurchase(null);
             window.location.hash = '#home';
           }}
           onPurchaseSuccess={() => {
             setMembershipPlansOpen(false);
+            setSelectedPlanForPurchase(null);
             handleNavigate('profile');
           }}
         />

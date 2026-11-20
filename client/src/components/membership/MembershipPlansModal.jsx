@@ -24,7 +24,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
+export const MembershipPlansModal = ({ onClose, onPurchaseSuccess, initialPlanId }) => {
   const { user, isAuthenticated, openLoginModal, refreshUser } = useAuth();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +43,12 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
         const res = await membershipApi.getPlans();
         if (res.success && res.data?.plans) {
           setPlans(res.data.plans);
+          if (initialPlanId) {
+            const matched = res.data.plans.find(
+              (p) => String(p._id) === String(initialPlanId) || String(p.id) === String(initialPlanId)
+            );
+            if (matched) setSelectedPlan(matched);
+          }
         }
       } catch (err) {
         setError(err.message || 'Failed to fetch membership plans');
@@ -51,7 +57,16 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess }) => {
       }
     };
     fetchPlans();
-  }, []);
+  }, [initialPlanId]);
+
+  useEffect(() => {
+    if (initialPlanId && plans.length > 0) {
+      const matched = plans.find(
+        (p) => String(p._id) === String(initialPlanId) || String(p.id) === String(initialPlanId)
+      );
+      if (matched) setSelectedPlan(matched);
+    }
+  }, [initialPlanId, plans]);
 
   const handleSelectPlan = (plan) => {
     setSelectedPlan(plan);
