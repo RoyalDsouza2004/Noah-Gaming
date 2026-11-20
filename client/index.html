@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/icons/Noah_gaming_logo.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>NOAH GAMING | PLAY • CHILL • CONNECT</title>
     
     <!-- PWA & Mobile Web App Meta -->
@@ -42,6 +45,23 @@
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) {
             meta.setAttribute('content', theme === 'light' ? '#F5F6FA' : '#851B2B');
+          }
+        } catch (e) {}
+      })();
+
+      // Mobile-only gesture zoom prevention (iOS Safari pinch gesture handling)
+      (function() {
+        try {
+          if ('ontouchstart' in window || (navigator && navigator.maxTouchPoints > 0)) {
+            document.addEventListener('gesturestart', function(e) {
+              e.preventDefault();
+            }, { passive: false });
+            document.addEventListener('gesturechange', function(e) {
+              e.preventDefault();
+            }, { passive: false });
+            document.addEventListener('gestureend', function(e) {
+              e.preventDefault();
+            }, { passive: false });
           }
         } catch (e) {}
       })();
