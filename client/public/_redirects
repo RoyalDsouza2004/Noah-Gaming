@@ -1,1 +1,4 @@
-/*    /index.html   200
+# Cloudflare Workers / Pages Redirects
+# SPA routing is natively handled by Cloudflare Workers Static Assets
+# using `not_found_handling = "single-page-application"` in wrangler.jsonc.
+# Redundant "/* /index.html 200" removed to prevent infinite loop error (code: 100324).
