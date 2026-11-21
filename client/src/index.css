@@ -503,6 +503,7 @@ html.light .game-card-item p {
 
 /* Booking Wizard Game Selection Cards (Step 2 - Choose Your Title) */
 /* 1. Default unselected state in Light Mode: clean white background, neutral border */
+.game-selection-card,
 html.light .game-selection-card,
 [data-theme="light"] .game-selection-card {
   background-color: #FFFFFF !important;
@@ -511,16 +512,20 @@ html.light .game-selection-card,
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 2. HOVER STATE IN LIGHT MODE: Visibly rich reddish brand tone (#FDE2E7 rose-red background, #851B2B burgundy border & shadow) */
+/* 2. HOVER STATE: Visibly rich reddish brand tone (#FDE2E7 rose-red background, #851B2B burgundy border & shadow) */
+.game-selection-card:hover,
 html.light .game-selection-card:hover,
 [data-theme="light"] .game-selection-card:hover {
   background-color: #FDE2E7 !important;
   border-color: #851B2B !important;
   box-shadow: 0 8px 24px -4px rgba(133, 27, 43, 0.28) !important;
   transform: translateY(-2px) !important;
+  cursor: pointer !important;
 }
 
 /* Disabled cards do not elevate or change color on hover */
+.game-selection-card.cursor-not-allowed:hover,
+.game-selection-card[class*="cursor-not-allowed"]:hover,
 html.light .game-selection-card.cursor-not-allowed:hover,
 html.light .game-selection-card[class*="cursor-not-allowed"]:hover,
 [data-theme="light"] .game-selection-card.cursor-not-allowed:hover,
@@ -529,9 +534,14 @@ html.light .game-selection-card[class*="cursor-not-allowed"]:hover,
   border-color: #E2E5EC !important;
   box-shadow: none !important;
   transform: none !important;
+  cursor: not-allowed !important;
 }
 
 /* 3. SELECTED STATE IN LIGHT MODE (takes priority over hover) */
+.game-selection-card.is-selected,
+.game-selection-card.is-selected:hover,
+.game-selection-card[class*="ring-2"],
+.game-selection-card[class*="ring-2"]:hover,
 html.light .game-selection-card.is-selected,
 html.light .game-selection-card.is-selected:hover,
 html.light .game-selection-card[class*="ring-2"],
@@ -546,6 +556,10 @@ html.light .game-selection-card[class*="ring-2"]:hover,
   transform: translateY(0) !important;
 }
 
+.game-selection-card.is-exclusive.is-selected,
+.game-selection-card.is-exclusive.is-selected:hover,
+.game-selection-card.is-exclusive[class*="ring-2"],
+.game-selection-card.is-exclusive[class*="ring-2"]:hover,
 html.light .game-selection-card.is-exclusive.is-selected,
 html.light .game-selection-card.is-exclusive.is-selected:hover,
 html.light .game-selection-card.is-exclusive[class*="ring-2"],
