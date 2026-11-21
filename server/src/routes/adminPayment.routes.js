@@ -6,6 +6,7 @@ import {
   issueRefund,
   getRefundsList,
   getPaymentSettings,
+  updatePaymentFeatures,
 } from '../controllers/adminPayment.controller.js';
 import { authenticate } from '../middlewares/auth.js';
 import { authorize } from '../middlewares/rbac.js';
@@ -17,8 +18,9 @@ router.use(authenticate);
 // Transactions List (Admin and Receptionist can view transactions)
 router.get('/payments', authorize('admin', 'receptionist'), getAdminPayments);
 
-// Razorpay Test Mode Gateway Settings (Admin Only)
+// Razorpay Test Mode Gateway Settings & Feature Controls (Admin Only)
 router.get('/payments/settings', authorize('admin'), getPaymentSettings);
+router.put('/payments/features', authorize('admin'), updatePaymentFeatures);
 
 // Revenue Reports & Analytics (Admin Only)
 router.get('/payments/reports', authorize('admin'), getRevenueReports);

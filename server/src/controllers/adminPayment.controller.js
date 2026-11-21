@@ -2,9 +2,11 @@ import Payment from '../models/Payment.js';
 import Refund from '../models/Refund.js';
 import Booking from '../models/Booking.js';
 import User from '../models/User.js';
+import ActivityLog from '../models/ActivityLog.js';
 import { processRefund } from '../services/payment.service.js';
 import { parseISTDateTime, formatISTDate } from '../utils/timeSlots.js';
 import { getRazorpayConfigStatus } from '../services/razorpay.service.js';
+import { getSystemFeatures, updateSystemFeatures } from '../config/features.js';
 import {
   calculateRevenueMetrics,
   getISTDateBoundaries,
@@ -411,6 +413,7 @@ export const getPaymentSettings = async (req, res) => {
         lastVerificationStatus: lastAttempt ? lastAttempt.paymentStatus : 'NONE',
         businessName: 'NOAH GAMING',
         currency: 'INR',
+        features: await getSystemFeatures(),
       },
     });
   } catch (err) {
@@ -418,6 +421,44 @@ export const getPaymentSettings = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve payment gateway settings',
+      error: err.message,
+    });
+  }
+};
+
+/**
+ * PUT /api/admin/payments/features
+ * Admin updates master availability toggles for online payments and memberships
+ */
+export const updatePaymentFeatures = async (req, res) => {
+  try {
+    const { enableOnlinePayments, enableMembershipPurchases } = req.body;
+    const updated = await updateSystemFeatures(
+      { enableOnlinePayments, enableMembershipPurchases },
+      req.user?._id
+    );
+
+    // Audit Log for Admin Security
+    await ActivityLog.create({
+      action: 'UPDATE_FEATURE_FLAGS',
+      performedBy: req.user?._id,
+      role: req.user?.role || 'admin',
+      details: {
+        enableOnlinePayments: updated.enableOnlinePayments,
+        enableMembershipPurchases: updated.enableMembershipPurchases,
+      },
+    }).catch(() => {});
+
+    res.status(200).json({
+      success: true,
+      message: 'System feature flags updated successfully',
+      data: updated,
+    });
+  } catch (err) {
+    console.error('[Update Features Error]:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update system feature flags',
       error: err.message,
     });
   }

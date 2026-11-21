@@ -5,6 +5,7 @@ dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
 
 import app from './app.js';
 import { connectDB } from './config/db.js';
+import { getSystemFeatures } from './config/features.js';
 import { releaseExpiredReservations } from './services/payment.service.js';
 import { checkAndExpireSubscriptions } from './services/membership.service.js';
 import { startScheduler } from './jobs/scheduler.js';
@@ -18,6 +19,7 @@ async function startServer() {
     console.log('====================================================');
 
     await connectDB();
+    await getSystemFeatures();
 
     // Start Phase 8 real-time automation and session timer scheduler
     startScheduler(10000);

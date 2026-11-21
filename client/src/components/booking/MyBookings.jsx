@@ -8,7 +8,8 @@ import { RazorpayModal } from '../payment/RazorpayModal.jsx';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { showToast } from '../../utils/toast.js';
 import { Pagination } from '../common/Pagination.jsx';
-import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
 import {
   Calendar,
   Clock,
@@ -61,6 +62,7 @@ function formatBookingTimeRange(booking) {
 
 export const MyBookings = ({ onNewBooking, onClose }) => {
   const { user, isAuthenticated } = useAuth();
+  const { enableOnlinePayments } = useFeatureFlags();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -135,7 +137,7 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
 
   // Initiate Online Balance Payment via Razorpay
   const handlePayRemainingBalance = async (booking) => {
-    if (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS) {
+    if (!enableOnlinePayments) {
       showToast.info(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
       return;
     }
@@ -323,19 +325,19 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
                   {hasBalanceDue && (
                     <button
                       onClick={() => handlePayRemainingBalance(booking)}
-                      disabled={!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS}
+                      disabled={!enableOnlinePayments}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold font-heading flex items-center gap-1 transition-all ${
-                        !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                        !enableOnlinePayments
                           ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80 shadow-none'
                           : 'bg-[#D7FF00] hover:bg-[#c8ee00] text-[#171014] shadow-md shadow-[#851B2B]/20'
                       }`}
                       title={
-                        !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                        !enableOnlinePayments
                           ? 'Online balance payments are temporarily unavailable. Please pay at the counter.'
                           : 'Pay remaining balance online'
                       }
                     >
-                      {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS ? (
+                      {!enableOnlinePayments ? (
                         <>
                           <Banknote className="w-3 h-3 text-amber-400" /> Pay Due at Counter ₹{(booking.balanceRemaining || 0) / 100}
                         </>

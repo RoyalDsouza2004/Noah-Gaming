@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { paymentApi } from '../../api/payment.js';
 import { loadRazorpayScript, launchRazorpayCheckout } from '../../utils/razorpay.js';
 import { showToast } from '../../utils/toast.js';
-import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
 import {
   CreditCard,
   Smartphone,
@@ -24,6 +25,7 @@ export const RazorpayModal = ({
   onSuccess,
   onClose,
 }) => {
+  const { enableOnlinePayments } = useFeatureFlags();
   const [selectedMethod, setSelectedMethod] = useState('UPI'); // UPI, CARD, NETBANKING
   const [upiId, setUpiId] = useState('customer@okhdfcbank');
   const [processing, setProcessing] = useState(false);
@@ -46,7 +48,7 @@ export const RazorpayModal = ({
   }, []);
 
   const handlePay = async () => {
-    if (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS) {
+    if (!enableOnlinePayments) {
       setError(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
       showToast.error(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
       return;
@@ -340,7 +342,7 @@ export const RazorpayModal = ({
               )}
 
               {/* Notice Banner when online payments are disabled */}
-              {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS && (
+              {!enableOnlinePayments && (
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>{PAYMENT_MESSAGES.ONLINE_UNAVAILABLE}</span>
@@ -351,16 +353,16 @@ export const RazorpayModal = ({
               <button
                 type="button"
                 onClick={handlePay}
-                disabled={!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || processing}
+                disabled={!enableOnlinePayments || processing}
                 className={`w-full py-3.5 rounded-xl font-black font-heading text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                  !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                  !enableOnlinePayments
                     ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80 shadow-none'
                     : 'bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white shadow-lg shadow-[#851B2B]/20 cursor-pointer active:scale-[0.98]'
                 }`}
               >
                 <Lock className="w-4 h-4" />
                 <span>
-                  {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                  {!enableOnlinePayments
                     ? 'Online Payments Unavailable'
                     : `Pay ₹${order.amountInRupees || (order.amount ? order.amount / 100 : 0)} (Test Mode)`}
                 </span>

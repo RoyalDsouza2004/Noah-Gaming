@@ -6,7 +6,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { RazorpayModal } from '../payment/RazorpayModal.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { showToast } from '../../utils/toast.js';
-import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
 import {
   Gamepad2,
   Tv,
@@ -64,6 +65,7 @@ export const isGameMultiplayer = (game) => {
 
 export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, onClose }) => {
   const { user, isAuthenticated, openLoginModal } = useAuth();
+  const { enableOnlinePayments } = useFeatureFlags();
 
   // Wizard Step: 1 = Device, 2 = Game, 3 = Date/Time/Slot, 4 = Players & Pricing, 5 = Confirmation
   const [step, setStep] = useState(initialGame ? 3 : 1);
@@ -120,8 +122,14 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   const [confirmedBooking, setConfirmedBooking] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [paymentChoice, setPaymentChoice] = useState(
-    FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS ? 'ONLINE' : 'COUNTER'
+    enableOnlinePayments ? 'ONLINE' : 'COUNTER'
   ); // 'ONLINE' | 'COUNTER'
+
+  useEffect(() => {
+    if (!enableOnlinePayments && paymentChoice === 'ONLINE') {
+      setPaymentChoice('COUNTER');
+    }
+  }, [enableOnlinePayments, paymentChoice]);
   const [razorpayOrder, setRazorpayOrder] = useState(null);
   const [razorpayModalOpen, setRazorpayModalOpen] = useState(false);
   const [confirmedPayment, setConfirmedPayment] = useState(null);
@@ -320,7 +328,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       const requiresAdvance = pricingQuote?.advanceRequired || selectedGame?.isExclusive;
 
       // 3. If online payments are enabled and online payment selected or mandatory GTA 6 advance required
-      if (FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS && (paymentChoice === 'ONLINE' || requiresAdvance)) {
+      if (enableOnlinePayments && (paymentChoice === 'ONLINE' || requiresAdvance)) {
         const purpose = requiresAdvance ? 'GTA6_ADVANCE' : 'BOOKING_FULL';
         const orderRes = await paymentApi.createOrder({
           bookingId: newBooking._id,
@@ -1244,7 +1252,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       </div>
                     </div>
                   ) : pricingQuote?.advanceRequired || selectedGame?.isExclusive ? (
-                    FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS ? (
+                    enableOnlinePayments ? (
                       <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs space-y-1">
                         <div className="flex items-center gap-1.5 font-bold">
                           <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -1279,7 +1287,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           <span className="font-mono font-bold">-₹{membershipBenefit.discountRupees}</span>
                         </div>
                       )}
-                      {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS && (
+                      {!enableOnlinePayments && (
                         <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                           <span>{PAYMENT_MESSAGES.ONLINE_UNAVAILABLE}</span>
@@ -1288,14 +1296,14 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <button
                           type="button"
-                          disabled={!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS}
+                          disabled={!enableOnlinePayments}
                           onClick={() => {
-                            if (FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS) {
+                            if (enableOnlinePayments) {
                               setPaymentChoice('ONLINE');
                             }
                           }}
                           className={`p-2.5 rounded-xl border text-left transition-all ${
-                            !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                            !enableOnlinePayments
                               ? 'bg-slate-100 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-400 cursor-not-allowed opacity-60'
                               : paymentChoice === 'ONLINE'
                               ? 'bg-amber-50/70 dark:bg-[#851B2B]/20 border-[#851B2B] text-slate-900 dark:text-[#FFF4E8] ring-1 ring-[#851B2B]'
@@ -1307,7 +1315,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                             <span>Pay Online</span>
                           </div>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                            {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                            {!enableOnlinePayments
                               ? 'Temporarily Unavailable'
                               : 'Razorpay (UPI / Cards)'}
                           </span>
@@ -1358,7 +1366,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   ? 'Confirming with Database...'
                   : isMembershipFullyCovered
                   ? 'Book Now - Covered by Membership'
-                  : !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || paymentChoice === 'COUNTER'
+                  : !enableOnlinePayments || paymentChoice === 'COUNTER'
                   ? 'Confirm & Pay at Counter'
                   : (pricingQuote?.advanceRequired || selectedGame?.isExclusive)
                   ? `Pay Advance ₹${pricingQuote?.minimumAdvanceRupees} via Razorpay`

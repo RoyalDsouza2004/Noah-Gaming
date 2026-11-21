@@ -19,12 +19,14 @@ import {
   selectThreePopularPlans,
   calculateYearlyDiscountPercentage,
 } from '../../utils/membershipPlanHelpers.js';
-import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
 
 export const CustomerMembershipSection = ({
   plans = [],
   onSelectPlan,
 }) => {
+  const { enableMembershipPurchases } = useFeatureFlags();
   const [billingPeriod, setBillingPeriod] = useState('monthly'); // 'monthly' | 'yearly'
   const [showAllTiers, setShowAllTiers] = useState(false);
   const [allTiersFilter, setAllTiersFilter] = useState('all'); // 'all' | 'monthly' | 'yearly'
@@ -230,22 +232,22 @@ export const CustomerMembershipSection = ({
         {/* CTA Button */}
         <button
           type="button"
-          disabled={!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES}
+          disabled={!enableMembershipPurchases}
           onClick={() => {
-            if (FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES && onSelectPlan) {
+            if (enableMembershipPurchases && onSelectPlan) {
               onSelectPlan(plan);
             }
           }}
-          aria-disabled={!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES}
+          aria-disabled={!enableMembershipPurchases}
           className={`mt-6 w-full py-3 px-4 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 ${
-            !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES
+            !enableMembershipPurchases
               ? 'bg-[#1D0C13] text-[#A68F94] border border-[#3E1A25] cursor-not-allowed opacity-80 shadow-none'
               : isPopular
               ? 'bg-gradient-to-r from-[#851B2B] to-[#A51F35] hover:from-[#6E1623] hover:to-[#851B2B] text-white shadow-lg shadow-[#851B2B]/30 border border-[#A51F35]'
               : 'bg-[#851B2B] hover:bg-[#6E1623] text-white border border-[#851B2B] shadow-md shadow-[#851B2B]/20'
           }`}
         >
-          {!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES ? (
+          {!enableMembershipPurchases ? (
             <>
               <Lock className="w-3.5 h-3.5 text-[#F5B942]" />
               <span>Memberships Temporarily Unavailable</span>
@@ -297,7 +299,7 @@ export const CustomerMembershipSection = ({
       </div>
 
       {/* Temporarily Disabled Notice Banner */}
-      {!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES && (
+      {!enableMembershipPurchases && (
         <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#851B2B]/20 border border-[#851B2B]/40 text-[#FFF4E8]">
           <div className="w-9 h-9 rounded-xl bg-[#851B2B]/40 flex items-center justify-center shrink-0 text-[#F5B942]">
             <AlertCircle className="w-5 h-5" />

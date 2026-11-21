@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { membershipApi } from '../../api/membership.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { showToast } from '../../utils/toast.js';
-import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
 import {
   Crown,
   Check,
@@ -27,6 +28,7 @@ import {
 
 export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
   const { user, refreshUser } = useAuth();
+  const { enableOnlinePayments, enableMembershipPurchases } = useFeatureFlags();
   const [loading, setLoading] = useState(true);
   const [eligiblePlans, setEligiblePlans] = useState([]);
   const [currentPlanInfo, setCurrentPlanInfo] = useState(null);
@@ -91,7 +93,7 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
     if (!selectedPlan) return;
 
     const isPaidUpgrade = (quote?.financials?.finalAmountPayableRupees || 0) > 0;
-    if (isPaidUpgrade && (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES)) {
+    if (isPaidUpgrade && (!enableOnlinePayments || !enableMembershipPurchases)) {
       showToast.error(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
       return;
     }
@@ -443,7 +445,7 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
           {selectedPlan && quote && (
             (() => {
               const isPaid = (quote.financials.finalAmountPayableRupees || 0) > 0;
-              const isBlocked = isPaid && (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES);
+              const isBlocked = isPaid && (!enableOnlinePayments || !enableMembershipPurchases);
 
               return (
                 <button

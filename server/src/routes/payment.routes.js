@@ -10,6 +10,7 @@ import {
   getMyPayments,
   getPaymentReceipt,
   getPublicConfig,
+  getPublicFeatures,
 } from '../controllers/payment.controller.js';
 import { authenticate } from '../middlewares/auth.js';
 import { authorize } from '../middlewares/rbac.js';
@@ -19,8 +20,9 @@ const router = express.Router();
 // Webhook endpoint (Raw body or parsed JSON signature-checked)
 router.post('/webhook', handleWebhook);
 
-// Public / Client checkout configuration (Returns public Key ID & Test Mode status only)
+// Public / Client checkout configuration & feature flags
 router.get('/config', getPublicConfig);
+router.get('/features', getPublicFeatures);
 
 // Protected Customer & Staff Endpoints
 router.use(authenticate);

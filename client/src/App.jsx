@@ -21,6 +21,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard.jsx';
 import { NotificationCenter } from './components/notifications/NotificationCenter.jsx';
 import { notificationApi } from './api/notifications.js';
 import { showToast } from './utils/toast.js';
+import { fetchFeatureFlags } from './utils/featureFlags.js';
 
 function AppContent() {
   const { user, loading, openLoginModal, logout } = useAuth();
@@ -43,6 +44,7 @@ function AppContent() {
 
   // Guarantee homepage always initializes cleanly at the top of the viewport
   useEffect(() => {
+    fetchFeatureFlags();
     if (typeof window !== 'undefined') {
       const hash = window.location.hash;
       if (!hash || hash === '#home') {

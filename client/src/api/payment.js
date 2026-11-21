@@ -107,6 +107,15 @@ export const paymentApi = {
   getPaymentSettings: () =>
     apiRequest('/admin/payments/settings'),
 
+  getFeatures: () =>
+    apiRequest('/payments/features'),
+
+  updateFeatures: ({ enableOnlinePayments, enableMembershipPurchases }) =>
+    apiRequest('/admin/payments/features', {
+      method: 'PUT',
+      body: { enableOnlinePayments, enableMembershipPurchases },
+    }),
+
   // 6. Admin Financial Operations & Reports
   getAdminPayments: (query = '') =>
     apiRequest(`/admin/payments${query ? `?${query}` : ''}`),

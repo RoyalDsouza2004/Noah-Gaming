@@ -5,7 +5,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { MembershipUpgradeModal } from './MembershipUpgradeModal.jsx';
 import { showToast } from '../../utils/toast.js';
 import { launchRazorpayCheckout } from '../../utils/razorpay.js';
-import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
 import {
   Crown,
   Check,
@@ -27,6 +28,7 @@ import {
 
 export const MembershipPlansModal = ({ onClose, onPurchaseSuccess, initialPlanId }) => {
   const { user, isAuthenticated, openLoginModal, refreshUser } = useAuth();
+  const { enableMembershipPurchases, enableOnlinePayments } = useFeatureFlags();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -75,7 +77,7 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess, initialPlanId
   };
 
   const handleStartPurchase = async (plan) => {
-    if (!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES || !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS) {
+    if (!enableMembershipPurchases || !enableOnlinePayments) {
       showToast.error(PAYMENT_MESSAGES.MEMBERSHIP_UNAVAILABLE);
       return;
     }
@@ -232,7 +234,7 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess, initialPlanId
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
-          {!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES && (
+          {!enableMembershipPurchases && (
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2.5">
               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
               <span>{PAYMENT_MESSAGES.MEMBERSHIP_UNAVAILABLE}</span>
@@ -379,18 +381,18 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess, initialPlanId
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES) return;
+                          if (!enableMembershipPurchases) return;
                           setSelectedPlan(plan);
                           handleStartPurchase(plan);
                         }}
-                        disabled={!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES || processing}
+                        disabled={!enableMembershipPurchases || processing}
                         className={`w-full py-2.5 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                          !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES
+                          !enableMembershipPurchases
                             ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80'
                             : 'bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white shadow-md shadow-[#851B2B]/20'
                         }`}
                       >
-                        {!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES ? (
+                        {!enableMembershipPurchases ? (
                           <>
                             <Lock className="w-3.5 h-3.5 text-slate-400" />
                             <span>Memberships Temporarily Unavailable</span>

@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { showToast } from '../../utils/toast.js';
 import { Pagination } from '../common/Pagination.jsx';
+import { setFeatureFlags } from '../../utils/featureFlags.js';
 import {
   DollarSign,
   TrendingUp,
@@ -34,6 +35,8 @@ import {
   ExternalLink,
   Download,
   Loader2,
+  Power,
+  Crown,
 } from 'lucide-react';
 
 export const AdminPaymentsTab = () => {
@@ -63,6 +66,42 @@ export const AdminPaymentsTab = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [dateRangeFilter, setDateRangeFilter] = useState('all_time');
   const [exportingPayments, setExportingPayments] = useState(false);
+  const [togglingOnline, setTogglingOnline] = useState(false);
+  const [togglingMembership, setTogglingMembership] = useState(false);
+
+  const handleToggleFeature = async (featureName, nextValue) => {
+    try {
+      const payload = {};
+      if (featureName === 'online') {
+        setTogglingOnline(true);
+        payload.enableOnlinePayments = nextValue;
+      } else {
+        setTogglingMembership(true);
+        payload.enableMembershipPurchases = nextValue;
+      }
+
+      const res = await paymentApi.updateFeatures(payload);
+      if (res.success && res.data) {
+        setFeatureFlags(res.data);
+        setSettings((prev) => ({
+          ...prev,
+          features: res.data,
+        }));
+        showToast.success(
+          featureName === 'online'
+            ? (nextValue ? 'Online Payments (Razorpay) ENABLED' : 'Online Payments PAUSED')
+            : (nextValue ? 'Membership Purchases ENABLED' : 'Membership Purchases PAUSED')
+        );
+      } else {
+        throw new Error(res.message || 'Failed to update feature');
+      }
+    } catch (err) {
+      showToast.error(err.message || 'Failed to update feature flag');
+    } finally {
+      setTogglingOnline(false);
+      setTogglingMembership(false);
+    }
+  };
 
   const handleExportPayments = async (format = 'xlsx') => {
     setExportingPayments(true);
@@ -529,9 +568,9 @@ export const AdminPaymentsTab = () => {
                 : 'text-slate-400 border-transparent hover:text-white'
             }`}
           >
-            <Settings className="w-4 h-4" /> Razorpay Test Settings
+            <Settings className="w-4 h-4" /> Gateway & Feature Controls
             <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#D7FF00]/15 text-[#D7FF00] font-mono border border-[#D7FF00]/30 ml-1">
-              TEST MODE
+              {settings?.features?.enableOnlinePayments ? 'ONLINE ACTIVE' : 'COUNTER ONLY'}
             </span>
           </button>
         )}
@@ -1179,9 +1218,130 @@ export const AdminPaymentsTab = () => {
         </div>
       )}
 
-      {/* ---------------- 4. RAZORPAY SETTINGS VIEW ---------------- */}
+      {/* ---------------- 4. RAZORPAY SETTINGS & FEATURE CONTROLS ---------------- */}
       {activeSubTab === 'settings' && (
         <div className="space-y-6 animate-fadeIn">
+          {/* System Availability & Master Feature Controls */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#260D17] via-[#1D0C13] to-[#171014] border border-[#851B2B]/60 shadow-2xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#49202C]">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Power className="w-5 h-5 text-[#F5B942]" />
+                  <h3 className="text-lg font-black font-heading text-white">
+                    System Master Availability Controls
+                  </h3>
+                </div>
+                <p className="text-xs text-[#C7A5A8] mt-1">
+                  Instantly toggle customer-facing online checkouts and membership passes without redeploying code. Changes apply immediately in real time.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Online Payments Switch */}
+              <div className="p-5 rounded-2xl bg-[#171014] border border-[#49202C] flex flex-col justify-between space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold font-heading text-white flex items-center gap-1.5">
+                      <CreditCard className="w-4 h-4 text-[#D7FF00]" />
+                      Razorpay Online Payments
+                    </span>
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                        settings?.features?.enableOnlinePayments
+                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      }`}
+                    >
+                      {settings?.features?.enableOnlinePayments ? 'ONLINE CHECKOUT ACTIVE' : 'ONLINE PAYMENTS PAUSED'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#C7A5A8]">
+                    {settings?.features?.enableOnlinePayments
+                      ? 'Customers can pay online via Razorpay (UPI, Debit/Credit Cards, Net Banking) for new bookings and balance dues.'
+                      : 'Online checkout is disabled. Online buttons display a notice directing customers to pay at the venue counter.'}
+                  </p>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between border-t border-[#49202C]/60">
+                  <span className="text-xs text-slate-400 font-mono">
+                    Status: <strong className={settings?.features?.enableOnlinePayments ? 'text-emerald-400' : 'text-amber-400'}>
+                      {settings?.features?.enableOnlinePayments ? 'Enabled' : 'Disabled (Counter Only)'}
+                    </strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleFeature('online', !settings?.features?.enableOnlinePayments)}
+                    disabled={togglingOnline}
+                    className={`px-4 py-2 rounded-xl font-bold font-heading text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-md ${
+                      settings?.features?.enableOnlinePayments
+                        ? 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                    }`}
+                  >
+                    {togglingOnline ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Power className="w-3.5 h-3.5" />
+                    )}
+                    <span>{settings?.features?.enableOnlinePayments ? 'Pause Online Payments' : 'Enable Online Payments'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Membership Purchases Switch */}
+              <div className="p-5 rounded-2xl bg-[#171014] border border-[#49202C] flex flex-col justify-between space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold font-heading text-white flex items-center gap-1.5">
+                      <Crown className="w-4 h-4 text-[#F5B942]" />
+                      Customer Membership Passes
+                    </span>
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                        settings?.features?.enableMembershipPurchases
+                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      }`}
+                    >
+                      {settings?.features?.enableMembershipPurchases ? 'PASS SALES ACTIVE' : 'PASS SALES PAUSED'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#C7A5A8]">
+                    {settings?.features?.enableMembershipPurchases
+                      ? 'Customers can purchase new monthly/yearly passes, upgrade plans, or renew passes directly from the website.'
+                      : 'New purchases & online renewals are paused with "Memberships Temporarily Unavailable". Existing active passes remain fully active.'}
+                  </p>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between border-t border-[#49202C]/60">
+                  <span className="text-xs text-slate-400 font-mono">
+                    Status: <strong className={settings?.features?.enableMembershipPurchases ? 'text-emerald-400' : 'text-amber-400'}>
+                      {settings?.features?.enableMembershipPurchases ? 'Enabled' : 'Disabled (Coming Soon)'}
+                    </strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleFeature('membership', !settings?.features?.enableMembershipPurchases)}
+                    disabled={togglingMembership}
+                    className={`px-4 py-2 rounded-xl font-bold font-heading text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-md ${
+                      settings?.features?.enableMembershipPurchases
+                        ? 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                    }`}
+                  >
+                    {togglingMembership ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Power className="w-3.5 h-3.5" />
+                    )}
+                    <span>{settings?.features?.enableMembershipPurchases ? 'Pause Pass Sales' : 'Enable Pass Sales'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Main Status Hero Card */}
           <div className="p-6 rounded-3xl bg-gradient-to-r from-[#260D17] via-[#171014] to-[#260D17] border border-[#851B2B]/40 shadow-xl space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { membershipApi } from '../../api/membership.js';
 import { showToast } from '../../utils/toast.js';
 import { launchRazorpayCheckout } from '../../utils/razorpay.js';
-import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
 import {
   RotateCcw,
   Sparkles,
@@ -23,6 +24,7 @@ export const MembershipRenewalModal = ({
   onClose,
   onRenewalSuccess,
 }) => {
+  const { enableOnlinePayments, enableMembershipPurchases } = useFeatureFlags();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [orderData, setOrderData] = useState(null);
@@ -51,7 +53,7 @@ export const MembershipRenewalModal = ({
   const newExpiry = new Date(baseDate.getTime() + validityDays * 24 * 60 * 60 * 1000);
 
   const handleStartRenewal = async () => {
-    if (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES) {
+    if (!enableOnlinePayments || !enableMembershipPurchases) {
       showToast.error(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
       return;
     }
@@ -233,7 +235,7 @@ export const MembershipRenewalModal = ({
             </div>
 
             {/* Notice Banner when online payments / renewals are disabled */}
-            {(!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES) && (
+            {(!enableOnlinePayments || !enableMembershipPurchases) && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>{PAYMENT_MESSAGES.ONLINE_UNAVAILABLE}</span>
@@ -253,14 +255,14 @@ export const MembershipRenewalModal = ({
               <button
                 type="button"
                 onClick={handleStartRenewal}
-                disabled={!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES || processing}
+                disabled={!enableOnlinePayments || !enableMembershipPurchases || processing}
                 className={`flex-1 py-3 rounded-xl font-bold font-heading text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
-                  !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES
+                  !enableOnlinePayments || !enableMembershipPurchases
                     ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80 shadow-none'
                     : 'bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white shadow-lg shadow-[#851B2B]/20 disabled:opacity-50'
                 }`}
               >
-                {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES ? (
+                {!enableOnlinePayments || !enableMembershipPurchases ? (
                   <>
                     <Lock className="w-4 h-4 text-slate-400" />
                     <span>Renewals Temporarily Unavailable</span>

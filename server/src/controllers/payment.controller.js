@@ -12,7 +12,23 @@ import {
 import { generateReceipt } from '../utils/receiptGenerator.js';
 import { generatePdfReceipt } from '../services/pdfReceipt.service.js';
 import { generateTestPaymentSignature, getRazorpayKeyId } from '../services/razorpay.service.js';
-import { FEATURES, PAYMENT_MESSAGES } from '../config/features.js';
+import { FEATURES, PAYMENT_MESSAGES, getSystemFeatures } from '../config/features.js';
+
+/**
+ * GET /api/payments/features
+ * Returns public system availability feature flags (Online Payments & Membership Purchases)
+ */
+export const getPublicFeatures = async (req, res) => {
+  try {
+    const data = await getSystemFeatures();
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 /**
  * GET /api/payments/config

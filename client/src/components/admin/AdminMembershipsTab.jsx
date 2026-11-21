@@ -34,14 +34,20 @@ import {
   ArrowRight,
   Printer,
   FileText,
+  Power,
 } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { showToast } from '../../utils/toast.js';
 import { Pagination } from '../common/Pagination.jsx';
+import { paymentApi } from '../../api/payment.js';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
+import { setFeatureFlags } from '../../utils/featureFlags.js';
 
 export const AdminMembershipsTab = () => {
   const { user, isAdmin, isStaff } = useAuth();
+  const { enableMembershipPurchases } = useFeatureFlags();
+  const [togglingMembershipSales, setTogglingMembershipSales] = useState(false);
 
   const [activeSubTab, setActiveSubTab] = useState('plans'); // 'plans', 'subscriptions', 'offline', 'usage'
 
@@ -75,6 +81,27 @@ export const AdminMembershipsTab = () => {
       showToast.error(err.message || 'Failed to export memberships.');
     } finally {
       setExportingMemberships(false);
+    }
+  };
+
+  const handleToggleMembershipSales = async (nextValue) => {
+    setTogglingMembershipSales(true);
+    try {
+      const res = await paymentApi.updateFeatures({ enableMembershipPurchases: nextValue });
+      if (res.success && res.data) {
+        setFeatureFlags(res.data);
+        showToast.success(
+          nextValue
+            ? 'Customer Membership Purchases ENABLED'
+            : 'Customer Membership Purchases PAUSED'
+        );
+      } else {
+        throw new Error(res.message || 'Failed to update feature');
+      }
+    } catch (err) {
+      showToast.error(err.message || 'Failed to update membership sales setting');
+    } finally {
+      setTogglingMembershipSales(false);
     }
   };
 
@@ -600,6 +627,68 @@ export const AdminMembershipsTab = () => {
           <span>{actionError}</span>
         </div>
       )}
+
+      {/* Customer Pass Sales Status Banner with Instant Master Toggle */}
+      <div
+        className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-all ${
+          enableMembershipPurchases
+            ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-200'
+            : 'bg-[#260D17] border-[#851B2B]/60 text-amber-200'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+              enableMembershipPurchases
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : 'bg-[#851B2B]/30 text-[#F5B942]'
+            }`}
+          >
+            <Crown className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold font-heading uppercase tracking-wider text-sm text-white">
+                Customer Pass Sales
+              </span>
+              <span
+                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                  enableMembershipPurchases
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                }`}
+              >
+                {enableMembershipPurchases ? 'ONLINE SALES ACTIVE' : 'ONLINE SALES PAUSED (COMING SOON)'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              {enableMembershipPurchases
+                ? 'Customers can purchase, upgrade, and renew membership passes directly from the customer website.'
+                : 'Customer purchase buttons are locked and display "Memberships Temporarily Unavailable". Existing active memberships and daily quotas remain fully valid.'}
+            </p>
+          </div>
+        </div>
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => handleToggleMembershipSales(!enableMembershipPurchases)}
+            disabled={togglingMembershipSales}
+            className={`self-start sm:self-center px-4 py-2 rounded-xl font-bold font-heading text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer ${
+              enableMembershipPurchases
+                ? 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+            }`}
+          >
+            {togglingMembershipSales ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Power className="w-3.5 h-3.5" />
+            )}
+            <span>{enableMembershipPurchases ? 'Pause Online Sales' : 'Enable Online Sales'}</span>
+          </button>
+        )}
+      </div>
 
       {/* Subtab Navigation */}
       {/* Mobile Selector Dropdown (sm:hidden) */}
