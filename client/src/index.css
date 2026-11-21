@@ -421,7 +421,7 @@ html.light #notifications-container {
 }
 
 /* All dark container classes convert to clean white cards */
-html.light [class*="bg-[#171014]"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *),
+html.light [class*="bg-[#171014]"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(.game-selection-card):not([class*="game-selection"]),
 html.light aside div[class*="bg-[#171014]"],
 html.light aside div[class*="bg-[#260D17]"],
 html.light .bg-\[\#111726\],
@@ -502,20 +502,24 @@ html.light .game-card-item p {
 }
 
 /* Booking Wizard Game Selection Cards (Step 2 - Choose Your Title) */
-/* 1. Default unselected state in Light Mode: clean white background, neutral border */
+/* 1. Default unselected resting state in Light Mode: clean white background, neutral border */
 .game-selection-card,
 html.light .game-selection-card,
 [data-theme="light"] .game-selection-card {
-  background-color: #FFFFFF;
-  border-color: #E2E5EC;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  transform: translateY(0) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* 2. HOVER STATE: Visibly rich reddish brand tone (#FBD5DB rose-red background, #851B2B burgundy border & shadow) */
-.game-selection-card:hover,
-html.light .game-selection-card:hover,
-[data-theme="light"] .game-selection-card:hover {
+.game-selection-card:hover:not(.cursor-not-allowed):not(.is-selected),
+html.light .game-selection-card:hover:not(.cursor-not-allowed):not(.is-selected),
+[data-theme="light"] .game-selection-card:hover:not(.cursor-not-allowed):not(.is-selected),
+.game-selection-card.is-exclusive:hover:not(.cursor-not-allowed):not(.is-selected),
+html.light .game-selection-card.is-exclusive:hover:not(.cursor-not-allowed):not(.is-selected),
+[data-theme="light"] .game-selection-card.is-exclusive:hover:not(.cursor-not-allowed):not(.is-selected) {
   background-color: #FBD5DB !important;
   border-color: #851B2B !important;
   box-shadow: 0 8px 24px -4px rgba(133, 27, 43, 0.35) !important;
@@ -524,11 +528,17 @@ html.light .game-selection-card:hover,
 }
 
 /* Disabled cards do not elevate or change color on hover */
+.game-selection-card.cursor-not-allowed,
 .game-selection-card.cursor-not-allowed:hover,
+.game-selection-card[class*="cursor-not-allowed"],
 .game-selection-card[class*="cursor-not-allowed"]:hover,
+html.light .game-selection-card.cursor-not-allowed,
 html.light .game-selection-card.cursor-not-allowed:hover,
+html.light .game-selection-card[class*="cursor-not-allowed"],
 html.light .game-selection-card[class*="cursor-not-allowed"]:hover,
+[data-theme="light"] .game-selection-card.cursor-not-allowed,
 [data-theme="light"] .game-selection-card.cursor-not-allowed:hover,
+[data-theme="light"] .game-selection-card[class*="cursor-not-allowed"],
 [data-theme="light"] .game-selection-card[class*="cursor-not-allowed"]:hover {
   background-color: #F1F5F9 !important;
   border-color: #E2E5EC !important;
@@ -537,7 +547,7 @@ html.light .game-selection-card[class*="cursor-not-allowed"]:hover,
   cursor: not-allowed !important;
 }
 
-/* 3. SELECTED STATE IN LIGHT MODE (takes priority over hover) */
+/* 3. SELECTED STATE: ON CLICK IT STAYS! Absolute priority in Light Mode */
 .game-selection-card.is-selected,
 .game-selection-card.is-selected:hover,
 .game-selection-card[class*="ring-2"],
@@ -549,29 +559,18 @@ html.light .game-selection-card[class*="ring-2"]:hover,
 [data-theme="light"] .game-selection-card.is-selected,
 [data-theme="light"] .game-selection-card.is-selected:hover,
 [data-theme="light"] .game-selection-card[class*="ring-2"],
-[data-theme="light"] .game-selection-card[class*="ring-2"]:hover {
+[data-theme="light"] .game-selection-card[class*="ring-2"]:hover,
+.game-selection-card.is-exclusive.is-selected,
+.game-selection-card.is-exclusive.is-selected:hover,
+html.light .game-selection-card.is-exclusive.is-selected,
+html.light .game-selection-card.is-exclusive.is-selected:hover,
+[data-theme="light"] .game-selection-card.is-exclusive.is-selected,
+[data-theme="light"] .game-selection-card.is-exclusive.is-selected:hover {
   border-color: #851B2B !important;
   background-color: #FBD5DB !important;
   box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.35) !important;
   transform: translateY(0) !important;
-}
-
-.game-selection-card.is-exclusive.is-selected,
-.game-selection-card.is-exclusive.is-selected:hover,
-.game-selection-card.is-exclusive[class*="ring-2"],
-.game-selection-card.is-exclusive[class*="ring-2"]:hover,
-html.light .game-selection-card.is-exclusive.is-selected,
-html.light .game-selection-card.is-exclusive.is-selected:hover,
-html.light .game-selection-card.is-exclusive[class*="ring-2"],
-html.light .game-selection-card.is-exclusive[class*="ring-2"]:hover,
-[data-theme="light"] .game-selection-card.is-exclusive.is-selected,
-[data-theme="light"] .game-selection-card.is-exclusive.is-selected:hover,
-[data-theme="light"] .game-selection-card.is-exclusive[class*="ring-2"],
-[data-theme="light"] .game-selection-card.is-exclusive[class*="ring-2"]:hover {
-  border-color: #F5B942 !important;
-  background-color: #FFFDF5 !important;
-  box-shadow: 0 0 0 2px #F5B942, 0 8px 24px -4px rgba(245, 185, 66, 0.25) !important;
-  transform: translateY(0) !important;
+  cursor: pointer !important;
 }
 
 /* Ensure Game Artwork is completely visible with rich, non-destructive gradient */
@@ -1486,9 +1485,12 @@ html.light .table-scrollbar::-webkit-scrollbar-thumb:hover {
 }
 
 /* 13. Absolute Priority: Game Selection Card Hover & Active Reddish Theme */
-.game-selection-card:hover:not(.cursor-not-allowed),
-html.light .game-selection-card:hover:not(.cursor-not-allowed),
-[data-theme="light"] .game-selection-card:hover:not(.cursor-not-allowed) {
+.game-selection-card:hover:not(.cursor-not-allowed):not(.is-selected),
+html.light .game-selection-card:hover:not(.cursor-not-allowed):not(.is-selected),
+[data-theme="light"] .game-selection-card:hover:not(.cursor-not-allowed):not(.is-selected),
+.game-selection-card.is-exclusive:hover:not(.cursor-not-allowed):not(.is-selected),
+html.light .game-selection-card.is-exclusive:hover:not(.cursor-not-allowed):not(.is-selected),
+[data-theme="light"] .game-selection-card.is-exclusive:hover:not(.cursor-not-allowed):not(.is-selected) {
   background-color: #FBD5DB !important;
   border-color: #851B2B !important;
   box-shadow: 0 8px 24px -4px rgba(133, 27, 43, 0.35) !important;
@@ -1497,10 +1499,20 @@ html.light .game-selection-card:hover:not(.cursor-not-allowed),
 }
 
 .game-selection-card.is-selected,
+.game-selection-card.is-selected:hover,
 html.light .game-selection-card.is-selected,
-[data-theme="light"] .game-selection-card.is-selected {
+html.light .game-selection-card.is-selected:hover,
+[data-theme="light"] .game-selection-card.is-selected,
+[data-theme="light"] .game-selection-card.is-selected:hover,
+.game-selection-card.is-exclusive.is-selected,
+.game-selection-card.is-exclusive.is-selected:hover,
+html.light .game-selection-card.is-exclusive.is-selected,
+html.light .game-selection-card.is-exclusive.is-selected:hover,
+[data-theme="light"] .game-selection-card.is-exclusive.is-selected,
+[data-theme="light"] .game-selection-card.is-exclusive.is-selected:hover {
   background-color: #FBD5DB !important;
   border-color: #851B2B !important;
   box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.35) !important;
   transform: translateY(0) !important;
+  cursor: pointer !important;
 }
