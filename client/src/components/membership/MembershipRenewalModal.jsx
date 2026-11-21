@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { membershipApi } from '../../api/membership.js';
 import { showToast } from '../../utils/toast.js';
 import { launchRazorpayCheckout } from '../../utils/razorpay.js';
+import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
 import {
   RotateCcw,
   Sparkles,
@@ -14,6 +15,7 @@ import {
   X,
   Loader2,
   ShieldCheck,
+  Lock,
 } from 'lucide-react';
 
 export const MembershipRenewalModal = ({
@@ -49,6 +51,11 @@ export const MembershipRenewalModal = ({
   const newExpiry = new Date(baseDate.getTime() + validityDays * 24 * 60 * 60 * 1000);
 
   const handleStartRenewal = async () => {
+    if (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES) {
+      showToast.error(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
+      return;
+    }
+
     setError('');
     setProcessing(true);
     try {
@@ -225,6 +232,14 @@ export const MembershipRenewalModal = ({
               </div>
             </div>
 
+            {/* Notice Banner when online payments / renewals are disabled */}
+            {(!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES) && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>{PAYMENT_MESSAGES.ONLINE_UNAVAILABLE}</span>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="pt-2 flex items-center justify-between gap-3">
               <button
@@ -238,10 +253,19 @@ export const MembershipRenewalModal = ({
               <button
                 type="button"
                 onClick={handleStartRenewal}
-                disabled={processing}
-                className="flex-1 py-3 rounded-xl bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-[#851B2B]/20 flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+                disabled={!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES || processing}
+                className={`flex-1 py-3 rounded-xl font-bold font-heading text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES
+                    ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80 shadow-none'
+                    : 'bg-[#851B2B] hover:bg-[#6E1623] active:bg-[#5E121E] text-white shadow-lg shadow-[#851B2B]/20 disabled:opacity-50'
+                }`}
               >
-                {processing ? (
+                {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES ? (
+                  <>
+                    <Lock className="w-4 h-4 text-slate-400" />
+                    <span>Renewals Temporarily Unavailable</span>
+                  </>
+                ) : processing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" /> Processing Payment...
                   </>

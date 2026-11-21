@@ -12,6 +12,7 @@ import {
 import { generateReceipt } from '../utils/receiptGenerator.js';
 import { generatePdfReceipt } from '../services/pdfReceipt.service.js';
 import { generateTestPaymentSignature, getRazorpayKeyId } from '../services/razorpay.service.js';
+import { FEATURES, PAYMENT_MESSAGES } from '../config/features.js';
 
 /**
  * GET /api/payments/config
@@ -41,6 +42,14 @@ export const getPublicConfig = async (req, res) => {
  */
 export const createOrder = async (req, res) => {
   try {
+    if (!FEATURES.ENABLE_ONLINE_PAYMENTS) {
+      return res.status(403).json({
+        success: false,
+        message: PAYMENT_MESSAGES.ONLINE_UNAVAILABLE,
+        code: 'ONLINE_PAYMENTS_DISABLED',
+      });
+    }
+
     const { bookingId, paymentPurpose } = req.body;
 
     if (!bookingId) {

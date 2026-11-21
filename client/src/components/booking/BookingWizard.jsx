@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { RazorpayModal } from '../payment/RazorpayModal.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { showToast } from '../../utils/toast.js';
+import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
 import {
   Gamepad2,
   Tv,
@@ -118,7 +119,9 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   // Final Confirmed Booking & Phase 4 Payment States
   const [confirmedBooking, setConfirmedBooking] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [paymentChoice, setPaymentChoice] = useState('ONLINE'); // 'ONLINE' | 'COUNTER'
+  const [paymentChoice, setPaymentChoice] = useState(
+    FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS ? 'ONLINE' : 'COUNTER'
+  ); // 'ONLINE' | 'COUNTER'
   const [razorpayOrder, setRazorpayOrder] = useState(null);
   const [razorpayModalOpen, setRazorpayModalOpen] = useState(false);
   const [confirmedPayment, setConfirmedPayment] = useState(null);
@@ -316,8 +319,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
       const requiresAdvance = pricingQuote?.advanceRequired || selectedGame?.isExclusive;
 
-      // 3. If online payment selected or mandatory GTA 6 advance required
-      if (paymentChoice === 'ONLINE' || requiresAdvance) {
+      // 3. If online payments are enabled and online payment selected or mandatory GTA 6 advance required
+      if (FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS && (paymentChoice === 'ONLINE' || requiresAdvance)) {
         const purpose = requiresAdvance ? 'GTA6_ADVANCE' : 'BOOKING_FULL';
         const orderRes = await paymentApi.createOrder({
           bookingId: newBooking._id,
@@ -331,7 +334,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
           throw new Error(orderRes.message || 'Failed to initiate Razorpay payment order');
         }
       } else {
-        // Counter payment selected (Regular booking)
+        // Counter payment selected (Regular booking or online payments paused)
         setConfirmedBooking(newBooking);
         setStep(5);
         showToast.success('Booking reserved successfully! Pay at the counter.');
@@ -567,32 +570,32 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   setSelectedGame(null);
                   setBookingType('SHARED');
                 }}
-                className={`p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
+                className={`game-selection-card p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
                   isVenueSelection && !selectedGame
-                    ? 'bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/25 ring-2 ring-[#851B2B]'
-                    : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'
+                    ? 'bg-rose-50/80 dark:bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/25 ring-2 ring-[#851B2B]'
+                    : 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-[#851B2B]/70 dark:hover:border-slate-700 hover:shadow-lg hover:shadow-[#851B2B]/12 hover:bg-rose-50/30 dark:hover:bg-slate-800/60 hover:-translate-y-0.5 shadow-sm'
                 }`}
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 flex items-center gap-1 font-heading">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-transparent flex items-center gap-1 font-heading">
                       <Sparkles className="w-2.5 h-2.5" /> Non-Exclusive
                     </span>
-                    <span className="text-xs font-mono font-black text-emerald-400">
+                    <span className="text-xs font-mono font-black text-emerald-800 dark:text-emerald-400">
                       ₹{ps5RateRupees}/hr/p
                     </span>
                   </div>
-                  <h4 className="font-bold text-white text-sm font-heading mt-1">Select at Venue</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <h4 className="font-bold text-slate-900 dark:text-white text-sm font-heading mt-1">Select at Venue</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                     Choose your game when you arrive at NOAH GAMING.
                   </p>
                 </div>
 
-                <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-[#D7FF00] font-semibold flex items-center gap-1">
-                    <Users className="w-3 h-3 text-[#D7FF00]" /> 1-4 Players
+                <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-[#851B2B] dark:text-[#D7FF00] font-semibold flex items-center gap-1">
+                    <Users className="w-3 h-3 text-[#851B2B] dark:text-[#D7FF00]" /> 1-4 Players
                   </span>
-                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-transparent">
                     Shared / Private
                   </span>
                 </div>
@@ -626,29 +629,33 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                         setNumberOfPlayers(maxP);
                       }
                     }}
-                    className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
+                    className={`game-selection-card ${isExclusive ? 'is-exclusive' : ''} p-4 rounded-xl border transition-all flex flex-col justify-between ${
                       isGta6Locked
                         ? 'bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/50 opacity-60 cursor-not-allowed'
                         : isSelected
-                        ? 'bg-rose-50/70 dark:bg-[#171014] border-[#851B2B] shadow-md shadow-[#851B2B]/20 ring-2 ring-[#851B2B] cursor-pointer'
-                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm cursor-pointer'
+                        ? isExclusive
+                          ? 'bg-amber-50/90 dark:bg-[#1F1218] border-[#F5B942] dark:border-[#F5B942] shadow-lg shadow-[#F5B942]/20 ring-2 ring-[#F5B942] cursor-pointer'
+                          : 'bg-rose-50/80 dark:bg-[#171014] border-[#851B2B] shadow-md shadow-[#851B2B]/20 ring-2 ring-[#851B2B] cursor-pointer'
+                        : isExclusive
+                        ? 'bg-white dark:bg-slate-900/60 border-amber-200/80 dark:border-slate-800 hover:border-[#F5B942] dark:hover:border-[#F5B942]/60 hover:shadow-lg hover:shadow-[#F5B942]/15 hover:bg-amber-50/40 dark:hover:bg-[#260D17]/80 hover:-translate-y-0.5 shadow-sm cursor-pointer'
+                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B]/70 dark:hover:border-[#851B2B]/60 hover:shadow-lg hover:shadow-[#851B2B]/12 hover:bg-rose-50/30 dark:hover:bg-slate-800/60 hover:-translate-y-0.5 shadow-sm cursor-pointer'
                     }`}
                   >
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         {isExclusive ? (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-[#851B2B]/30 border border-amber-300 dark:border-[#851B2B]/60 text-amber-800 dark:text-amber-300 flex items-center gap-1 font-heading">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-[#851B2B]/30 border border-amber-300 dark:border-[#851B2B]/60 text-amber-900 dark:text-amber-300 flex items-center gap-1 font-heading">
                             <Flame className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" /> Exclusive
                           </span>
                         ) : (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-heading">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/15 border border-emerald-300/60 dark:border-transparent text-emerald-900 dark:text-emerald-300 font-heading">
                             Non-Exclusive
                           </span>
                         )}
 
                         <span
                           className={`text-xs font-mono font-black ${
-                            isExclusive ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'
+                            isExclusive ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-800 dark:text-emerald-400'
                           }`}
                         >
                           ₹{gamePriceRupees}/hr{isExclusive ? ' (console)' : '/p'}
@@ -673,7 +680,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
                     <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
                       <span className="text-[#851B2B] dark:text-[#D7FF00] font-semibold flex items-center gap-1">
-                        <Users className="w-3 h-3 text-[#D7FF00]" />
+                        <Users className="w-3 h-3 text-[#851B2B] dark:text-[#D7FF00]" />
                         {game.minPlayers === game.maxPlayers
                           ? `${game.maxPlayers} Player${game.maxPlayers > 1 ? 's' : ''}`
                           : `${game.minPlayers || 1}-${game.maxPlayers || 4} Players`}
@@ -681,10 +688,10 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       <span
                         className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
                           isExclusive || game.bookingMode === 'PRIVATE_ONLY'
-                            ? 'bg-amber-500/20 text-amber-300'
+                            ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300/60 dark:border-transparent'
                             : isGameMultiplayer(game) || game.bookingMode === 'SHARED'
-                            ? 'bg-blue-500/20 text-blue-300'
-                            : 'bg-emerald-500/20 text-emerald-300'
+                            ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300 border border-blue-300/60 dark:border-transparent'
+                            : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 border border-emerald-300/60 dark:border-transparent'
                         }`}
                       >
                         {isExclusive || game.bookingMode === 'PRIVATE_ONLY'
@@ -1237,18 +1244,33 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       </div>
                     </div>
                   ) : pricingQuote?.advanceRequired || selectedGame?.isExclusive ? (
-                    <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                        <span>Mandatory Online Advance Required</span>
+                    FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS ? (
+                      <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          <span>Mandatory Online Advance Required</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                          GTA 6 exclusive bookings lock the entire physical PS5 console. A 50% advance (₹{pricingQuote?.minimumAdvanceRupees}) must be paid online via Razorpay (UPI, Debit/Credit Cards).
+                        </p>
+                        <div className="text-[10px] text-amber-800 dark:text-amber-200/80 pt-1 font-mono">
+                          Remaining balance of ₹{pricingQuote ? pricingQuote.totalAmountRupees - pricingQuote.minimumAdvanceRupees : 0} payable at front desk.
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                        GTA 6 exclusive bookings lock the entire physical PS5 console. A 50% advance (₹{pricingQuote?.minimumAdvanceRupees}) must be paid online via Razorpay (UPI, Debit/Credit Cards).
-                      </p>
-                      <div className="text-[10px] text-amber-800 dark:text-amber-200/80 pt-1 font-mono">
-                        Remaining balance of ₹{pricingQuote ? pricingQuote.totalAmountRupees - pricingQuote.minimumAdvanceRupees : 0} payable at front desk.
+                    ) : (
+                      <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs space-y-1.5">
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span>Online Payments Unavailable</span>
+                        </div>
+                        <p className="text-[11px] text-slate-700 dark:text-slate-200">
+                          {PAYMENT_MESSAGES.ONLINE_UNAVAILABLE}
+                        </p>
+                        <p className="text-[10px] text-amber-800 dark:text-amber-400 font-mono">
+                          Your GTA 6 exclusive slot will be reserved. Please pay the required advance or balance at the counter upon arrival.
+                        </p>
                       </div>
-                    </div>
+                    )
                   ) : (
                     <>
                       {membershipBenefit?.applied && (
@@ -1257,12 +1279,25 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           <span className="font-mono font-bold">-₹{membershipBenefit.discountRupees}</span>
                         </div>
                       )}
+                      {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS && (
+                        <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span>{PAYMENT_MESSAGES.ONLINE_UNAVAILABLE}</span>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <button
                           type="button"
-                          onClick={() => setPaymentChoice('ONLINE')}
+                          disabled={!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS}
+                          onClick={() => {
+                            if (FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS) {
+                              setPaymentChoice('ONLINE');
+                            }
+                          }}
                           className={`p-2.5 rounded-xl border text-left transition-all ${
-                            paymentChoice === 'ONLINE'
+                            !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                              ? 'bg-slate-100 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-400 cursor-not-allowed opacity-60'
+                              : paymentChoice === 'ONLINE'
                               ? 'bg-amber-50/70 dark:bg-[#851B2B]/20 border-[#851B2B] text-slate-900 dark:text-[#FFF4E8] ring-1 ring-[#851B2B]'
                               : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
@@ -1272,7 +1307,9 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                             <span>Pay Online</span>
                           </div>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                            Razorpay (UPI / Cards)
+                            {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                              ? 'Temporarily Unavailable'
+                              : 'Razorpay (UPI / Cards)'}
                           </span>
                         </button>
 
@@ -1321,11 +1358,11 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   ? 'Confirming with Database...'
                   : isMembershipFullyCovered
                   ? 'Book Now - Covered by Membership'
+                  : !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || paymentChoice === 'COUNTER'
+                  ? 'Confirm & Pay at Counter'
                   : (pricingQuote?.advanceRequired || selectedGame?.isExclusive)
                   ? `Pay Advance ₹${pricingQuote?.minimumAdvanceRupees} via Razorpay`
-                  : paymentChoice === 'ONLINE'
-                  ? `Pay ₹${pricingQuote?.totalAmountRupees || 0} via Razorpay`
-                  : 'Confirm & Pay at Counter'}
+                  : `Pay ₹${pricingQuote?.totalAmountRupees || 0} via Razorpay`}
                 <CheckCircle2 className="w-4 h-4" />
               </button>
             </div>

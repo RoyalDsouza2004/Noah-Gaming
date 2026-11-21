@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { MembershipUpgradeModal } from './MembershipUpgradeModal.jsx';
 import { showToast } from '../../utils/toast.js';
 import { launchRazorpayCheckout } from '../../utils/razorpay.js';
+import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
 import {
   Crown,
   Check,
@@ -74,6 +75,11 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess, initialPlanId
   };
 
   const handleStartPurchase = async (plan) => {
+    if (!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES || !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS) {
+      showToast.error(PAYMENT_MESSAGES.MEMBERSHIP_UNAVAILABLE);
+      return;
+    }
+
     if (!isAuthenticated) {
       openLoginModal();
       return;
@@ -226,6 +232,13 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess, initialPlanId
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
+          {!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{PAYMENT_MESSAGES.MEMBERSHIP_UNAVAILABLE}</span>
+            </div>
+          )}
+
           {user?.membership?.status === 'ACTIVE' && (
             <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-3">
@@ -366,13 +379,23 @@ export const MembershipPlansModal = ({ onClose, onPurchaseSuccess, initialPlanId
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES) return;
                           setSelectedPlan(plan);
                           handleStartPurchase(plan);
                         }}
-                        disabled={processing}
-                        className="w-full py-2.5 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white shadow-md shadow-[#851B2B]/20"
+                        disabled={!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES || processing}
+                        className={`w-full py-2.5 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                          !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES
+                            ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80'
+                            : 'bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white shadow-md shadow-[#851B2B]/20'
+                        }`}
                       >
-                        {processing && selectedPlan?._id === plan._id ? (
+                        {!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES ? (
+                          <>
+                            <Lock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Memberships Temporarily Unavailable</span>
+                          </>
+                        ) : processing && selectedPlan?._id === plan._id ? (
                           <Loader2 className="w-4 h-4 animate-spin text-white" />
                         ) : (
                           <span className="text-white">Get Membership</span>

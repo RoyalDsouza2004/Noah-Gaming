@@ -14,6 +14,7 @@ import {
   recordOfflineMembershipUpgrade,
   recordOfflineMembershipRenewal,
 } from '../services/membership.service.js';
+import { FEATURES, PAYMENT_MESSAGES } from '../config/features.js';
 
 /**
  * GET /api/memberships/plans
@@ -63,6 +64,14 @@ export const getPlanById = async (req, res) => {
  */
 export const purchaseMembership = async (req, res) => {
   try {
+    if (!FEATURES.ENABLE_MEMBERSHIP_PURCHASES || !FEATURES.ENABLE_ONLINE_PAYMENTS) {
+      return res.status(403).json({
+        success: false,
+        message: PAYMENT_MESSAGES.MEMBERSHIP_UNAVAILABLE,
+        code: 'MEMBERSHIPS_DISABLED',
+      });
+    }
+
     const { planId, renewalSubscriptionId } = req.body;
     if (!planId) {
       return res.status(400).json({ success: false, message: 'planId is required' });
@@ -209,6 +218,14 @@ export const getMyUsage = async (req, res) => {
  */
 export const renewMySubscription = async (req, res) => {
   try {
+    if (!FEATURES.ENABLE_MEMBERSHIP_PURCHASES || !FEATURES.ENABLE_ONLINE_PAYMENTS) {
+      return res.status(403).json({
+        success: false,
+        message: PAYMENT_MESSAGES.MEMBERSHIP_UNAVAILABLE,
+        code: 'MEMBERSHIPS_DISABLED',
+      });
+    }
+
     const orderData = await renewSubscription({
       subscriptionId: req.params.subscriptionId,
       customerId: req.user._id,
@@ -274,6 +291,14 @@ export const getUpgradeQuote = async (req, res) => {
  */
 export const initiateUpgrade = async (req, res) => {
   try {
+    if (!FEATURES.ENABLE_MEMBERSHIP_PURCHASES || !FEATURES.ENABLE_ONLINE_PAYMENTS) {
+      return res.status(403).json({
+        success: false,
+        message: PAYMENT_MESSAGES.MEMBERSHIP_UNAVAILABLE,
+        code: 'MEMBERSHIPS_DISABLED',
+      });
+    }
+
     const { targetPlanId } = req.body;
     if (!targetPlanId) {
       return res.status(400).json({ success: false, message: 'targetPlanId is required' });

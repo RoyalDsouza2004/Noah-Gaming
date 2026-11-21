@@ -1,4 +1,5 @@
 import { showToast } from './toast.js';
+import { FEATURE_FLAGS, PAYMENT_MESSAGES } from './featureFlags.js';
 
 let scriptLoadingPromise = null;
 let isCheckoutActive = false;
@@ -57,6 +58,12 @@ export async function launchRazorpayCheckout({
   onError,
   onDismiss,
 }) {
+  if (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS) {
+    showToast.error(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
+    if (onError) onError({ description: PAYMENT_MESSAGES.ONLINE_UNAVAILABLE });
+    return false;
+  }
+
   if (isCheckoutActive) {
     showToast.error('A checkout window is already in progress.');
     return false;

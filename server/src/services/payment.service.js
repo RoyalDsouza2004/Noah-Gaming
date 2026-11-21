@@ -14,6 +14,7 @@ import {
   getRazorpayKeyId,
 } from './razorpay.service.js';
 import { formatISTDate } from '../utils/timeSlots.js';
+import { FEATURES, PAYMENT_MESSAGES } from '../config/features.js';
 import { createNotification } from './notification.service.js';
 import {
   sendPaymentSuccessEmail,
@@ -55,6 +56,12 @@ async function findBookingSafely(identifier) {
  * - Temporary 15-minute slot lock
  */
 export async function createOnlineOrder({ customerId, bookingId, paymentPurpose }) {
+  if (!FEATURES.ENABLE_ONLINE_PAYMENTS) {
+    const err = new Error(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
+    err.status = 403;
+    throw err;
+  }
+
   const booking = await findBookingSafely(bookingId);
   if (!booking) {
     const err = new Error('Booking not found');

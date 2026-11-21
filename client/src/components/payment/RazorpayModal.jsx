@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { paymentApi } from '../../api/payment.js';
 import { loadRazorpayScript, launchRazorpayCheckout } from '../../utils/razorpay.js';
 import { showToast } from '../../utils/toast.js';
+import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
 import {
   CreditCard,
   Smartphone,
@@ -45,6 +46,12 @@ export const RazorpayModal = ({
   }, []);
 
   const handlePay = async () => {
+    if (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS) {
+      setError(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
+      showToast.error(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
+      return;
+    }
+
     setError('');
     setProcessing(true);
     setStatusMessage('Initiating secure checkout session...');
@@ -332,15 +339,31 @@ export const RazorpayModal = ({
                 </div>
               )}
 
+              {/* Notice Banner when online payments are disabled */}
+              {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{PAYMENT_MESSAGES.ONLINE_UNAVAILABLE}</span>
+                </div>
+              )}
+
               {/* Pay Now Button */}
               <button
                 type="button"
                 onClick={handlePay}
-                disabled={processing}
-                className="w-full py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-black font-heading text-sm uppercase tracking-wider shadow-lg shadow-[#851B2B]/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                disabled={!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || processing}
+                className={`w-full py-3.5 rounded-xl font-black font-heading text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                  !FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                    ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80 shadow-none'
+                    : 'bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white shadow-lg shadow-[#851B2B]/20 cursor-pointer active:scale-[0.98]'
+                }`}
               >
-                <Lock className="w-4 h-4 text-white" />
-                <span className="text-white">Pay ₹{order.amountInRupees || (order.amount ? order.amount / 100 : 0)} (Test Mode)</span>
+                <Lock className="w-4 h-4" />
+                <span>
+                  {!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS
+                    ? 'Online Payments Unavailable'
+                    : `Pay ₹${order.amountInRupees || (order.amount ? order.amount / 100 : 0)} (Test Mode)`}
+                </span>
               </button>
 
               <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 font-mono">

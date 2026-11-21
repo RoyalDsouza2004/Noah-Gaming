@@ -171,55 +171,6 @@ export const HomePage = ({
       </section>
 
       {/* ========================================================= */}
-      {/* 2. LOUNGE EXPERIENCE & AMENITIES                           */}
-      {/* ========================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="text-center max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F5B942] uppercase tracking-wider">
-            <Award className="w-4 h-4 text-[#F5B942]" /> The NOAH Experience
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-bold font-heading text-[#FFF4E8]">
-            Engineered For Serious Gamers & Social Chillouts
-          </h2>
-          <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
-            Whether you want intense competitive FIFA tournaments with friends, relaxed 8-ball pool matches, or deep private campaign sessions, NOAH GAMING delivers the premier gaming atmosphere in Bajagoli.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-[#260D17] border border-[#49202C] space-y-4 hover:border-[#851B2B]/60 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-[#851B2B]/25 text-[#D7FF00] flex items-center justify-center border border-[#851B2B]/40">
-              <Gamepad2 className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold font-heading text-[#FFF4E8]">Flagship PlayStation 5 Hardware</h3>
-            <p className="text-xs text-[#C7A5A8] leading-relaxed">
-              Equipped with Sony DualSense wireless controllers, immersive haptic feedback, 3D spatial audio, and an extensive library of top-tier AAA multiplayer and sports titles.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-[#260D17] border border-[#49202C] space-y-4 hover:border-[#851B2B]/60 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-[#851B2B]/25 text-[#F5B942] flex items-center justify-center border border-[#851B2B]/40">
-              <CircleDot className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold font-heading text-[#FFF4E8]">Tournament 8-Ball Pool Table</h3>
-            <p className="text-xs text-[#C7A5A8] leading-relaxed">
-              Professional-grade slate bed pool table with Simonis tournament cloth, premium weighted cues, Aramith tournament balls, and dedicated spectator seating.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-[#260D17] border border-[#49202C] space-y-4 hover:border-[#851B2B]/60 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-[#851B2B]/25 text-[#45C987] flex items-center justify-center border border-[#851B2B]/40">
-              <Coffee className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold font-heading text-[#FFF4E8]">Café Lounge & Refreshments</h3>
-            <p className="text-xs text-[#C7A5A8] leading-relaxed">
-              Air-conditioned chillout lounge offering chilled beverages, energy drinks, gourmet snacks, and high-speed fiber Wi-Fi to keep your energy high between gaming sessions.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================= */}
       {/* 3. GAMING STATIONS & HARDWARE (Exact 2 PS5 + 1 Pool Rule)  */}
       {/* ========================================================= */}
       <section id="overview" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">

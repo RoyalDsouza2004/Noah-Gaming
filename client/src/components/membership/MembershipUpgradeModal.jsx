@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { membershipApi } from '../../api/membership.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { showToast } from '../../utils/toast.js';
+import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
 import {
   Crown,
   Check,
@@ -88,6 +89,13 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
   // Execute upgrade checkout
   const handleConfirmUpgrade = async () => {
     if (!selectedPlan) return;
+
+    const isPaidUpgrade = (quote?.financials?.finalAmountPayableRupees || 0) > 0;
+    if (isPaidUpgrade && (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES)) {
+      showToast.error(PAYMENT_MESSAGES.ONLINE_UNAVAILABLE);
+      return;
+    }
+
     setUpgrading(true);
 
     try {
@@ -433,27 +441,49 @@ export const MembershipUpgradeModal = ({ onClose, onUpgradeSuccess }) => {
           </button>
 
           {selectedPlan && quote && (
-            <button
-              type="button"
-              onClick={handleConfirmUpgrade}
-              disabled={upgrading || quoteLoading}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black font-heading text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
-            >
-              {upgrading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                  <span>Processing Upgrade...</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-4 h-4 text-slate-950" />
-                  <span>
-                    Pay ₹{quote.financials.finalAmountPayableRupees.toFixed(2)} & Complete Upgrade
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+            (() => {
+              const isPaid = (quote.financials.finalAmountPayableRupees || 0) > 0;
+              const isBlocked = isPaid && (!FEATURE_FLAGS.ENABLE_ONLINE_PAYMENTS || !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES);
+
+              return (
+                <button
+                  type="button"
+                  onClick={handleConfirmUpgrade}
+                  disabled={upgrading || quoteLoading || isBlocked}
+                  className={`w-full sm:w-auto px-6 py-3 rounded-xl font-black font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                    isBlocked
+                      ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80 shadow-none'
+                      : 'bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 shadow-lg shadow-amber-500/20'
+                  }`}
+                >
+                  {isBlocked ? (
+                    <>
+                      <Lock className="w-4 h-4 text-slate-400" />
+                      <span>Online Upgrades Temporarily Unavailable</span>
+                    </>
+                  ) : upgrading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                      <span>Processing Upgrade...</span>
+                    </>
+                  ) : isPaid ? (
+                    <>
+                      <Lock className="w-4 h-4 text-slate-950" />
+                      <span>
+                        Pay ₹{quote.financials.finalAmountPayableRupees.toFixed(2)} & Complete Upgrade
+                      </span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-slate-950" />
+                      <span>Confirm Free Upgrade (100% Credit)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              );
+            })()
           )}
         </div>
       </div>

@@ -10,6 +10,8 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
+  Lock,
+  AlertCircle,
 } from 'lucide-react';
 import {
   isYearlyPlan,
@@ -17,6 +19,7 @@ import {
   selectThreePopularPlans,
   calculateYearlyDiscountPercentage,
 } from '../../utils/membershipPlanHelpers.js';
+import { FEATURE_FLAGS, PAYMENT_MESSAGES } from '../../utils/featureFlags.js';
 
 export const CustomerMembershipSection = ({
   plans = [],
@@ -227,15 +230,32 @@ export const CustomerMembershipSection = ({
         {/* CTA Button */}
         <button
           type="button"
-          onClick={() => onSelectPlan && onSelectPlan(plan)}
+          disabled={!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES}
+          onClick={() => {
+            if (FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES && onSelectPlan) {
+              onSelectPlan(plan);
+            }
+          }}
+          aria-disabled={!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES}
           className={`mt-6 w-full py-3 px-4 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 ${
-            isPopular
+            !FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES
+              ? 'bg-[#1D0C13] text-[#A68F94] border border-[#3E1A25] cursor-not-allowed opacity-80 shadow-none'
+              : isPopular
               ? 'bg-gradient-to-r from-[#851B2B] to-[#A51F35] hover:from-[#6E1623] hover:to-[#851B2B] text-white shadow-lg shadow-[#851B2B]/30 border border-[#A51F35]'
               : 'bg-[#851B2B] hover:bg-[#6E1623] text-white border border-[#851B2B] shadow-md shadow-[#851B2B]/20'
           }`}
         >
-          <Crown className="w-4 h-4 text-[#F5B942]" />
-          <span>Get This Pass</span>
+          {!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES ? (
+            <>
+              <Lock className="w-3.5 h-3.5 text-[#F5B942]" />
+              <span>Memberships Temporarily Unavailable</span>
+            </>
+          ) : (
+            <>
+              <Crown className="w-4 h-4 text-[#F5B942]" />
+              <span>Get This Pass</span>
+            </>
+          )}
         </button>
       </article>
     );
@@ -275,6 +295,23 @@ export const CustomerMembershipSection = ({
           <span>{showAllTiers ? 'Show 3 Popular Plans' : 'View All Membership Tiers'}</span>
         </button>
       </div>
+
+      {/* Temporarily Disabled Notice Banner */}
+      {!FEATURE_FLAGS.ENABLE_MEMBERSHIP_PURCHASES && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#851B2B]/20 border border-[#851B2B]/40 text-[#FFF4E8]">
+          <div className="w-9 h-9 rounded-xl bg-[#851B2B]/40 flex items-center justify-center shrink-0 text-[#F5B942]">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm font-bold font-heading text-[#F5B942] uppercase tracking-wider">
+              Memberships Temporarily Unavailable
+            </p>
+            <p className="text-xs text-[#C7A5A8] mt-0.5">
+              Online membership purchases are temporarily paused. Existing active memberships and daily quotas remain fully active and valid. For enquiries or assistance, please speak with our front desk.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* 2. BILLING PERIOD SWITCH (MONTHLY / YEARLY)                */}
