@@ -83,6 +83,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   const [selectedDevice, setSelectedDevice] = useState(initialDevice || null);
   const [selectedGame, setSelectedGame] = useState(initialGame || null);
   const [isVenueSelection, setIsVenueSelection] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState(null);
 
   // Date & Duration selection (default Tomorrow in YYYY-MM-DD IST)
   const tomorrowStr = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -578,10 +579,25 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   setSelectedGame(null);
                   setBookingType('SHARED');
                 }}
+                onMouseEnter={() => setHoveredCard('venue')}
+                onMouseLeave={() => setHoveredCard(null)}
+                style={
+                  isVenueSelection && !selectedGame
+                    ? undefined
+                    : hoveredCard === 'venue'
+                    ? {
+                        backgroundColor: '#FBD5DB',
+                        borderColor: '#851B2B',
+                        boxShadow: '0 8px 24px -4px rgba(133, 27, 43, 0.35)',
+                        transform: 'translateY(-2px)',
+                        cursor: 'pointer',
+                      }
+                    : undefined
+                }
                 className={`game-selection-card ${isVenueSelection && !selectedGame ? 'is-selected' : ''} p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
                   isVenueSelection && !selectedGame
                     ? 'bg-rose-50/80 dark:bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/25 ring-2 ring-[#851B2B]'
-                    : 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FDE2E7] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm'
+                    : 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FBD5DB] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm'
                 }`}
               >
                 <div className="space-y-1.5">
@@ -616,6 +632,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 const isGta6Locked = isGta6 && (game.status === 'INACTIVE' || !game.status);
                 const isExclusive = Boolean(game.isExclusive || isGta6);
                 const gamePriceRupees = isExclusive ? getExclusiveGameRate(game) : ps5RateRupees;
+                const isHovered = hoveredCard === game._id;
 
                 return (
                   <div
@@ -637,6 +654,21 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                         setNumberOfPlayers(maxP);
                       }
                     }}
+                    onMouseEnter={() => !isGta6Locked && setHoveredCard(game._id)}
+                    onMouseLeave={() => setHoveredCard(null)}
+                    style={
+                      isSelected || isGta6Locked
+                        ? undefined
+                        : isHovered
+                        ? {
+                            backgroundColor: '#FBD5DB',
+                            borderColor: '#851B2B',
+                            boxShadow: '0 8px 24px -4px rgba(133, 27, 43, 0.35)',
+                            transform: 'translateY(-2px)',
+                            cursor: 'pointer',
+                          }
+                        : undefined
+                    }
                     className={`game-selection-card ${isExclusive ? 'is-exclusive' : ''} ${isSelected ? 'is-selected' : ''} p-4 rounded-xl border transition-all flex flex-col justify-between ${
                       isGta6Locked
                         ? 'bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/50 opacity-60 cursor-not-allowed'
@@ -645,8 +677,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           ? 'bg-amber-50/90 dark:bg-[#1F1218] border-[#F5B942] dark:border-[#F5B942] shadow-lg shadow-[#F5B942]/20 ring-2 ring-[#F5B942] cursor-pointer'
                           : 'bg-rose-50/80 dark:bg-[#171014] border-[#851B2B] shadow-md shadow-[#851B2B]/20 ring-2 ring-[#851B2B] cursor-pointer'
                         : isExclusive
-                        ? 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FDE2E7] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm cursor-pointer'
-                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FDE2E7] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm cursor-pointer'
+                        ? 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FBD5DB] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm cursor-pointer'
+                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FBD5DB] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm cursor-pointer'
                     }`}
                   >
                     <div className="space-y-1.5">
