@@ -581,7 +581,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 className={`game-selection-card ${isVenueSelection && !selectedGame ? 'is-selected' : ''} p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
                   isVenueSelection && !selectedGame
                     ? 'bg-rose-50/80 dark:bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/25 ring-2 ring-[#851B2B]'
-                    : 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FCECEF] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm'
+                    : 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FDE2E7] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm'
                 }`}
               >
                 <div className="space-y-1.5">
@@ -645,8 +645,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           ? 'bg-amber-50/90 dark:bg-[#1F1218] border-[#F5B942] dark:border-[#F5B942] shadow-lg shadow-[#F5B942]/20 ring-2 ring-[#F5B942] cursor-pointer'
                           : 'bg-rose-50/80 dark:bg-[#171014] border-[#851B2B] shadow-md shadow-[#851B2B]/20 ring-2 ring-[#851B2B] cursor-pointer'
                         : isExclusive
-                        ? 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FCECEF] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm cursor-pointer'
-                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FCECEF] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm cursor-pointer'
+                        ? 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FDE2E7] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm cursor-pointer'
+                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] dark:hover:border-[#851B2B] hover:shadow-lg hover:shadow-[#851B2B]/20 hover:bg-[#FDE2E7] dark:hover:bg-[#260D17] hover:-translate-y-0.5 shadow-sm cursor-pointer'
                     }`}
                   >
                     <div className="space-y-1.5">

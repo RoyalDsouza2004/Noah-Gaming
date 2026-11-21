@@ -478,17 +478,19 @@ html.light .membership-plan-card {
 /* GAME CARDS & GAME DETAILS MODAL (LIGHT THEME ARTWORK FIXES)   */
 /* ------------------------------------------------------------- */
 /* Popular Titles / Game Catalog Cards */
-html.light .game-card-item {
+html.light .game-card-item,
+[data-theme="light"] .game-card-item {
   background-color: #FFFFFF !important;
   background-image: none !important;
   border-color: #E2E5EC !important;
   box-shadow: 0 2px 10px -2px rgba(23, 25, 35, 0.05) !important;
 }
 
-html.light .game-card-item:hover {
+html.light .game-card-item:hover,
+[data-theme="light"] .game-card-item:hover {
   border-color: #851B2B !important;
-  background-color: #FCECEF !important;
-  box-shadow: 0 8px 24px -4px rgba(133, 27, 43, 0.2) !important;
+  background-color: #FDE2E7 !important;
+  box-shadow: 0 8px 24px -4px rgba(133, 27, 43, 0.22) !important;
 }
 
 html.light .game-card-item h4 {
@@ -500,44 +502,58 @@ html.light .game-card-item p {
 }
 
 /* Booking Wizard Game Selection Cards (Step 2 - Choose Your Title) */
-/* 1. Default unselected state: crisp white background, neutral border */
-html.light .game-selection-card {
+/* 1. Default unselected state in Light Mode: clean white background, neutral border */
+html.light .game-selection-card,
+[data-theme="light"] .game-selection-card {
   background-color: #FFFFFF !important;
   border-color: #E2E5EC !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 2. Hover state: ONLY when mouse is actively hovering and card is NOT selected or disabled */
-/* Light Mode: Warm reddish brand tone (#FCECEF rose background, #851B2B burgundy border & shadow) */
-html.light .game-selection-card:not([class*="cursor-not-allowed"]):not([class*="ring-2"]):not(.is-selected):hover,
-html.light .game-selection-card.is-exclusive:not([class*="cursor-not-allowed"]):not([class*="ring-2"]):not(.is-selected):hover {
+/* 2. HOVER STATE IN LIGHT MODE: Visibly rich reddish brand tone (#FDE2E7 rose-red background, #851B2B burgundy border & shadow) */
+html.light .game-selection-card:hover,
+[data-theme="light"] .game-selection-card:hover {
+  background-color: #FDE2E7 !important;
   border-color: #851B2B !important;
-  background-color: #FCECEF !important;
-  box-shadow: 0 6px 20px -3px rgba(133, 27, 43, 0.22) !important;
+  box-shadow: 0 8px 24px -4px rgba(133, 27, 43, 0.28) !important;
   transform: translateY(-2px) !important;
 }
 
-/* Dark Mode: Deep wine-red brand tone (#260D17 background, #851B2B burgundy border & shadow) */
-html:not(.light) .game-selection-card:not([class*="cursor-not-allowed"]):not([class*="ring-2"]):not(.is-selected):hover,
-html:not(.light) .game-selection-card.is-exclusive:not([class*="cursor-not-allowed"]):not([class*="ring-2"]):not(.is-selected):hover {
-  border-color: #851B2B !important;
-  background-color: #260D17 !important;
-  box-shadow: 0 6px 20px -3px rgba(133, 27, 43, 0.35) !important;
-  transform: translateY(-2px) !important;
+/* Disabled cards do not elevate or change color on hover */
+html.light .game-selection-card.cursor-not-allowed:hover,
+html.light .game-selection-card[class*="cursor-not-allowed"]:hover,
+[data-theme="light"] .game-selection-card.cursor-not-allowed:hover,
+[data-theme="light"] .game-selection-card[class*="cursor-not-allowed"]:hover {
+  background-color: #F1F5F9 !important;
+  border-color: #E2E5EC !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
-/* 3. Selected state: ONLY applied to the actively selected game or venue card */
+/* 3. SELECTED STATE IN LIGHT MODE (takes priority over hover) */
 html.light .game-selection-card.is-selected,
-html.light .game-selection-card[class*="ring-2"] {
+html.light .game-selection-card.is-selected:hover,
+html.light .game-selection-card[class*="ring-2"],
+html.light .game-selection-card[class*="ring-2"]:hover,
+[data-theme="light"] .game-selection-card.is-selected,
+[data-theme="light"] .game-selection-card.is-selected:hover,
+[data-theme="light"] .game-selection-card[class*="ring-2"],
+[data-theme="light"] .game-selection-card[class*="ring-2"]:hover {
   border-color: #851B2B !important;
-  background-color: #FCECEF !important;
-  box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.18) !important;
+  background-color: #FCE4E8 !important;
+  box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.25) !important;
   transform: translateY(0) !important;
 }
 
 html.light .game-selection-card.is-exclusive.is-selected,
-html.light .game-selection-card.is-exclusive[class*="ring-2"] {
+html.light .game-selection-card.is-exclusive.is-selected:hover,
+html.light .game-selection-card.is-exclusive[class*="ring-2"],
+html.light .game-selection-card.is-exclusive[class*="ring-2"]:hover,
+[data-theme="light"] .game-selection-card.is-exclusive.is-selected,
+[data-theme="light"] .game-selection-card.is-exclusive.is-selected:hover,
+[data-theme="light"] .game-selection-card.is-exclusive[class*="ring-2"],
+[data-theme="light"] .game-selection-card.is-exclusive[class*="ring-2"]:hover {
   border-color: #F5B942 !important;
   background-color: #FFFDF5 !important;
   box-shadow: 0 0 0 2px #F5B942, 0 8px 24px -4px rgba(245, 185, 66, 0.25) !important;
@@ -683,15 +699,17 @@ html.light .push-device-card div[class*="text-gray-400"] {
 }
 
 /* Booking Station Selection Cards (Unselected & Selected) */
-html.light .booking-station-card {
+html.light .booking-station-card,
+[data-theme="light"] .booking-station-card {
   background-color: #FFFFFF !important;
   border-color: #E2E5EC !important;
   box-shadow: 0 1px 3px rgba(23, 25, 35, 0.04) !important;
 }
-html.light .booking-station-card:hover {
+html.light .booking-station-card:hover,
+[data-theme="light"] .booking-station-card:hover {
   border-color: #851B2B !important;
-  background-color: #FCECEF !important;
-  box-shadow: 0 4px 16px -2px rgba(133, 27, 43, 0.18) !important;
+  background-color: #FDE2E7 !important;
+  box-shadow: 0 4px 16px -2px rgba(133, 27, 43, 0.22) !important;
 }
 html.light .booking-station-card h4 {
   color: #171923 !important;
