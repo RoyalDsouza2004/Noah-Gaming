@@ -578,7 +578,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   setSelectedGame(null);
                   setBookingType('SHARED');
                 }}
-                className={`game-selection-card p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
+                className={`game-selection-card ${isVenueSelection && !selectedGame ? 'is-selected' : ''} p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between ${
                   isVenueSelection && !selectedGame
                     ? 'bg-rose-50/80 dark:bg-[#171014] border-[#851B2B] shadow-lg shadow-[#851B2B]/25 ring-2 ring-[#851B2B]'
                     : 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-[#851B2B]/70 dark:hover:border-slate-700 hover:shadow-lg hover:shadow-[#851B2B]/12 hover:bg-rose-50/30 dark:hover:bg-slate-800/60 hover:-translate-y-0.5 shadow-sm'
@@ -637,7 +637,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                         setNumberOfPlayers(maxP);
                       }
                     }}
-                    className={`game-selection-card ${isExclusive ? 'is-exclusive' : ''} p-4 rounded-xl border transition-all flex flex-col justify-between ${
+                    className={`game-selection-card ${isExclusive ? 'is-exclusive' : ''} ${isSelected ? 'is-selected' : ''} p-4 rounded-xl border transition-all flex flex-col justify-between ${
                       isGta6Locked
                         ? 'bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/50 opacity-60 cursor-not-allowed'
                         : isSelected
@@ -645,7 +645,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           ? 'bg-amber-50/90 dark:bg-[#1F1218] border-[#F5B942] dark:border-[#F5B942] shadow-lg shadow-[#F5B942]/20 ring-2 ring-[#F5B942] cursor-pointer'
                           : 'bg-rose-50/80 dark:bg-[#171014] border-[#851B2B] shadow-md shadow-[#851B2B]/20 ring-2 ring-[#851B2B] cursor-pointer'
                         : isExclusive
-                        ? 'bg-white dark:bg-slate-900/60 border-amber-200/80 dark:border-slate-800 hover:border-[#F5B942] dark:hover:border-[#F5B942]/60 hover:shadow-lg hover:shadow-[#F5B942]/15 hover:bg-amber-50/40 dark:hover:bg-[#260D17]/80 hover:-translate-y-0.5 shadow-sm cursor-pointer'
+                        ? 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#F5B942] dark:hover:border-[#F5B942]/60 hover:shadow-lg hover:shadow-[#F5B942]/15 hover:bg-amber-50/40 dark:hover:bg-[#260D17]/80 hover:-translate-y-0.5 shadow-sm cursor-pointer'
                         : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B]/70 dark:hover:border-[#851B2B]/60 hover:shadow-lg hover:shadow-[#851B2B]/12 hover:bg-rose-50/30 dark:hover:bg-slate-800/60 hover:-translate-y-0.5 shadow-sm cursor-pointer'
                     }`}
                   >

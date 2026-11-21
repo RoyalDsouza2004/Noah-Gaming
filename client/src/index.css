@@ -499,28 +499,43 @@ html.light .game-card-item p {
 }
 
 /* Booking Wizard Game Selection Cards (Step 2 - Choose Your Title) */
+/* 1. Default unselected state: crisp white background, neutral border */
 html.light .game-selection-card {
-  background-color: #FFFFFF;
-  border-color: #E2E5EC;
+  background-color: #FFFFFF !important;
+  border-color: #E2E5EC !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-html.light .game-selection-card:not([class*="cursor-not-allowed"]):hover {
+/* 2. Hover state: ONLY when mouse is actively hovering and card is NOT selected or disabled */
+html.light .game-selection-card:not([class*="cursor-not-allowed"]):not([class*="ring-2"]):not(.is-selected):hover {
   border-color: #851B2B !important;
   background-color: #FFF9FA !important;
   box-shadow: 0 6px 20px -3px rgba(133, 27, 43, 0.15) !important;
-  transform: translateY(-2px);
+  transform: translateY(-2px) !important;
 }
 
-html.light .game-selection-card.is-exclusive:not([class*="cursor-not-allowed"]):hover {
+html.light .game-selection-card.is-exclusive:not([class*="cursor-not-allowed"]):not([class*="ring-2"]):not(.is-selected):hover {
   border-color: #F5B942 !important;
   background-color: #FFFDF5 !important;
   box-shadow: 0 6px 20px -3px rgba(245, 185, 66, 0.2) !important;
-  transform: translateY(-2px);
+  transform: translateY(-2px) !important;
 }
 
-html.light .game-selection-card.ring-2,
+/* 3. Selected state: ONLY applied to the actively selected game or venue card */
+html.light .game-selection-card.is-selected,
 html.light .game-selection-card[class*="ring-2"] {
+  border-color: #851B2B !important;
+  background-color: #FCECEF !important;
+  box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.18) !important;
+  transform: translateY(0) !important;
+}
+
+html.light .game-selection-card.is-exclusive.is-selected,
+html.light .game-selection-card.is-exclusive[class*="ring-2"] {
+  border-color: #F5B942 !important;
+  background-color: #FFFDF5 !important;
+  box-shadow: 0 0 0 2px #F5B942, 0 8px 24px -4px rgba(245, 185, 66, 0.25) !important;
   transform: translateY(0) !important;
 }
 
@@ -929,7 +944,7 @@ html.light [class*="from-[#851B2B]/25"][class*="to-[#260D17]"] {
 }
 
 /* Selected station / option card */
-html.light [class*="border-[#851B2B]"][class*="shadow-lg"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *) {
+html.light [class*="border-[#851B2B]"][class*="shadow-lg"]:not(#mobile-bottom-nav):not(#mobile-bottom-nav *):not(.game-selection-card):not([class*="game-selection"]) {
   background-color: #FCECEF !important;
   border-color: #851B2B !important;
 }
