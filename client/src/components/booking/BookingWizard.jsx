@@ -583,7 +583,13 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 onMouseLeave={() => setHoveredCard(null)}
                 style={
                   isVenueSelection && !selectedGame
-                    ? undefined
+                    ? {
+                        backgroundColor: '#FBD5DB',
+                        borderColor: '#851B2B',
+                        boxShadow: '0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.35)',
+                        transform: 'translateY(0)',
+                        cursor: 'pointer',
+                      }
                     : hoveredCard === 'venue'
                     ? {
                         backgroundColor: '#FBD5DB',
@@ -657,8 +663,16 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     onMouseEnter={() => !isGta6Locked && setHoveredCard(game._id)}
                     onMouseLeave={() => setHoveredCard(null)}
                     style={
-                      isSelected || isGta6Locked
+                      isGta6Locked
                         ? undefined
+                        : isSelected
+                        ? {
+                            backgroundColor: '#FBD5DB',
+                            borderColor: '#851B2B',
+                            boxShadow: '0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.35)',
+                            transform: 'translateY(0)',
+                            cursor: 'pointer',
+                          }
                         : isHovered
                         ? {
                             backgroundColor: '#FBD5DB',

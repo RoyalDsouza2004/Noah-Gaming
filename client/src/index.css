@@ -551,8 +551,8 @@ html.light .game-selection-card[class*="ring-2"]:hover,
 [data-theme="light"] .game-selection-card[class*="ring-2"],
 [data-theme="light"] .game-selection-card[class*="ring-2"]:hover {
   border-color: #851B2B !important;
-  background-color: #FCE4E8 !important;
-  box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.25) !important;
+  background-color: #FBD5DB !important;
+  box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.35) !important;
   transform: translateY(0) !important;
 }
 
@@ -1499,8 +1499,8 @@ html.light .game-selection-card:hover:not(.cursor-not-allowed),
 .game-selection-card.is-selected,
 html.light .game-selection-card.is-selected,
 [data-theme="light"] .game-selection-card.is-selected {
-  background-color: #FCE4E8 !important;
+  background-color: #FBD5DB !important;
   border-color: #851B2B !important;
-  box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.25) !important;
+  box-shadow: 0 0 0 2px #851B2B, 0 8px 24px -4px rgba(133, 27, 43, 0.35) !important;
   transform: translateY(0) !important;
 }
