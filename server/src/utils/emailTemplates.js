@@ -146,7 +146,7 @@ export function wrapInNoahLayout({ title, previewText = '', contentHtml }) {
           <!-- Footer -->
           <div class="footer">
             <p style="margin: 0 0 8px 0; font-weight: 600; color: #FFF4E8;">NOAH GAMING LOUNGE &bull; Premium Esports &amp; Console Arena</p>
-            <p style="margin: 0 0 8px 0;">Mumbai &bull; Open Daily 10:00 AM - 11:00 PM IST</p>
+            <p style="margin: 0 0 8px 0;">Bajagoli &bull; Open Daily 10:00 AM - 11:00 PM IST</p>
             <p style="margin: 0; font-size: 10px; color: #8F7275;">
               This is an automated transactional message. Replies to this address are monitored via Front Desk.
             </p>

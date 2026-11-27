@@ -602,7 +602,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       }
                     : undefined
                 }
-                className={`game-selection-card ${isVenueSelection && !selectedGame ? 'is-selected ring-2 ring-[#851B2B]' : ''} p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between shadow-sm`}
+                className={`game-selection-card ${isVenueSelection && !selectedGame ? 'is-selected ring-2 ring-[#851B2B]' : ''} p-4 rounded-xl cursor-pointer border transition-all flex flex-col justify-between shadow-sm bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800`}
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -690,7 +690,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     } p-4 rounded-xl border transition-all flex flex-col justify-between ${
                       isGta6Locked
                         ? 'bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/50 opacity-60 cursor-not-allowed'
-                        : 'shadow-sm cursor-pointer'
+                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer'
                     }`}
                   >
                     <div className="space-y-1.5">
