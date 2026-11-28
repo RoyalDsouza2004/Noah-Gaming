@@ -41,7 +41,9 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        heading: ['Orbitron', 'Rajdhani', 'sans-serif'],
+        heading: ['"Chakra Petch"', 'Orbitron', 'Rajdhani', 'Teko', 'sans-serif'],
+        gaming: ['"Chakra Petch"', 'Orbitron', 'sans-serif'],
+        teko: ['Teko', 'sans-serif'],
       }
     },
   },

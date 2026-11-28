@@ -21,6 +21,8 @@ export async function calculateSessionPrice({
   deviceId,
   gameId = null,
   isVenueSelection = false,
+  pricingCategory = null,
+  gameClassification: customClassification = null,
   durationMinutes = 60,
   playersCount = 1,
   customerId = null,
@@ -44,18 +46,13 @@ export async function calculateSessionPrice({
     game = await Game.findById(gameId);
   }
 
-  if (isVenueSelection && game && (game.isExclusive || game.name === 'GTA 6')) {
-    throw new Error('Exclusive games cannot be configured as Select at Venue.');
-  }
-
-  // If Select at Venue, ignore specific game reference for pricing
-  const effectiveGame = isVenueSelection ? null : game;
-
   // Determine game booking classification
-  let gameClassification = 'NON_EXCLUSIVE';
+  let gameClassification = customClassification || pricingCategory || 'NON_EXCLUSIVE';
   if (device.deviceType === 'POOL') {
     gameClassification = 'NONE';
   } else if (game && (game.isExclusive || game.name === 'GTA 6')) {
+    gameClassification = 'EXCLUSIVE';
+  } else if (pricingCategory === 'EXCLUSIVE' || customClassification === 'EXCLUSIVE') {
     gameClassification = 'EXCLUSIVE';
   } else {
     gameClassification = 'NON_EXCLUSIVE';
@@ -69,12 +66,26 @@ export async function calculateSessionPrice({
     pricingRule = await Pricing.findOne({ _id: game.pricing, status: 'ACTIVE' });
   }
 
-  // 2. If exclusive game, find exclusive pricing rule
-  if (!pricingRule && !isVenueSelection && game && (game.isExclusive || game.name === 'GTA 6')) {
+  // 2. If exclusive (either game-based or pricing category selected)
+  if (!pricingRule && gameClassification === 'EXCLUSIVE') {
     pricingRule = await Pricing.findOne({
-      $or: [{ game: game._id }, { name: /GTA 6/i }, { deviceType: 'EXCLUSIVE' }],
+      $or: [
+        { deviceType: 'EXCLUSIVE' },
+        { name: /Exclusive/i },
+        { name: /GTA 6/i },
+      ],
       status: 'ACTIVE',
     });
+
+    if (!pricingRule) {
+      pricingRule = {
+        name: 'PS5 Exclusive Hourly Rate',
+        deviceType: 'EXCLUSIVE',
+        billingType: 'PER_PLAYER_HOURLY',
+        amount: 15000, // ₹150 per player per hour in paise
+        currency: 'INR',
+      };
+    }
   }
 
   // 3. For non-exclusive games or Select at Venue on PS5, use the standard PS5 pricing rule (not game-specific/exclusive)
@@ -85,24 +96,39 @@ export async function calculateSessionPrice({
       billingType: 'PER_PLAYER_HOURLY',
       status: 'ACTIVE',
     }) || await Pricing.findOne({ deviceType: 'PS5', game: null, status: 'ACTIVE' });
+
+    if (!pricingRule) {
+      pricingRule = {
+        name: 'PS5 Standard Hourly Rate',
+        deviceType: 'PS5',
+        billingType: 'PER_PLAYER_HOURLY',
+        amount: 7000, // ₹70 per player per hour in paise
+        currency: 'INR',
+      };
+    }
   }
 
-  // 4. Check device direct match
+  // 4. For Pool Table
+  if (!pricingRule && device.deviceType === 'POOL') {
+    pricingRule = await Pricing.findOne({ deviceType: 'POOL', status: 'ACTIVE' });
+  }
+
+  // 5. Check device direct match
   if (!pricingRule) {
     pricingRule = await Pricing.findOne({ device: device._id, game: null, status: 'ACTIVE' });
   }
 
-  // 5. Check deviceType standard match (excluding game-specific rules)
+  // 6. Check deviceType standard match (excluding game-specific rules)
   if (!pricingRule) {
     pricingRule = await Pricing.findOne({ deviceType: device.deviceType, game: null, status: 'ACTIVE' });
   }
 
-  // 6. Check general deviceType active pricing rule
+  // 7. Check general deviceType active pricing rule
   if (!pricingRule) {
     pricingRule = await Pricing.findOne({ deviceType: device.deviceType, status: 'ACTIVE' });
   }
 
-  // 6. Fallback to general active pricing rule
+  // 8. Fallback to general active pricing rule
   if (!pricingRule) {
     pricingRule = await Pricing.findOne({ deviceType: 'GENERAL', status: 'ACTIVE' });
   }
@@ -122,7 +148,10 @@ export async function calculateSessionPrice({
   const players = Math.max(1, playersCount);
   let totalAmountPaise = 0;
 
-  switch (pricingRule.billingType) {
+  // On PS5 consoles, all gaming sessions (Exclusive and Non-Exclusive) calculate per player per hour
+  const effectiveBillingType = device.deviceType === 'PS5' ? 'PER_PLAYER_HOURLY' : pricingRule.billingType;
+
+  switch (effectiveBillingType) {
     case 'PER_PLAYER_HOURLY':
       totalAmountPaise = Math.round(pricingRule.amount * hours * players);
       break;

@@ -1,14 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { receptionistApi } from '../../api/receptionist.js';
+import { equipmentApi } from '../../api/equipment.js';
 import { CheckCircle2, IndianRupee, AlertCircle, X, Loader2, User, Tv, Gamepad2, CreditCard } from 'lucide-react';
 
 export const CheckInModal = ({ booking, onClose, onSuccess }) => {
   const [collectBalance, setCollectBalance] = useState(booking?.balanceRemaining > 0);
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [transactionRef, setTransactionRef] = useState('');
+  const [games, setGames] = useState([]);
+  const [selectedGameId, setSelectedGameId] = useState(booking?.game?._id || '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Fetch active games catalogue for staff assignment
+  useEffect(() => {
+    if (booking?.device?.deviceType === 'PS5') {
+      equipmentApi.getGames('status=ACTIVE').then((res) => {
+        if (res?.success) {
+          setGames(res.data.games || []);
+        }
+      }).catch(() => {});
+    }
+  }, [booking?.device?.deviceType]);
 
   if (!booking) return null;
 
@@ -30,7 +44,11 @@ export const CheckInModal = ({ booking, onClose, onSuccess }) => {
           }
         : null;
 
-      const res = await receptionistApi.checkInBooking(booking._id, paymentCollection);
+      const res = await receptionistApi.checkInBooking(
+        booking._id,
+        paymentCollection,
+        selectedGameId || null
+      );
 
       if (res?.success) {
         toast.success(`Booking ${booking.bookingId} checked in successfully! Session is now ACTIVE.`);
@@ -93,9 +111,36 @@ export const CheckInModal = ({ booking, onClose, onSuccess }) => {
                 <Tv className="w-3.5 h-3.5 text-purple-400" /> Station & Game:
               </span>
               <span className="font-semibold text-white">
-                {booking.device?.name} &bull; {booking.game?.name || 'Open Title'}
+                {booking.device?.name} &bull; {booking.game?.name || booking.gameTitle || 'Select at Venue'}
               </span>
             </div>
+
+            {booking.device?.deviceType === 'PS5' && games.length > 0 && (
+              <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Gamepad2 className="w-3.5 h-3.5 text-[#D7FF00]" /> Front Desk Title Assignment:
+                </label>
+                <select
+                  value={selectedGameId}
+                  onChange={(e) => setSelectedGameId(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white focus:ring-1 focus:ring-[#851B2B] outline-none"
+                >
+                  <option value="">-- {booking.gameTitle || 'Select Title at Venue'} --</option>
+                  {games.map((g) => {
+                    const isExclusiveForbidden = booking.gameClassification === 'NON_EXCLUSIVE' && (g.isExclusive || /GTA/i.test(g.name));
+                    return (
+                      <option
+                        key={g._id}
+                        value={g._id}
+                        disabled={isExclusiveForbidden}
+                      >
+                        {g.name} {g.isExclusive ? '(Exclusive)' : ''} {isExclusiveForbidden ? '• Exclusive Upgrade Required' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Slot & Duration:</span>
               <span className="font-semibold text-white">

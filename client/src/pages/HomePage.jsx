@@ -3,8 +3,6 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { equipmentApi } from '../api/equipment.js';
 import { membershipApi } from '../api/membership.js';
 import { scheduleApi } from '../api/schedule.js';
-import { GameCard } from '../components/games/GameCard.jsx';
-import { GameDetailsModal } from '../components/games/GameDetailsModal.jsx';
 import { CustomerMembershipSection } from '../components/membership/CustomerMembershipSection.jsx';
 import { navigate } from '../utils/navigation.js';
 import {
@@ -27,8 +25,8 @@ import {
   Mail,
   Headphones,
   Award,
-  Coffee,
-  Wifi,
+  Calendar,
+  ExternalLink,
 } from 'lucide-react';
 
 export const HomePage = ({
@@ -41,28 +39,23 @@ export const HomePage = ({
 
   // Dynamic Data fetched from MongoDB backend
   const [devices, setDevices] = useState([]);
-  const [games, setGames] = useState([]);
   const [pricingRules, setPricingRules] = useState([]);
   const [plans, setPlans] = useState([]);
   const [operatingStatus, setOperatingStatus] = useState(null);
-  const [selectedGameCategory, setSelectedGameCategory] = useState('ALL');
-  const [selectedGameForDetails, setSelectedGameForDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch dynamic equipment, games, pricing, membership plans, and operating hours from backend
+  // Fetch dynamic equipment, pricing, membership plans, and operating hours from backend
   const fetchLoungeData = async () => {
     try {
       setLoading(true);
-      const [devRes, gmRes, prRes, planRes, schedRes] = await Promise.all([
+      const [devRes, prRes, planRes, schedRes] = await Promise.all([
         equipmentApi.getDevices(),
-        equipmentApi.getGames(),
         equipmentApi.getPricing(),
         membershipApi.getPlans().catch(() => ({ success: false })),
         scheduleApi.getOperatingStatus().catch(() => ({ success: false })),
       ]);
-      if (devRes.success) setDevices(devRes.data.devices);
-      if (gmRes.success) setGames(gmRes.data.games);
-      if (prRes.success) setPricingRules(prRes.data.pricingPlans);
+      if (devRes?.success) setDevices(devRes.data.devices);
+      if (prRes?.success) setPricingRules(prRes.data.pricingPlans);
       if (planRes?.success && planRes.data?.plans) setPlans(planRes.data.plans);
       if (schedRes?.success && schedRes.data) setOperatingStatus(schedRes.data);
     } catch (err) {
@@ -76,495 +69,386 @@ export const HomePage = ({
     fetchLoungeData();
   }, []);
 
-  const gta6Game = games.find((g) => g.name === 'GTA 6');
-
-  // Filter games by category
-  const categories = ['ALL', ...new Set(games.map((g) => g.category?.name || 'Action'))];
-  const filteredGames = selectedGameCategory === 'ALL'
-    ? games
-    : games.filter((g) => (g.category?.name || 'Action') === selectedGameCategory);
-
-  // Authoritative dynamic rates from backend pricing rules (with correct fallback rates: PS5 ₹70, Pool ₹150, GTA 6 ₹150)
+  // Centralized dynamic rates from backend pricing rules (Fallbacks: PS5 Non-Exclusive ₹70, Exclusive ₹150, Pool ₹150)
   const ps5Pricing = pricingRules.find((p) => p.deviceType === 'PS5' && !p.game);
-  const ps5RateRupees = ps5Pricing ? ps5Pricing.amount / 100 : 70;
+  const ps5RateRupees = ps5Pricing ? Math.round(ps5Pricing.amount / 100) : 70;
+
+  const exclusivePricing = pricingRules.find(
+    (p) =>
+      p.deviceType === 'EXCLUSIVE' ||
+      p.name?.toLowerCase().includes('exclusive') ||
+      p.name?.toLowerCase().includes('gta')
+  );
+  const exclusiveRateRupees = exclusivePricing ? Math.round(exclusivePricing.amount / 100) : 150;
 
   const poolPricing = pricingRules.find((p) => p.deviceType === 'POOL');
-  const poolRateRupees = poolPricing ? poolPricing.amount / 100 : 150;
+  const poolRateRupees = poolPricing ? Math.round(poolPricing.amount / 100) : 150;
 
-  const gta6Pricing = pricingRules.find((p) => p.game || (p.name && /GTA/i.test(p.name)));
-  const gta6RateRupees = gta6Pricing ? gta6Pricing.amount / 100 : 150;
+  // Station references
+  const ps5Station1 = devices.find((d) => d.deviceCode === 'PS5-01' || d.name?.includes('1')) || devices.find((d) => d.deviceType === 'PS5');
+  const poolDevice = devices.find((d) => d.deviceType === 'POOL');
 
   return (
-    <div className="space-y-20">
-      {/* ========================================================= */}
-      {/* 1. HERO SECTION                                           */}
-      {/* ========================================================= */}
-      <section className="relative overflow-hidden pt-10 sm:pt-16 pb-12 sm:pb-20 border-b border-[#49202C]/40">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(133,27,43,0.35),rgba(23,16,20,0))] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#851B2B]/10 blur-[140px] pointer-events-none rounded-full" />
+    <div className="space-y-16 sm:space-y-24">
+      {/* ========================================================================= */}
+      {/* 1. HERO SECTION WITH GAMING POSTER & TRANSPARENT DARK OVERLAY            */}
+      {/* ========================================================================= */}
+      <section className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-[#851B2B]/40 shadow-2xl">
+        {/* Background Gaming Poster Imagery with 75% Dark Overlay */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop')`,
+          }}
+        />
+        {/* Dark Burgundy + Charcoal 75% Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#171014]/95 via-[#260D17]/85 to-[#171014]/95 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(133,27,43,0.35),transparent_70%)] pointer-events-none" />
 
-        <div className="max-w-5xl mx-auto text-center space-y-6 relative z-10 px-4">
-          {/* Brand Tagline Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#851B2B]/20 border border-[#851B2B]/50 text-[#D7FF00] text-xs font-bold uppercase tracking-widest shadow-md shadow-[#851B2B]/20">
-            <div className="w-5 h-5 rounded-full overflow-hidden border border-[#D7FF00]/40 p-0.5 bg-[#171014] shrink-0 flex items-center justify-center">
-              <img src="/icons/Noah_gaming_logo.svg" alt="NOAH GAMING" className="w-full h-full object-cover rounded-full" />
-            </div>
-            <span>NOAH GAMING • PLAY • CHILL • CONNECT</span>
+        <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-28 text-center space-y-6">
+          {/* Status Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-[#851B2B]/40 border border-[#851B2B] text-[#FFF4E8] shadow-lg shadow-[#851B2B]/20">
+            <span className="w-2 h-2 rounded-full bg-[#D7FF00] animate-pulse" />
+            NOAH GAMING • BAJAGOLI ESPORTS LOUNGE
           </div>
 
-          {/* Main Title */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black font-heading tracking-tight text-[#FFF4E8] leading-tight">
-            BAJAGOLI'S PREMIER <br />
-            <span className="gaming-gradient-text">GAMING LOUNGE</span>
+          {/* Valorant-Inspired Geometric Headline */}
+          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black font-heading uppercase tracking-wider text-white leading-tight">
+            PLAY • CHILL <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D7FF00] via-[#FFF4E8] to-[#F5B942]">• CONNECT</span>
           </h1>
 
-          {/* Subtitle */}
-          <p className="text-base sm:text-xl text-[#C7A5A8] max-w-2xl mx-auto leading-relaxed">
-            Experience next-generation PlayStation 5 multiplayer battles, tournament 8-Ball pool, and exclusive private GTA 6 suites. Ultra-low latency, 4K 120Hz displays, and instant online reservations.
+          <p className="text-sm sm:text-lg text-[#C7A5A8] max-w-2xl mx-auto leading-relaxed font-sans">
+            Experience next-generation 4K 120Hz PlayStation 5 console arenas, competitive 8-ball billiards, and seamless venue bookings in Bajagoli.
           </p>
 
           {/* Primary Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-4">
             <button
               onClick={() => onOpenBooking && onOpenBooking(null)}
-              className="px-7 py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-black font-heading text-sm shadow-xl shadow-[#851B2B]/25 transition-all flex items-center gap-2 hover:scale-[1.03] active:scale-[0.98]"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#851B2B] to-[#A51F35] hover:from-[#A51F35] hover:to-[#851B2B] text-white font-black font-heading text-sm uppercase tracking-widest transition-all shadow-xl shadow-[#851B2B]/40 hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2.5 border border-[#851B2B]/50"
             >
-              <Gamepad2 className="w-5 h-5 text-white" />
-              <span className="text-white">Book a Gaming Session</span> <ArrowRight className="w-4 h-4 text-white" />
+              <Gamepad2 className="w-5 h-5 text-[#D7FF00]" />
+              <span>BOOK YOUR SESSION</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
-              onClick={() => onOpenMembershipPlans && onOpenMembershipPlans()}
-              className="px-6 py-3.5 rounded-xl bg-[#851B2B]/30 hover:bg-[#851B2B]/50 text-[#FFF4E8] font-bold font-heading text-sm border border-[#851B2B] shadow-lg shadow-[#851B2B]/20 transition-all flex items-center gap-2 hover:scale-[1.02]"
-            >
-              <Crown className="w-4 h-4 text-[#F5B942]" />
-              Club Passes & Memberships
-            </button>
-
-            <button
-              type="button"
               onClick={() => {
-                navigate('/overview');
-                const el = document.getElementById('overview');
+                navigate('/pricing');
+                const el = document.getElementById('pricing');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="px-5 py-3.5 rounded-xl bg-[#260D17] hover:bg-[#381322] text-[#C7A5A8] hover:text-[#FFF4E8] font-semibold text-sm border border-[#49202C] transition-colors"
+              className="w-full sm:w-auto px-6 py-4 rounded-xl bg-[#260D17]/80 hover:bg-[#381322] text-[#FFF4E8] font-bold font-heading text-sm uppercase tracking-wider border border-[#49202C] transition-all hover:scale-[1.02]"
             >
-              Explore Equipment & Rates
+              View Rates & Pricing
             </button>
           </div>
 
           {/* Key Amenities Banner */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-8 max-w-3xl mx-auto text-xs text-[#C7A5A8]">
-            <div className="p-3 rounded-xl bg-[#260D17]/80 border border-[#49202C] flex items-center justify-center gap-2">
+            <div className="p-3 rounded-xl bg-[#171014]/80 border border-[#49202C] flex items-center justify-center gap-2">
               <Zap className="w-4 h-4 text-[#D7FF00]" />
-              <span className="font-semibold text-[#FFF4E8]">4K 120Hz HDR Displays</span>
+              <span className="font-semibold text-[#FFF4E8]">4K 120Hz HDR</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#260D17]/80 border border-[#49202C] flex items-center justify-center gap-2">
+            <div className="p-3 rounded-xl bg-[#171014]/80 border border-[#49202C] flex items-center justify-center gap-2">
               <Users className="w-4 h-4 text-[#F5B942]" />
-              <span className="font-semibold text-[#FFF4E8]">Up to 4-Player Co-op</span>
+              <span className="font-semibold text-[#FFF4E8]">Up to 4-P Co-op</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#260D17]/80 border border-[#49202C] flex items-center justify-center gap-2">
-              <CircleDot className="w-4 h-4 text-[#45C987]" />
-              <span className="font-semibold text-[#FFF4E8]">Tournament 8-Ball Pool</span>
+            <div className="p-3 rounded-xl bg-[#171014]/80 border border-[#49202C] flex items-center justify-center gap-2">
+              <Headphones className="w-4 h-4 text-[#45C987]" />
+              <span className="font-semibold text-[#FFF4E8]">3D Spatial Audio</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#260D17]/80 border border-[#49202C] flex items-center justify-center gap-2">
-              <Flame className="w-4 h-4 text-[#F06A76]" />
-              <span className="font-semibold text-[#FFF4E8]">GTA 6 VIP Suites</span>
+            <div className="p-3 rounded-xl bg-[#171014]/80 border border-[#49202C] flex items-center justify-center gap-2">
+              <CircleDot className="w-4 h-4 text-[#D7FF00]" />
+              <span className="font-semibold text-[#FFF4E8]">Pro 8-Ball Billiards</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========================================================= */}
-      {/* 3. GAMING STATIONS & HARDWARE (Exact 2 PS5 + 1 Pool Rule)  */}
-      {/* ========================================================= */}
-      <section id="overview" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#D7FF00] uppercase tracking-wider mb-1">
-              <Tv className="w-4 h-4" /> Gaming Equipment & Stations
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold font-heading text-[#FFF4E8]">
-              Available Stations & Hardware
-            </h2>
-            <p className="text-xs sm:text-sm text-[#C7A5A8] mt-1 max-w-2xl">
-              Check real-time station availability and reserve your preferred console or tournament table online with instant confirmation.
-            </p>
-          </div>
-
-          <button
-            onClick={() => onOpenBooking && onOpenBooking(null)}
-            className="self-start sm:self-center px-4 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading flex items-center gap-2 shadow-md shadow-[#851B2B]/30"
-          >
-            <Gamepad2 className="w-4 h-4 text-white" /> <span className="text-white">Check Slot Availability</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {devices.map((device) => {
-            // Find authoritative standard rate for this device (excluding game-specific/exclusive rates like GTA 6)
-            const devicePricing =
-              pricingRules.find(
-                (p) =>
-                  (p.device === device._id || p.deviceType === device.deviceType) &&
-                  !p.game &&
-                  p.billingType === (device.deviceType === 'POOL' ? 'PER_DEVICE_HOURLY' : 'PER_PLAYER_HOURLY')
-              ) ||
-              pricingRules.find((p) => (p.device === device._id || p.deviceType === device.deviceType) && !p.game);
-            const rateRupees = devicePricing ? devicePricing.amount / 100 : device.deviceType === 'POOL' ? 150 : 70;
-
-            return (
-              <div
-                key={device._id}
-                className="gaming-card p-6 rounded-2xl flex flex-col justify-between border-[#49202C] relative overflow-hidden group bg-[#260D17]"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="p-3 rounded-xl bg-[#851B2B]/20 text-[#FFF4E8] border border-[#851B2B]/40">
-                      {device.deviceType === 'POOL' ? (
-                        <CircleDot className="w-6 h-6 text-[#F5B942]" />
-                      ) : (
-                        <Gamepad2 className="w-6 h-6 text-[#D7FF00]" />
-                      )}
-                    </div>
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${device.status === 'ACTIVE'
-                        ? 'bg-[#45C987]/15 text-[#45C987] border border-[#45C987]/30'
-                        : device.status === 'MAINTENANCE'
-                          ? 'bg-[#F5B942]/15 text-[#F5B942] border border-[#F5B942]/30'
-                          : 'bg-[#851B2B]/20 text-[#C7A5A8] border border-[#49202C]'
-                        }`}
-                    >
-                      {device.status === 'ACTIVE' ? 'Available' : device.status}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-mono text-[#D7FF00] font-bold">{device.deviceCode}</span>
-                    <h3 className="text-xl font-bold font-heading text-[#FFF4E8]">{device.name}</h3>
-                    <p className="text-xs text-[#C7A5A8] mt-1 leading-relaxed">{device.description}</p>
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t border-[#49202C] text-xs text-[#C7A5A8]">
-                    <div className="flex justify-between py-1 border-b border-[#49202C]/60">
-                      <span className="text-[#C7A5A8]">Max Capacity:</span>
-                      <span className="font-semibold text-[#D7FF00]">{device.capacity} Players</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-[#49202C]/60">
-                      <span className="text-[#C7A5A8]">Standard Rate:</span>
-                      <span className="font-bold text-[#FFF4E8] font-mono">
-                        ₹{rateRupees} / hour {device.deviceType === 'POOL' ? '(Table Rate)' : '(per player)'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-1">
-                      <span className="text-[#C7A5A8]">Games Library:</span>
-                      <span className="text-[#FFF4E8] font-medium">{device.supportedGames?.length || 0} Titles Available</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-[#49202C] space-y-3">
-                  {device.status === 'ACTIVE' ? (
-                    <button
-                      type="button"
-                      onClick={() => onOpenBooking && onOpenBooking(device)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white border border-[#851B2B] text-xs font-bold font-heading uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#851B2B]/25"
-                    >
-                      <Gamepad2 className="w-3.5 h-3.5 text-white" /> <span className="text-white">Reserve This Station</span>
-                    </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="w-full py-2.5 px-3 rounded-xl bg-[#171014] text-[#D0B9BC] text-xs font-semibold cursor-not-allowed uppercase border border-[#49202C]"
-                    >
-                      Station Under Maintenance
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ========================================================= */}
-      {/* 4. EXCLUSIVE GTA 6 PRIVATE SUITE SHOWCASE                 */}
-      {/* ========================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div id="gta6-showcase-banner" className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#260D17] via-[#171014] to-[#260D17] border border-[#851B2B]/60 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#851B2B]/15 blur-3xl pointer-events-none rounded-full" />
-
-          <div className="space-y-3 relative z-10">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F5B942] uppercase tracking-wider">
-              <Flame className="w-4 h-4 text-[#F5B942]" /> Marquee Exclusive Title • PS5 Console Experience
-            </div>
-            <h3 className="text-2xl sm:text-3xl font-black font-heading text-[#FFF4E8]">
-              Grand Theft Auto VI (GTA 6)
-            </h3>
-            <p className="text-xs sm:text-sm text-[#C7A5A8] max-w-2xl leading-relaxed">
-              Step into Vice City in next-gen 4K. Reserving GTA 6 locks the entire physical PlayStation 5 console exclusively for your private party at <strong>₹{gta6RateRupees}/hour</strong> with mandatory advance booking.
-            </p>
-            <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-[#C7A5A8] pt-1">
-              <span className="px-2.5 py-1 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8]">
-                Rate: <strong className="text-[#D7FF00]">₹{gta6RateRupees} / hr</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8]">
-                Platform: <strong className="text-[#D7FF00]">PS5 Station 1 or 2</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-[#171014] border border-[#49202C] text-[#FFF4E8]">
-                Console Lock: <strong className="text-[#F5B942]">Full Private Access</strong>
-              </span>
-            </div>
-          </div>
-
-          <div className="shrink-0 relative z-10 w-full sm:w-auto">
-            {gta6Game?.status === 'ACTIVE' ? (
-              <button
-                onClick={() => onOpenBooking && onOpenBooking(devices[0])}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold font-heading text-xs uppercase tracking-wider shadow-lg shadow-[#851B2B]/30 transition-all flex items-center justify-center gap-2 border border-[#851B2B]"
-              >
-                <Flame className="w-4 h-4 text-white" /> <span className="text-white">Book GTA 6 Suite</span>
-              </button>
-            ) : (
-              <div className="px-5 py-3 rounded-xl bg-[#171014] border border-[#49202C] text-xs font-semibold text-[#C7A5A8] uppercase tracking-wider text-center">
-                Reservations Opening Soon
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================= */}
-      {/* 5. AVAILABLE GAMES CATALOGUE                               */}
-      {/* ========================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#F5B942] uppercase tracking-wider mb-1">
-              <Gamepad2 className="w-4 h-4 text-[#F5B942]" /> Game Library
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold font-heading text-[#FFF4E8]">Popular Titles</h2>
-            <p className="text-xs sm:text-sm text-[#C7A5A8] mt-1">
-              All PlayStation 5 consoles come pre-installed with top competitive sports, action, and multiplayer hits.
-            </p>
-          </div>
-
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedGameCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${selectedGameCategory === cat
-                  ? 'bg-[#851B2B] text-[#FFF4E8] shadow-sm'
-                  : 'bg-[#260D17] text-[#C7A5A8] hover:text-[#FFF4E8] border border-[#49202C]'
-                  }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {filteredGames.map((game) => (
-            <GameCard
-              key={game._id}
-              game={game}
-              onViewDetails={(g) => setSelectedGameForDetails(g)}
-              onBook={(g) => onOpenBooking && onOpenBooking(null, g)}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* ========================================================= */}
-      {/* 6. TRANSPARENT PRICING & HOUSE RULES                       */}
-      {/* ========================================================= */}
+      {/* ========================================================================= */}
+      {/* 2. PRICING SECTION (SINGLE CONSOLIDATED PRICING SECTION)                  */}
+      {/* ========================================================================= */}
       <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D7FF00] uppercase tracking-wider">
-            <Coins className="w-4 h-4 text-[#D7FF00]" /> Straightforward Rates
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold font-heading text-[#D7FF00] uppercase tracking-widest">
+            <Coins className="w-4 h-4" /> Transparent Lounge Rates
           </div>
-          <h2 className="text-2xl sm:text-4xl font-bold font-heading text-[#FFF4E8]">
-            Lounge Pricing & Transparent Billing
+          <h2 className="text-2xl sm:text-4xl font-black font-heading uppercase text-white tracking-wider">
+            CONSOLE & TABLE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D7FF00] to-[#F5B942]">PRICING</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
-            No hidden charges or surprise deductions. Pay securely online via UPI/Card, or cash/UPI at the reception counter.
+          <p className="text-xs sm:text-sm text-[#C7A5A8]">
+            Direct pricing configured from central lounge management. Pay at the counter upon arrival.
           </p>
         </div>
 
+        {/* 3 Authoritative Pricing Cards: PS5 Non-Exclusive, PS5 Exclusive, Pool Table */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* PS5 Standard */}
-          <div className="p-6 rounded-2xl bg-[#260D17] border border-[#49202C] space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#851B2B]/20 text-[#D7FF00] text-[11px] font-bold">
-                PlayStation 5 Standard
+          {/* Card 1: PS5 NON-EXCLUSIVE */}
+          <div className="relative p-6 sm:p-7 rounded-3xl bg-[#260D17] border border-[#49202C] hover:border-[#851B2B] shadow-xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  NON-EXCLUSIVE
+                </span>
+                <Gamepad2 className="w-6 h-6 text-[#851B2B] group-hover:text-[#D7FF00] transition-colors" />
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹{ps5RateRupees}</span>
-                <span className="text-xs text-[#C7A5A8]">/ player / hour</span>
+
+              <div>
+                <h3 className="text-xl font-black font-heading text-white uppercase tracking-wider">
+                  PS5 Standard Gaming
+                </h3>
+                <p className="text-xs text-[#C7A5A8] mt-1 leading-relaxed">
+                  Ideal for casual sessions, tournament rivalries, and co-op matches. Title selected upon arrival.
+                </p>
               </div>
-              <p className="text-xs text-[#C7A5A8] leading-relaxed">
-                Standard hourly rate for FIFA, Call of Duty, Tekken, and all catalog multiplayer games on PS5 Station 1 or 2.
-              </p>
-              <ul className="space-y-2 text-xs text-[#C7A5A8] pt-2">
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Full access to standard games catalog</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Up to 4 players per console</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Shared or private group booking</li>
+
+              <div className="py-3 border-y border-[#49202C]">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl sm:text-4xl font-black font-heading text-[#FFF4E8]">
+                    ₹{ps5RateRupees}
+                  </span>
+                  <span className="text-xs text-[#C7A5A8] font-mono">/ player / hour</span>
+                </div>
+                <span className="text-[11px] text-[#8F7275] block mt-1">Configured Central PS5 Rate</span>
+              </div>
+
+              <ul className="space-y-2.5 text-xs text-[#C7A5A8]">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <span>Sony PS5 Console with DualSense Wireless</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <span>Full Standard Library (FC 25, Tekken 8, GT7)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <span>1 to 4 Players Couch Multiplayer Support</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <span>Shared or Private Seat Reservations</span>
+                </li>
               </ul>
             </div>
+
             <button
-              onClick={() => onOpenBooking && onOpenBooking(devices[0])}
-              className="w-full py-2.5 rounded-xl bg-[#851B2B]/25 hover:bg-[#851B2B]/40 text-[#FFF4E8] font-bold text-xs uppercase tracking-wider border border-[#851B2B]"
+              onClick={() => onOpenBooking && onOpenBooking(ps5Station1)}
+              className="mt-6 w-full py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#A51F35] text-white font-black font-heading text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#851B2B]/20 flex items-center justify-center gap-2"
             >
-              Book PS5 Session
+              <span>BOOK NON-EXCLUSIVE</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Tournament 8-Ball Pool */}
-          <div className="p-6 rounded-2xl bg-[#260D17] border border-[#49202C] space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F5B942]/20 text-[#F5B942] text-[11px] font-bold">
-                Tournament 8-Ball Pool
+          {/* Card 2: PS5 EXCLUSIVE */}
+          <div className="relative p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-[#30121E] to-[#260D17] border-2 border-[#851B2B] shadow-2xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#D7FF00] text-[#171014] text-[10px] font-black font-heading tracking-widest uppercase shadow-md">
+              PREMIUM EXPERIENCE
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-amber-500/20 text-[#F5B942] border border-amber-500/40">
+                  EXCLUSIVE
+                </span>
+                <Flame className="w-6 h-6 text-[#F5B942]" />
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹{poolRateRupees}</span>
-                <span className="text-xs text-[#C7A5A8]">/ player / hour</span>
+
+              <div>
+                <h3 className="text-xl font-black font-heading text-white uppercase tracking-wider">
+                  PS5 Exclusive Titles
+                </h3>
+                <p className="text-xs text-[#C7A5A8] mt-1 leading-relaxed">
+                  Dedicated console allocation and high-performance calibration for flagship releases (such as GTA 6).
+                </p>
               </div>
-              <p className="text-xs text-[#C7A5A8] leading-relaxed">
-                Professional slate bed tournament pool table with Simonis cloth, weighted cues, and spectator seating.
-              </p>
-              <ul className="space-y-2 text-xs text-[#C7A5A8] pt-2">
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Tournament balls & weighted cues</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Up to 4 players per table</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Real-time countdown timer</li>
+
+              <div className="py-3 border-y border-[#49202C]">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl sm:text-4xl font-black font-heading text-[#FFF4E8]">
+                    ₹{exclusiveRateRupees}
+                  </span>
+                  <span className="text-xs text-[#C7A5A8] font-mono">/ player / hour</span>
+                </div>
+                <span className="text-[11px] text-[#8F7275] block mt-1">Dedicated Station Reservation</span>
+              </div>
+
+              <ul className="space-y-2.5 text-xs text-[#C7A5A8]">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#D7FF00] shrink-0" />
+                  <span>Dedicated Physical PS5 Console Hardware Lock</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#D7FF00] shrink-0" />
+                  <span>Optimized for Day-One & Exclusive Titles</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#D7FF00] shrink-0" />
+                  <span>Priority Station Allocation & Low-Latency Displays</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#D7FF00] shrink-0" />
+                  <span>Counter Payment Upon Lounge Arrival</span>
+                </li>
               </ul>
             </div>
+
             <button
-              onClick={() => onOpenBooking && onOpenBooking(devices.find((d) => d.deviceType === 'POOL'))}
-              className="w-full py-2.5 rounded-xl bg-[#851B2B]/25 hover:bg-[#851B2B]/40 text-[#FFF4E8] font-bold text-xs uppercase tracking-wider border border-[#851B2B]"
+              onClick={() => onOpenBooking && onOpenBooking(ps5Station1)}
+              className="mt-6 w-full py-3.5 rounded-xl bg-gradient-to-r from-[#D7FF00] to-[#F5B942] hover:brightness-110 text-[#171014] font-black font-heading text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#D7FF00]/20 flex items-center justify-center gap-2"
             >
-              Book Pool Table
+              <span>BOOK EXCLUSIVE</span>
+              <ArrowRight className="w-4 h-4 text-[#171014]" />
             </button>
           </div>
 
-          {/* GTA 6 Exclusive */}
-          <div className="p-6 rounded-2xl bg-[#260D17] border border-[#851B2B] space-y-4 flex flex-col justify-between shadow-xl shadow-[#851B2B]/20">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#851B2B] !text-white text-[11px] font-bold">
-                Exclusive Title: GTA 6 Suite
+          {/* Card 3: 8-BALL POOL TABLE */}
+          <div className="relative p-6 sm:p-7 rounded-3xl bg-[#260D17] border border-[#49202C] hover:border-[#851B2B] shadow-xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                  BILLIARDS ARENA
+                </span>
+                <CircleDot className="w-6 h-6 text-purple-400" />
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black font-heading text-[#FFF4E8]">₹{gta6RateRupees}</span>
-                <span className="text-xs text-[#C7A5A8]">/ hour (entire console)</span>
+
+              <div>
+                <h3 className="text-xl font-black font-heading text-white uppercase tracking-wider">
+                  8-Ball Pool Table
+                </h3>
+                <p className="text-xs text-[#C7A5A8] mt-1 leading-relaxed">
+                  Championship grade slate table, precision cue sticks, and dedicated lounge seating for friend matches.
+                </p>
               </div>
-              <p className="text-xs text-[#C7A5A8] leading-relaxed">
-                Reserving GTA 6 locks the full PS5 console exclusively for your private party with mandatory advance reservation.
-              </p>
-              <ul className="space-y-2 text-xs text-[#C7A5A8] pt-2">
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Full private console lock</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Mandatory ₹{Math.round(gta6RateRupees / 2)} advance deposit</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#45C987]" /> Covered by VIP GTA 6 Club Pass</li>
+
+              <div className="py-3 border-y border-[#49202C]">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl sm:text-4xl font-black font-heading text-[#FFF4E8]">
+                    ₹{poolRateRupees}
+                  </span>
+                  <span className="text-xs text-[#C7A5A8] font-mono">/ hour</span>
+                </div>
+                <span className="text-[11px] text-[#8F7275] block mt-1">Configured Table Rate</span>
+              </div>
+
+              <ul className="space-y-2.5 text-xs text-[#C7A5A8]">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <span>Regulation 8-Ball Slate Tournament Table</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <span>Standard Cue Sticks & Triangle Chalk Included</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <span>Up to 4 Players Match Gameplay</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <span>Instant Booking & Walk-in Slot Confirmation</span>
+                </li>
               </ul>
             </div>
+
             <button
-              onClick={() => onOpenBooking && onOpenBooking(devices[0])}
-              className="w-full py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-bold text-xs uppercase tracking-wider font-heading shadow-md shadow-[#851B2B]/20"
+              onClick={() => onOpenBooking && onOpenBooking(poolDevice)}
+              className="mt-6 w-full py-3.5 rounded-xl bg-[#260D17] hover:bg-[#381322] border border-[#851B2B] text-white font-black font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
             >
-              Reserve GTA 6 Suite
+              <span>BOOK POOL TABLE</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       </section>
 
-      {/* ========================================================= */}
-      {/* 7. CLUB PASSES & MEMBERSHIPS (REDESIGNED 3-PLAN CAROUSEL)  */}
-      {/* ========================================================= */}
-      <CustomerMembershipSection
-        plans={plans}
-        onSelectPlan={(plan) => onOpenMembershipPlans && onOpenMembershipPlans(plan)}
-      />
+      {/* ========================================================================= */}
+      {/* 3. MEMBERSHIP SECTION (PRESERVED PLANS & PRICING)                         */}
+      {/* ========================================================================= */}
+      <section id="passes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <CustomerMembershipSection
+          plans={plans}
+          onSelectPlan={(plan) => {
+            if (onOpenMembershipPlans) {
+              onOpenMembershipPlans(plan);
+            }
+          }}
+        />
+      </section>
 
-      {/* ========================================================= */}
-      {/* 8. LOUNGE LOCATION, OPENING HOURS & CONTACT               */}
-      {/* ========================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="p-8 rounded-3xl bg-[#260D17] border border-[#49202C] grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 text-[#D7FF00] flex items-center justify-center border border-[#851B2B]/40">
-              <Clock className="w-5 h-5" />
-            </div>
-            <h3 className="text-lg font-bold font-heading text-[#FFF4E8]">Operating Hours</h3>
-            <div className="text-xs text-[#C7A5A8] space-y-1">
-              {(() => {
-                const format12h = (timeStr) => {
-                  if (!timeStr) return '';
-                  const [h, m] = timeStr.split(':').map(Number);
-                  const period = h >= 12 ? 'PM' : 'AM';
-                  const hour12 = h % 12 === 0 ? 12 : h % 12;
-                  return `${hour12}:${String(m || 0).padStart(2, '0')} ${period}`;
-                };
-                const todayHours = operatingStatus?.todaySchedule || operatingStatus?.today;
-                const hoursFormatted = todayHours?.openTime && todayHours?.closeTime
-                  ? `${format12h(todayHours.openTime)} – ${format12h(todayHours.closeTime)} IST`
-                  : '10:00 AM – 11:00 PM IST';
-                return (
-                  <>
-                    <p><strong className="text-[#FFF4E8]">Today's Hours:</strong> {hoursFormatted}</p>
-                    <p>{operatingStatus?.statusMessage || 'Walk-ins welcome & online bookings open 24/7'}</p>
-                    <p className="text-[#45C987] font-medium pt-1">Open 365 Days a Year</p>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
+      {/* ========================================================================= */}
+      {/* 4. LOCATION & VENUE DETAILS (CONFIGURED BAJAGOLI VENUE)                  */}
+      {/* ========================================================================= */}
+      <section id="location" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-3xl bg-[#260D17] border border-[#49202C] shadow-2xl">
+          {/* Subtle lounge backdrop overlay */}
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none"
+            style={{
+              backgroundImage: `url('https://images.unsplash.com/photo-1511882150382-421056c89033?q=80&w=2070&auto=format&fit=crop')`,
+            }}
+          />
 
-          <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 text-[#F5B942] flex items-center justify-center border border-[#851B2B]/40">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <h3 className="text-lg font-bold font-heading text-[#FFF4E8]">Lounge Location</h3>
-            <div className="text-xs text-[#C7A5A8] space-y-1">
-              <p className="text-[#FFF4E8] font-medium">NOAH GAMING Lounge</p>
-              <p>Near Noah Gym, Bailur, karkala</p>
-              <p>Near Miyar town • Parking Available</p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 text-[#45C987] flex items-center justify-center border border-[#851B2B]/40">
-              <Phone className="w-5 h-5" />
-            </div>
-            <h3 className="text-lg font-bold font-heading text-[#FFF4E8]">Contact & Support</h3>
-            <div className="text-xs text-[#C7A5A8] space-y-1">
-              <p>Phone / WhatsApp: <strong className="text-[#FFF4E8]">+91 98765 43210</strong></p>
-              <p>Email: <strong className="text-[#FFF4E8]">support@noahgaming.com</strong></p>
-              <p className="pt-1">
-                <button
-                  onClick={() => onOpenBooking && onOpenBooking(null)}
-                  className="text-[#D7FF00] hover:underline font-bold"
-                >
-                  Reserve a Station Now →
-                </button>
+          <div className="relative z-10 p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Address */}
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 border border-[#851B2B]/40 flex items-center justify-center text-[#D7FF00]">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold font-heading text-white uppercase tracking-wider">
+                Lounge Location
+              </h3>
+              <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
+                NOAH GAMING & Esports Lounge<br />
+                Bajagoli, Karkala Taluk<br />
+                Udupi District, Karnataka – 574122
               </p>
+              <a
+                href="https://maps.google.com/?q=Bajagoli+Karkala"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D7FF00] hover:underline pt-1"
+              >
+                <span>Get Directions on Google Maps</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* Operating Timings */}
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 border border-[#851B2B]/40 flex items-center justify-center text-[#F5B942]">
+                <Clock className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold font-heading text-white uppercase tracking-wider">
+                Operating Timings
+              </h3>
+              <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
+                Open Daily: 10:00 AM – 11:00 PM IST<br />
+                Monday through Sunday<br />
+                <span className="text-[#45C987] font-semibold">Live Stations & Walk-in Ready</span>
+              </p>
+            </div>
+
+            {/* Front Desk & Contact */}
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 border border-[#851B2B]/40 flex items-center justify-center text-[#45C987]">
+                <Phone className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold font-heading text-white uppercase tracking-wider">
+                Front Desk Inquiries
+              </h3>
+              <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
+                Counter Phone & WhatsApp Support<br />
+                Tournament & Group Bookings<br />
+                <span className="font-mono text-white">+91 94819 74347</span>
+              </p>
+              <span className="text-xs text-[#8F7275] block">support@noahclubs.in</span>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Dedicated Game Details Modal */}
-      <GameDetailsModal
-        game={selectedGameForDetails}
-        isOpen={Boolean(selectedGameForDetails)}
-        onClose={() => setSelectedGameForDetails(null)}
-        onBookGame={(game) => {
-          setSelectedGameForDetails(null);
-          if (onOpenBooking) onOpenBooking(null, game);
-        }}
-      />
     </div>
   );
 };

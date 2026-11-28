@@ -49,7 +49,7 @@ export const Footer = () => {
                 <Clock className="w-3.5 h-3.5 text-[#D7FF00]" /> Open Daily (IST Schedule)
               </span>
               <span className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#F5B942]" /> Bajagoli , Karkala
+                <MapPin className="w-3.5 h-3.5 text-[#F5B942]" /> Bajagoli, Karkala
               </span>
             </div>
           </div>

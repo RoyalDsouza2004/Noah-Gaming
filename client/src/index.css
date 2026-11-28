@@ -114,9 +114,9 @@ html.light,
     box-shadow: none !important;
     -webkit-tap-highlight-color: transparent !important;
   }
-  h1, h2, h3, .font-heading {
-    font-family: 'Orbitron', 'Rajdhani', sans-serif;
-    letter-spacing: 0.05em;
+  h1, h2, h3, h4, .font-heading {
+    font-family: 'Chakra Petch', 'Orbitron', 'Rajdhani', 'Teko', sans-serif;
+    letter-spacing: 0.04em;
   }
 }
 

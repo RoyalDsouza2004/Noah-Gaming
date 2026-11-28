@@ -231,6 +231,8 @@ export const calculatePrice = async (req, res) => {
     const {
       deviceId,
       gameId,
+      pricingCategory,
+      gameClassification,
       isVenueSelection = false,
       durationMinutes = 60,
       playersCount = 1,
@@ -253,6 +255,8 @@ export const calculatePrice = async (req, res) => {
       deviceId,
       gameId: isVenueSelection ? null : gameId,
       isVenueSelection: Boolean(isVenueSelection),
+      pricingCategory,
+      gameClassification,
       durationMinutes: parseInt(durationMinutes),
       playersCount: parseInt(playersCount),
       customerId: effectiveCustomerId,

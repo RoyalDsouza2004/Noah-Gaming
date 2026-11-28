@@ -410,6 +410,8 @@ export async function createBookingAtomic({
   customerId,
   deviceId,
   gameId = null,
+  pricingCategory = null,
+  gameClassification: customClassification = null,
   isVenueSelection = false,
   bookingType = 'SHARED',
   bookingDate, // 'YYYY-MM-DD'
@@ -420,6 +422,10 @@ export async function createBookingAtomic({
   idempotencyKey = null,
   applyMembershipBenefit = true,
 }) {
+  // If no gameId was provided, treat as venue selection (customer selects game upon arrival)
+  const effectiveIsVenueSelection = Boolean(isVenueSelection || !gameId);
+  const effectivePricingCategory = customClassification || pricingCategory || 'NON_EXCLUSIVE';
+
   // 0. Idempotency Check: if identical idempotencyKey was already submitted by this customer, return that booking
   if (idempotencyKey && customerId) {
     const existingBooking = await Booking.findOne({
@@ -457,26 +463,9 @@ export async function createBookingAtomic({
     throw err;
   }
 
-  // Validate Select at Venue restrictions
-  if (isVenueSelection) {
-    if (device.deviceType !== 'PS5') {
-      const err = new Error('Select at Venue is only available for PlayStation 5 consoles.');
-      err.status = 400;
-      throw err;
-    }
-    if (gameId) {
-      const g = await Game.findById(gameId);
-      if (g && g.isExclusive) {
-        const err = new Error('Exclusive games cannot be booked under Select at Venue.');
-        err.status = 400;
-        throw err;
-      }
-    }
-  }
-
   // 2. Validate Game if provided (and not venue selection)
   let game = null;
-  if (gameId && !isVenueSelection) {
+  if (gameId && !effectiveIsVenueSelection) {
     game = await Game.findById(gameId);
     if (!game) {
       const err = new Error('Selected game not found');
@@ -694,8 +683,10 @@ export async function createBookingAtomic({
     // 6. Calculate Price using centralized backend pricing engine
     const pricingCalculation = await calculateSessionPrice({
       deviceId: device._id,
-      gameId: isVenueSelection ? null : (game ? game._id : null),
-      isVenueSelection: Boolean(isVenueSelection),
+      gameId: effectiveIsVenueSelection ? null : (game ? game._id : null),
+      isVenueSelection: effectiveIsVenueSelection,
+      pricingCategory: effectivePricingCategory,
+      gameClassification: effectivePricingCategory,
       durationMinutes,
       playersCount: players,
       customerId,
@@ -709,7 +700,7 @@ export async function createBookingAtomic({
     let advanceRequired = Boolean(pricingCalculation.advanceRequired);
     let advanceAmountPaise = pricingCalculation.minimumAdvancePaise || 0;
     let isAdvancePaid = false;
-    let initialPaymentStatus = 'UNPAID';
+    let initialPaymentStatus = 'PENDING';
     let membershipApplied = Boolean(pricingCalculation.membershipBenefit?.applied && applyMembershipBenefit);
     let membershipSubscriptionId = null;
     let membershipDiscountPaise = pricingCalculation.membershipBenefit?.discountPaise || 0;
@@ -720,7 +711,7 @@ export async function createBookingAtomic({
       const coverage = await checkMembershipBookingCoverage({
         customerId,
         deviceId: device._id,
-        gameId: isVenueSelection ? null : (game ? game._id : null),
+        gameId: effectiveIsVenueSelection ? null : (game ? game._id : null),
         bookingDate,
         startTime,
         durationHours,
@@ -766,25 +757,27 @@ export async function createBookingAtomic({
       });
     }
 
-    const gameClassification = isVenueSelection
-      ? 'NON_EXCLUSIVE'
-      : game
-      ? (game.isExclusive ? 'EXCLUSIVE' : 'NON_EXCLUSIVE')
-      : (device.deviceType === 'POOL' ? 'NONE' : 'NON_EXCLUSIVE');
+    const gameClassification = device.deviceType === 'POOL'
+      ? 'NONE'
+      : (effectivePricingCategory === 'EXCLUSIVE' || (game && game.isExclusive))
+      ? 'EXCLUSIVE'
+      : 'NON_EXCLUSIVE';
 
-    const gameTitle = isVenueSelection
-      ? 'Select at Venue'
+    const gameTitle = device.deviceType === 'POOL'
+      ? '8-Ball Pool Table'
       : game
       ? game.name
-      : (device.deviceType === 'POOL' ? '8-Ball Pool Table' : 'Select at Venue');
+      : gameClassification === 'EXCLUSIVE'
+      ? 'Exclusive Game (Select at Venue)'
+      : 'Non-Exclusive Game (Select at Venue)';
 
     // 9. Save confirmed booking to MongoDB
     const booking = new Booking({
       bookingId,
       customer: customerId,
       device: device._id,
-      game: isVenueSelection ? null : (game ? game._id : null),
-      isVenueSelection: Boolean(isVenueSelection),
+      game: effectiveIsVenueSelection ? null : (game ? game._id : null),
+      isVenueSelection: Boolean(effectiveIsVenueSelection),
       gameClassification,
       gameTitle,
       bookingType: effectiveBookingType,

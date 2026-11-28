@@ -239,7 +239,7 @@ export const createBookingAdmin = async (req, res) => {
 // PATCH /api/admin/bookings/:id
 export const updateBookingAdmin = async (req, res) => {
   try {
-    const { bookingStatus, paymentStatus, notes, cancellationReason } = req.body;
+    const { bookingStatus, paymentStatus, notes, cancellationReason, gameId } = req.body;
 
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
@@ -247,6 +247,22 @@ export const updateBookingAdmin = async (req, res) => {
         success: false,
         message: 'Booking not found',
       });
+    }
+
+    if (gameId) {
+      const Game = (await import('../models/Game.js')).default;
+      const game = await Game.findById(gameId);
+      if (game) {
+        if (booking.gameClassification === 'NON_EXCLUSIVE' && (game.isExclusive || /GTA/i.test(game.name))) {
+          return res.status(400).json({
+            success: false,
+            message: 'Cannot assign an exclusive title to a non-exclusive booking without authorized pricing adjustment.',
+          });
+        }
+        booking.game = game._id;
+        booking.gameTitle = game.name;
+        booking.isVenueSelection = false;
+      }
     }
 
     if (bookingStatus) {

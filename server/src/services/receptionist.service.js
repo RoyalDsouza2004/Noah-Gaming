@@ -651,10 +651,13 @@ export async function createWalkInBooking({
 /**
  * 6. Booking Check-in
  */
-export async function checkInBooking({ bookingId, staffUser, paymentCollection }) {
-  const booking = await Booking.findOne({
-    $or: [{ bookingId: bookingId.toUpperCase() }, { _id: bookingId }],
-  }).populate('customer device game payments');
+export async function checkInBooking({ bookingId, staffUser, paymentCollection, gameId = null }) {
+  const isOid = mongoose.Types.ObjectId.isValid(bookingId);
+  const booking = await Booking.findOne(
+    isOid
+      ? { $or: [{ bookingId: String(bookingId).toUpperCase() }, { _id: bookingId }] }
+      : { bookingId: String(bookingId).toUpperCase() }
+  ).populate('customer device game payments');
 
   if (!booking) {
     const err = new Error('Booking reservation not found.');
@@ -672,6 +675,28 @@ export async function checkInBooking({ bookingId, staffUser, paymentCollection }
     const err = new Error(`Booking ${booking.bookingId} is already checked in.`);
     err.status = 400;
     throw err;
+  }
+
+  // Assign or update game if specified by staff at check-in
+  if (gameId) {
+    const game = await Game.findById(gameId);
+    if (!game) {
+      const err = new Error('Selected game not found.');
+      err.status = 404;
+      throw err;
+    }
+
+    // Validate pricing category compatibility:
+    // If booking was booked as NON_EXCLUSIVE, staff cannot assign an exclusive game without authorization
+    if (booking.gameClassification === 'NON_EXCLUSIVE' && (game.isExclusive || /GTA/i.test(game.name))) {
+      const err = new Error('Cannot assign an exclusive title to a standard non-exclusive reservation.');
+      err.status = 400;
+      throw err;
+    }
+
+    booking.game = game._id;
+    booking.gameTitle = game.name;
+    booking.isVenueSelection = false;
   }
 
   const now = new Date();

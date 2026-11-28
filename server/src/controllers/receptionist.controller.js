@@ -118,11 +118,12 @@ export const getBookingDetails = async (req, res, next) => {
 
 export const checkIn = async (req, res, next) => {
   try {
-    const { paymentCollection } = req.body;
+    const { paymentCollection, gameId } = req.body;
     const result = await receptionistService.checkInBooking({
       bookingId: req.params.id,
       staffUser: req.user,
       paymentCollection,
+      gameId,
     });
     res.status(200).json({
       success: true,

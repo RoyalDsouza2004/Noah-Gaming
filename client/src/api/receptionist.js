@@ -34,10 +34,10 @@ export const receptionistApi = {
   getUpcomingBookings: (limit = 50) =>
     apiRequest(`/receptionist/bookings/upcoming?limit=${limit}`),
   getBookingDetails: (id) => apiRequest(`/receptionist/bookings/${id}`),
-  checkInBooking: (id, paymentCollection = null) =>
+  checkInBooking: (id, paymentCollection = null, gameId = null) =>
     apiRequest(`/receptionist/bookings/${id}/check-in`, {
       method: 'POST',
-      body: { paymentCollection },
+      body: { paymentCollection, gameId },
     }),
   markNoShow: (id, reason = '') =>
     apiRequest(`/receptionist/bookings/${id}/no-show`, {
