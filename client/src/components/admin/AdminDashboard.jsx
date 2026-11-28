@@ -17,6 +17,7 @@ import { AdminOperatingHoursTab } from './AdminOperatingHoursTab.jsx';
 import { ThemeToggle } from '../common/ThemeToggle.jsx';
 import { cloudinaryApi } from '../../api/cloudinary.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { navigate } from '../../utils/navigation.js';
 import {
   Tv,
   Gamepad2,
@@ -591,7 +592,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
 
           <button
             type="button"
-            onClick={() => { window.location.hash = '#receptionist'; }}
+            onClick={() => { navigate('/receptionist'); }}
             className="h-9 px-2 rounded-xl bg-[#D7FF00]/15 text-[#851B2B] dark:text-[#D7FF00] border border-[#851B2B]/30 dark:border-[#D7FF00]/40 text-xs font-bold font-heading flex items-center gap-1"
             title="Switch to Front Desk POS"
           >
@@ -647,7 +648,7 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
           <button
             type="button"
             onClick={() => {
-              window.location.hash = '#receptionist';
+              navigate('/receptionist');
             }}
             style={{
               WebkitTapHighlightColor: 'transparent',
@@ -803,14 +804,14 @@ export const AdminDashboard = ({ initialTab = 'overview', onClose }) => {
                             onClick={() => {
                               if (tab.id === 'receptionist') {
                                 setSectionDropdownOpen(false);
-                                window.location.hash = '#receptionist';
+                                navigate('/receptionist');
                                 return;
                               }
                               setActiveTab(tab.id);
                               setSectionDropdownOpen(false);
                               setSearchQuery('');
                               setStatusFilter('');
-                              window.location.hash = tab.id === 'overview' ? '#admin' : `#admin-${tab.id}`;
+                              navigate(tab.id === 'overview' ? '/admin' : `/admin-${tab.id}`);
                             }}
                             className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left ${
                               isSelected

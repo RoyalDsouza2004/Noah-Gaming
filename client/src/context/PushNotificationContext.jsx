@@ -3,6 +3,7 @@ import { pushApi } from '../api/push.js';
 import { urlBase64ToUint8Array, isPushNotificationSupported, isIosDevice, isStandalonePwa } from '../utils/pushUtils.js';
 import { showToast } from '../utils/toast.js';
 import { useAuth } from './AuthContext.jsx';
+import { navigate } from '../utils/navigation.js';
 
 const PushNotificationContext = createContext(null);
 
@@ -38,8 +39,9 @@ export const PushNotificationProvider = ({ children }) => {
       const handleMessage = (event) => {
         if (event.data?.type === 'PUSH_NOTIFICATION_CLICK') {
           const url = event.data?.data?.url;
-          if (url && window.location.hash !== url) {
-            window.location.hash = url.replace(/^\/?#?/, '#');
+          if (url) {
+            const cleanPath = url.replace(/^#\/?/, '').replace(/^\/+/, '');
+            navigate(`/${cleanPath}`);
           }
         }
       };

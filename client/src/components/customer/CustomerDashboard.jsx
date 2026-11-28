@@ -18,6 +18,7 @@ import { ThemeToggle } from '../common/ThemeToggle.jsx';
 import { SixDigitOtpInput } from '../common/SixDigitOtpInput.jsx';
 import { maskEmail } from '../../utils/mask.js';
 import { showToast } from '../../utils/toast.js';
+import { navigate } from '../../utils/navigation.js';
 import {
   User,
   Users,
@@ -134,7 +135,7 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
     setLogoutConfirmOpen(false);
     logout();
     if (onClose) onClose();
-    window.location.hash = '#home';
+    navigate('/', true);
     showToast.success('Logged out successfully. See you soon, Gamer!');
   };
 

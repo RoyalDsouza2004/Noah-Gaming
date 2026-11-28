@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { userManagementApi } from '../api/userManagement.js';
 import { emailApi } from '../api/email.js';
 import { showToast } from '../utils/toast.js';
+import { navigate } from '../utils/navigation.js';
 import { SixDigitOtpInput } from './common/SixDigitOtpInput.jsx';
 import { maskEmail } from '../utils/mask.js';
 import {
@@ -156,11 +157,11 @@ export const AuthModal = () => {
               setAuthModalOpen(false);
               showToast.success(`Welcome to NOAH GAMING, ${compRes.user?.name || 'Gamer'}!`);
               if (compRes.user?.role === 'admin') {
-                window.location.hash = '#admin';
+                navigate('/admin');
               } else if (compRes.user?.role === 'receptionist') {
-                window.location.hash = '#receptionist';
+                navigate('/receptionist');
               } else {
-                window.location.hash = '#home';
+                navigate('/');
               }
             } else {
               setErrorMessage(compRes?.message || 'Failed to complete authentication.');
@@ -222,11 +223,13 @@ export const AuthModal = () => {
     checkApprovalStatusNow,
   ]);
 
-  // Check URL hash for #reset-password?token=...
+  // Check URL pathname or hash for reset-password?token=...
   useEffect(() => {
-    const handleHash = () => {
+    const handleResetRoute = () => {
       const hash = window.location.hash || '';
-      if (hash.startsWith('#reset-password')) {
+      const pathname = window.location.pathname || '';
+      const isReset = pathname.includes('reset-password') || hash.startsWith('#reset-password');
+      if (isReset) {
         let token = '';
         if (hash.includes('token=')) {
           token = hash.split('token=')[1]?.split('&')[0];
@@ -243,9 +246,15 @@ export const AuthModal = () => {
       }
     };
 
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    handleResetRoute();
+    window.addEventListener('popstate', handleResetRoute);
+    window.addEventListener('routechange', handleResetRoute);
+    window.addEventListener('hashchange', handleResetRoute);
+    return () => {
+      window.removeEventListener('popstate', handleResetRoute);
+      window.removeEventListener('routechange', handleResetRoute);
+      window.removeEventListener('hashchange', handleResetRoute);
+    };
   }, [setAuthModalOpen, setAuthModalTab]);
 
   if (!authModalOpen) return null;
@@ -273,11 +282,11 @@ export const AuthModal = () => {
       setAuthModalOpen(false);
       showToast.success(`Welcome back, ${result.user?.name || 'Gamer'}!`);
       if (result.user?.role === 'admin') {
-        window.location.hash = '#admin';
+        navigate('/admin');
       } else if (result.user?.role === 'receptionist') {
-        window.location.hash = '#receptionist';
+        navigate('/receptionist');
       } else {
-        window.location.hash = '#home';
+        navigate('/');
       }
     }
   };
@@ -302,11 +311,11 @@ export const AuthModal = () => {
         showToast.success(`Welcome to NOAH GAMING, ${res.user?.name || 'Gamer'}!`);
         setAuthModalOpen(false);
         if (res.user?.role === 'admin') {
-          window.location.hash = '#admin';
+          navigate('/admin');
         } else if (res.user?.role === 'receptionist') {
-          window.location.hash = '#receptionist';
+          navigate('/receptionist');
         } else {
-          window.location.hash = '#home';
+          navigate('/');
         }
       } else {
         setErrorMessage(res.message || 'Verification failed');
@@ -707,7 +716,7 @@ export const AuthModal = () => {
       const res = await emailApi.resetPasswordWithToken(resetToken, tokenNewPassword);
       if (res?.success) {
         showToast.success('Password reset successfully! Please sign in with your new password.');
-        window.location.hash = '';
+        navigate('/', true);
         setAuthModalTab('login');
         setLoginPassword('');
       } else {
@@ -1764,7 +1773,7 @@ export const AuthModal = () => {
             <button
               type="button"
               onClick={() => {
-                window.location.hash = '';
+                navigate('/', true);
                 setAuthModalTab('login');
                 setErrorMessage('');
               }}

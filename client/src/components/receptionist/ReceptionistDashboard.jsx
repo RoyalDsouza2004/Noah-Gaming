@@ -7,6 +7,7 @@ import { bookingApi } from '../../api/booking.js';
 import { reportsApi } from '../../api/reports.js';
 import { scheduleApi } from '../../api/schedule.js';
 import { ThemeToggle } from '../common/ThemeToggle.jsx';
+import { navigate } from '../../utils/navigation.js';
 import { ExtendSessionModal } from './ExtendSessionModal.jsx';
 import { CheckInModal } from './CheckInModal.jsx';
 import { CheckoutModal } from './CheckoutModal.jsx';
@@ -584,7 +585,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
               <button
                 type="button"
                 onClick={() => {
-                  window.location.hash = '#admin';
+                  navigate('/admin');
                 }}
                 style={{
                   WebkitTapHighlightColor: 'transparent',

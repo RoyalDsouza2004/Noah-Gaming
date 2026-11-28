@@ -6,6 +6,7 @@ import { scheduleApi } from '../api/schedule.js';
 import { GameCard } from '../components/games/GameCard.jsx';
 import { GameDetailsModal } from '../components/games/GameDetailsModal.jsx';
 import { CustomerMembershipSection } from '../components/membership/CustomerMembershipSection.jsx';
+import { navigate } from '../utils/navigation.js';
 import {
   Gamepad2,
   Tv,
@@ -140,12 +141,17 @@ export const HomePage = ({
               Club Passes & Memberships
             </button>
 
-            <a
-              href="#overview"
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/overview');
+                const el = document.getElementById('overview');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
               className="px-5 py-3.5 rounded-xl bg-[#260D17] hover:bg-[#381322] text-[#C7A5A8] hover:text-[#FFF4E8] font-semibold text-sm border border-[#49202C] transition-colors"
             >
               Explore Equipment & Rates
-            </a>
+            </button>
           </div>
 
           {/* Key Amenities Banner */}

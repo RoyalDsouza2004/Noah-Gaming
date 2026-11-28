@@ -22,6 +22,7 @@ import { NotificationCenter } from './components/notifications/NotificationCente
 import { notificationApi } from './api/notifications.js';
 import { showToast } from './utils/toast.js';
 import { fetchFeatureFlags } from './utils/featureFlags.js';
+import { navigate, getRoutePath } from './utils/navigation.js';
 
 function AppContent() {
   const { user, loading, openLoginModal, logout } = useAuth();
@@ -46,8 +47,8 @@ function AppContent() {
   useEffect(() => {
     fetchFeatureFlags();
     if (typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      if (!hash || hash === '#home') {
+      const path = getRoutePath();
+      if (!path || path === 'home') {
         window.scrollTo(0, 0);
       }
     }
@@ -78,12 +79,12 @@ function AppContent() {
     };
   }, [user]);
 
-  // Synchronize route from browser URL hash and popstate (supports browser Back / Forward navigation)
+  // Synchronize route from browser URL (supports clean pathname /home, /book, /admin, etc.)
   useEffect(() => {
     if (loading) return; // Wait until initial token check completes before checking route permissions
 
-    const syncRouteFromHash = () => {
-      const hash = window.location.hash;
+    const syncRoute = () => {
+      const path = getRoutePath();
       const token = localStorage.getItem('noah_auth_token') || localStorage.getItem('nexus_auth_token');
       let effectiveUser = user;
       if (!effectiveUser && token) {
@@ -92,17 +93,17 @@ function AppContent() {
         } catch (e) {}
       }
 
-      if (hash.startsWith('#admin')) {
+      if (path.startsWith('admin')) {
         if (!effectiveUser) {
           if (!token) openLoginModal();
           return;
         }
         if (effectiveUser.role !== 'admin') {
           showToast.error('Access Denied: Administrator credentials required.');
-          window.location.hash = '#home';
+          navigate('/', true);
           return;
         }
-        const rawTab = hash.replace('#admin-', '').replace('#admin', '');
+        const rawTab = path.replace('admin-', '').replace('admin/', '').replace('admin', '');
         const tab = rawTab || 'overview';
         setAdminInitialTab(tab);
         setAdminDashboardOpen(true);
@@ -113,17 +114,17 @@ function AppContent() {
         setReceptionistDashboardOpen(false);
         setNotificationsOpen(false);
         setActiveNav(`admin_${tab}`);
-      } else if (hash === '#receptionist' || hash.startsWith('#receptionist-')) {
+      } else if (path === 'receptionist' || path.startsWith('receptionist-') || path.startsWith('receptionist/')) {
         if (!effectiveUser) {
           if (!token) openLoginModal();
           return;
         }
         if (effectiveUser.role !== 'receptionist' && effectiveUser.role !== 'admin') {
           showToast.error('Access Denied: Front Desk Staff authorization required.');
-          window.location.hash = '#home';
+          navigate('/', true);
           return;
         }
-        const tab = hash.includes('walkin') ? 'walkin' : hash.includes('bookings') ? 'bookings' : 'live';
+        const tab = path.includes('walkin') ? 'walkin' : path.includes('bookings') ? 'bookings' : 'live';
         setReceptionistInitialTab(tab);
         setReceptionistDashboardOpen(true);
         setAdminDashboardOpen(false);
@@ -133,7 +134,7 @@ function AppContent() {
         setBookingWizardOpen(false);
         setNotificationsOpen(false);
         setActiveNav(tab === 'live' ? 'receptionist' : `reception_${tab}`);
-      } else if (hash === '#bookings') {
+      } else if (path === 'bookings' || path === 'my-bookings') {
         if (!effectiveUser) {
           if (!token) openLoginModal();
           return;
@@ -146,7 +147,7 @@ function AppContent() {
         setAdminDashboardOpen(false);
         setNotificationsOpen(false);
         setActiveNav('bookings');
-      } else if (hash === '#profile') {
+      } else if (path === 'profile') {
         if (!effectiveUser) {
           if (!token) openLoginModal();
           return;
@@ -160,7 +161,7 @@ function AppContent() {
         setAdminDashboardOpen(false);
         setNotificationsOpen(false);
         setActiveNav('profile');
-      } else if (hash === '#notifications') {
+      } else if (path === 'notifications') {
         if (!effectiveUser) {
           if (!token) openLoginModal();
           return;
@@ -173,7 +174,7 @@ function AppContent() {
         setReceptionistDashboardOpen(false);
         setAdminDashboardOpen(false);
         setActiveNav('notifications');
-      } else if (hash === '#passes') {
+      } else if (path === 'passes' || path === 'memberships') {
         setMembershipPlansOpen(true);
         setMyBookingsOpen(false);
         setCustomerDashboardOpen(false);
@@ -182,7 +183,7 @@ function AppContent() {
         setAdminDashboardOpen(false);
         setNotificationsOpen(false);
         setActiveNav('passes');
-      } else if (hash === '#book') {
+      } else if (path === 'book' || path === 'booking') {
         setBookingWizardOpen(true);
         setMyBookingsOpen(false);
         setCustomerDashboardOpen(false);
@@ -190,7 +191,7 @@ function AppContent() {
         setReceptionistDashboardOpen(false);
         setAdminDashboardOpen(false);
         setNotificationsOpen(false);
-      } else if (hash === '#overview') {
+      } else if (path === 'overview' || path === 'equipment') {
         setMyBookingsOpen(false);
         setCustomerDashboardOpen(false);
         setMembershipPlansOpen(false);
@@ -201,7 +202,7 @@ function AppContent() {
         setActiveNav('equipment');
         const el = document.getElementById('overview');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
-      } else if (hash === '#pricing') {
+      } else if (path === 'pricing') {
         setMyBookingsOpen(false);
         setCustomerDashboardOpen(false);
         setMembershipPlansOpen(false);
@@ -212,7 +213,7 @@ function AppContent() {
         setActiveNav('pricing');
         const el = document.getElementById('pricing');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
-      } else if (hash === '#system-health' || hash === '#auth-console') {
+      } else if (path === 'system-health' || path === 'auth-console') {
         if (user?.role === 'admin') {
           setAdminInitialTab('health');
           setAdminDashboardOpen(true);
@@ -225,10 +226,10 @@ function AppContent() {
           setActiveNav('admin_health');
         } else {
           showToast.error('Access Denied: Internal diagnostic tools are restricted to administrators.');
-          window.location.hash = '#home';
+          navigate('/', true);
         }
       } else {
-        // Default customer home view
+        // Default customer home view ('/' or '/home')
         setMyBookingsOpen(false);
         setCustomerDashboardOpen(false);
         setMembershipPlansOpen(false);
@@ -240,12 +241,14 @@ function AppContent() {
       }
     };
 
-    syncRouteFromHash();
-    window.addEventListener('hashchange', syncRouteFromHash);
-    window.addEventListener('popstate', syncRouteFromHash);
+    syncRoute();
+    window.addEventListener('popstate', syncRoute);
+    window.addEventListener('routechange', syncRoute);
+    window.addEventListener('hashchange', syncRoute);
     return () => {
-      window.removeEventListener('hashchange', syncRouteFromHash);
-      window.removeEventListener('popstate', syncRouteFromHash);
+      window.removeEventListener('popstate', syncRoute);
+      window.removeEventListener('routechange', syncRoute);
+      window.removeEventListener('hashchange', syncRoute);
     };
   }, [user, loading]);
 
@@ -267,7 +270,7 @@ function AppContent() {
     }
     if (effectiveUser.role !== 'admin') {
       showToast.error('Access Denied: Administrator credentials required.');
-      window.location.hash = '#home';
+      navigate('/', true);
       return;
     }
     if (adminDashboardOpen && adminInitialTab === tab) {
@@ -288,7 +291,7 @@ function AppContent() {
     setAdminInitialTab(tab);
     setAdminDashboardOpen(true);
     setActiveNav(`admin_${tab}`);
-    window.location.hash = tab && tab !== 'overview' ? `#admin-${tab}` : '#admin';
+    navigate(tab && tab !== 'overview' ? `/admin-${tab}` : '/admin');
   };
 
   const handleOpenReceptionistDashboard = (tab = 'live') => {
@@ -299,7 +302,7 @@ function AppContent() {
     }
     if (effectiveUser.role !== 'receptionist' && effectiveUser.role !== 'admin') {
       showToast.error('Access Denied: Front Desk Staff authorization required.');
-      window.location.hash = '#home';
+      navigate('/', true);
       return;
     }
     if (receptionistDashboardOpen && receptionistInitialTab === tab) {
@@ -320,7 +323,7 @@ function AppContent() {
     setReceptionistInitialTab(tab);
     setReceptionistDashboardOpen(true);
     setActiveNav(tab === 'live' ? 'receptionist' : `reception_${tab}`);
-    window.location.hash = tab && tab !== 'live' ? `#receptionist-${tab}` : '#receptionist';
+    navigate(tab && tab !== 'live' ? `/receptionist-${tab}` : '/receptionist');
   };
 
   const handleOpenMembershipPlans = (plan = null) => {
@@ -332,7 +335,7 @@ function AppContent() {
     setAdminDashboardOpen(false);
     setNotificationsOpen(false);
     setMembershipPlansOpen(true);
-    window.location.hash = '#passes';
+    navigate('/passes');
   };
 
   const handleNavigate = (navId) => {
@@ -353,7 +356,7 @@ function AppContent() {
         setReceptionistDashboardOpen(false);
         setAdminDashboardOpen(false);
         setNotificationsOpen(false);
-        window.location.hash = '#home';
+        navigate('/');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         break;
       case 'equipment':
@@ -364,7 +367,7 @@ function AppContent() {
         setReceptionistDashboardOpen(false);
         setAdminDashboardOpen(false);
         setNotificationsOpen(false);
-        window.location.hash = '#overview';
+        navigate('/overview');
         const overviewEl = document.getElementById('overview');
         if (overviewEl) {
           overviewEl.scrollIntoView({ behavior: 'smooth' });
@@ -380,7 +383,7 @@ function AppContent() {
         setReceptionistDashboardOpen(false);
         setAdminDashboardOpen(false);
         setNotificationsOpen(false);
-        window.location.hash = '#pricing';
+        navigate('/pricing');
         const pricingEl = document.getElementById('pricing');
         if (pricingEl) {
           pricingEl.scrollIntoView({ behavior: 'smooth' });
@@ -409,7 +412,7 @@ function AppContent() {
         setAdminDashboardOpen(false);
         setNotificationsOpen(false);
         setMyBookingsOpen(true);
-        window.location.hash = '#bookings';
+        navigate('/bookings');
         break;
       case 'notifications':
         if (!getEffectiveUser()) {
@@ -423,7 +426,7 @@ function AppContent() {
         setReceptionistDashboardOpen(false);
         setAdminDashboardOpen(false);
         setNotificationsOpen(true);
-        window.location.hash = '#notifications';
+        navigate('/notifications');
         break;
       case 'profile':
         if (!getEffectiveUser()) {
@@ -444,7 +447,7 @@ function AppContent() {
         setNotificationsOpen(false);
         setCustomerDashboardInitialTab('profile');
         setCustomerDashboardOpen(true);
-        window.location.hash = '#profile';
+        navigate('/profile');
         break;
       case 'receptionist':
         handleOpenReceptionistDashboard('live');
@@ -468,7 +471,7 @@ function AppContent() {
     setSelectedGameForBooking(game);
     setNotificationsOpen(false);
     setBookingWizardOpen(true);
-    window.location.hash = '#book';
+    navigate('/book');
   };
 
   return (
@@ -595,7 +598,7 @@ function AppContent() {
               }}
               onClose={() => {
                 setBookingWizardOpen(false);
-                window.location.hash = '#home';
+                navigate('/', true);
               }}
             />
           </div>
@@ -613,7 +616,7 @@ function AppContent() {
               }}
               onClose={() => {
                 setMyBookingsOpen(false);
-                window.location.hash = '#home';
+                navigate('/', true);
               }}
             />
           </div>
@@ -636,7 +639,7 @@ function AppContent() {
               }}
               onClose={() => {
                 setCustomerDashboardOpen(false);
-                window.location.hash = '#home';
+                navigate('/', true);
               }}
             />
           </div>
@@ -651,7 +654,7 @@ function AppContent() {
               user={user}
               onClose={() => {
                 setNotificationsOpen(false);
-                window.location.hash = '#home';
+                navigate('/', true);
               }}
               onNavigateToBooking={() => {
                 setNotificationsOpen(false);
@@ -679,7 +682,7 @@ function AppContent() {
           onClose={() => {
             setMembershipPlansOpen(false);
             setSelectedPlanForPurchase(null);
-            window.location.hash = '#home';
+            navigate('/', true);
           }}
           onPurchaseSuccess={() => {
             setMembershipPlansOpen(false);
@@ -697,14 +700,12 @@ function AppContent() {
             onTabChange={(newTab) => {
               setReceptionistInitialTab(newTab);
               setActiveNav(newTab === 'live' ? 'receptionist' : `reception_${newTab}`);
-              const targetHash = newTab === 'live' ? '#receptionist' : `#receptionist-${newTab}`;
-              if (window.location.hash !== targetHash) {
-                window.history.replaceState(null, '', targetHash);
-              }
+              const targetPath = newTab === 'live' ? '/receptionist' : `/receptionist-${newTab}`;
+              navigate(targetPath, true);
             }}
             onClose={() => {
               setReceptionistDashboardOpen(false);
-              window.location.hash = '#home';
+              navigate('/', true);
             }}
           />
         </div>
@@ -717,7 +718,7 @@ function AppContent() {
             initialTab={adminInitialTab}
             onClose={() => {
               setAdminDashboardOpen(false);
-              window.location.hash = '#home';
+              navigate('/', true);
             }}
           />
         </div>

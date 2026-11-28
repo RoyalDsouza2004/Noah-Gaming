@@ -37,9 +37,10 @@ export const MobileBottomNav = ({
 
   const role = currentUser?.role || 'customer';
 
-  // Determine which navigation item is active based on activeNav and window.location.hash
+  // Determine which navigation item is active based on activeNav, clean pathname and hash
   const getActiveItemId = () => {
     const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    const path = typeof window !== 'undefined' ? (window.location.pathname || '').toLowerCase().replace(/^\/+/, '').replace(/\/+$/, '') : '';
 
     if (role === 'admin') {
       // 1. Overview: dashboard, analytics, automation, health
@@ -48,6 +49,13 @@ export const MobileBottomNav = ({
         activeNav === 'admin_analytics' ||
         activeNav === 'admin_automation' ||
         activeNav === 'admin_health' ||
+        path === 'admin' ||
+        path.startsWith('admin-overview') ||
+        path.startsWith('admin-analytics') ||
+        path.startsWith('admin-automation') ||
+        path.startsWith('admin-health') ||
+        path === 'system-health' ||
+        path === 'auth-console' ||
         hash === '#admin' ||
         hash === '#admin-overview' ||
         hash === '#admin-analytics' ||
@@ -64,6 +72,8 @@ export const MobileBottomNav = ({
         activeNav === 'reception_live' ||
         activeNav === 'reception_walkin' ||
         activeNav === 'reception_bookings' ||
+        path === 'receptionist' ||
+        path.startsWith('receptionist-') ||
         hash === '#receptionist' ||
         hash === '#receptionist-live' ||
         hash === '#receptionist-walkin' ||
@@ -79,6 +89,12 @@ export const MobileBottomNav = ({
         activeNav === 'admin_categories' ||
         activeNav === 'admin_pricing' ||
         activeNav === 'admin_maintenance' ||
+        path.startsWith('admin-devices') ||
+        path.startsWith('admin-games') ||
+        path.startsWith('admin-exclusive') ||
+        path.startsWith('admin-categories') ||
+        path.startsWith('admin-pricing') ||
+        path.startsWith('admin-maintenance') ||
         hash === '#admin-devices' ||
         hash === '#admin-games' ||
         hash === '#admin-exclusive' ||
@@ -94,6 +110,10 @@ export const MobileBottomNav = ({
         activeNav === 'admin_calendar' ||
         activeNav === 'admin_payments' ||
         activeNav === 'admin_memberships' ||
+        path.startsWith('admin-bookings') ||
+        path.startsWith('admin-calendar') ||
+        path.startsWith('admin-payments') ||
+        path.startsWith('admin-memberships') ||
         hash === '#admin-bookings' ||
         hash === '#admin-calendar' ||
         hash === '#admin-payments' ||
@@ -105,6 +125,8 @@ export const MobileBottomNav = ({
       if (
         activeNav === 'profile' ||
         activeNav === 'admin_profile' ||
+        path === 'profile' ||
+        path === 'admin-profile' ||
         hash === '#profile' ||
         hash === '#admin-profile'
       ) {
@@ -119,23 +141,34 @@ export const MobileBottomNav = ({
         activeNav === 'receptionist' ||
         activeNav === 'reception_live' ||
         activeNav === 'reception_status' ||
+        path === 'receptionist' ||
+        path === 'receptionist-live' ||
         hash === '#receptionist' ||
         hash === '#receptionist-live'
       ) {
         return 'reception_dashboard';
       }
       // 2. Walk-In POS
-      if (activeNav === 'reception_walkin' || hash === '#receptionist-walkin') {
+      if (
+        activeNav === 'reception_walkin' ||
+        path === 'receptionist-walkin' ||
+        hash === '#receptionist-walkin'
+      ) {
         return 'reception_walkin';
       }
       // 3. Today's Bookings & Check-ins
-      if (activeNav === 'reception_bookings' || hash === '#receptionist-bookings') {
+      if (
+        activeNav === 'reception_bookings' ||
+        path === 'receptionist-bookings' ||
+        hash === '#receptionist-bookings'
+      ) {
         return 'reception_bookings';
       }
       // 4. Staff Profile & Account
       if (
         activeNav === 'profile' ||
         activeNav === 'reception_profile' ||
+        path === 'profile' ||
         hash === '#profile'
       ) {
         return 'profile';
@@ -148,6 +181,9 @@ export const MobileBottomNav = ({
     if (
       activeNav === 'equipment' ||
       activeNav === 'pricing' ||
+      path === 'overview' ||
+      path === 'equipment' ||
+      path === 'pricing' ||
       hash === '#overview' ||
       hash === '#equipment' ||
       hash === '#pricing'
@@ -158,6 +194,10 @@ export const MobileBottomNav = ({
     if (
       activeNav === 'bookings' ||
       activeNav === 'book' ||
+      path === 'bookings' ||
+      path === 'my-bookings' ||
+      path === 'book' ||
+      path === 'booking' ||
       hash === '#bookings' ||
       hash === '#book'
     ) {
@@ -168,6 +208,10 @@ export const MobileBottomNav = ({
       activeNav === 'profile' ||
       activeNav === 'passes' ||
       activeNav === 'notifications' ||
+      path === 'profile' ||
+      path === 'passes' ||
+      path === 'memberships' ||
+      path === 'notifications' ||
       hash === '#profile' ||
       hash === '#passes' ||
       hash === '#notifications'

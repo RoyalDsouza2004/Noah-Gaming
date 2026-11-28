@@ -1,6 +1,7 @@
 import React from 'react';
 import { Gamepad2, ShieldCheck, Clock, Sparkles, MapPin, Phone, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { navigate } from '../utils/navigation.js';
 
 export const Footer = () => {
   const { user, openLoginModal } = useAuth();
@@ -10,11 +11,11 @@ export const Footer = () => {
     if (!user) {
       openLoginModal();
     } else if (user.role === 'admin') {
-      window.location.hash = '#admin';
+      navigate('/admin');
     } else if (user.role === 'receptionist') {
-      window.location.hash = '#receptionist';
+      navigate('/receptionist');
     } else {
-      window.location.hash = '#profile';
+      navigate('/profile');
     }
   };
 
@@ -60,27 +61,47 @@ export const Footer = () => {
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <a href="#overview" className="hover:text-[#FFF4E8] transition-colors">
+                <a
+                  href="/overview"
+                  onClick={(e) => { e.preventDefault(); navigate('/overview'); }}
+                  className="hover:text-[#FFF4E8] transition-colors"
+                >
                   PlayStation 5 Consoles
                 </a>
               </li>
               <li>
-                <a href="#overview" className="hover:text-[#FFF4E8] transition-colors">
+                <a
+                  href="/overview"
+                  onClick={(e) => { e.preventDefault(); navigate('/overview'); }}
+                  className="hover:text-[#FFF4E8] transition-colors"
+                >
                   Tournament 8-Ball Pool
                 </a>
               </li>
               <li>
-                <a href="#pricing" className="hover:text-[#FFF4E8] transition-colors">
+                <a
+                  href="/pricing"
+                  onClick={(e) => { e.preventDefault(); navigate('/pricing'); }}
+                  className="hover:text-[#FFF4E8] transition-colors"
+                >
                   Hourly Pricing & House Rules
                 </a>
               </li>
               <li>
-                <a href="#passes" className="hover:text-[#FFF4E8] transition-colors">
+                <a
+                  href="/passes"
+                  onClick={(e) => { e.preventDefault(); navigate('/passes'); }}
+                  className="hover:text-[#FFF4E8] transition-colors"
+                >
                   NOAH Club Passes
                 </a>
               </li>
               <li>
-                <a href="#book" className="text-[#D7FF00] hover:underline font-bold transition-colors">
+                <a
+                  href="/book"
+                  onClick={(e) => { e.preventDefault(); navigate('/book'); }}
+                  className="text-[#D7FF00] hover:underline font-bold transition-colors"
+                >
                   Book a Station Online →
                 </a>
               </li>

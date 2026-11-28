@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { usePwa } from '../context/PwaContext.jsx';
 import { ThemeToggle } from './common/ThemeToggle.jsx';
 import { scheduleApi } from '../api/schedule.js';
+import { navigate } from '../utils/navigation.js';
 import {
   Gamepad2,
   Sparkles,
@@ -66,7 +67,11 @@ export const Navbar = ({
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           {/* Mobile Logo: visible only on mobile (md:hidden) */}
           <a
-            href="#home"
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/');
+            }}
             style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
             className="flex md:hidden items-center gap-2 group shrink-0 focus:outline-none"
             title="NOAH GAMING Home"
