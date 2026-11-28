@@ -29,24 +29,25 @@ import {
   Lock,
   Banknote,
 } from 'lucide-react';
+import { format12HourTime } from '../../utils/timeFormat.js';
 
 function formatBookingTimeRange(booking) {
   if (!booking) return '';
   const startStr = booking.startAt
-    ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(booking.startAt))
-    : (booking.startTime || '');
+    ? format12HourTime(new Date(booking.startAt))
+    : format12HourTime(booking.startTime || '');
 
   let endStr = '';
   if (booking.endAt) {
-    endStr = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(booking.endAt));
+    endStr = format12HourTime(new Date(booking.endAt));
   } else if (booking.startTime && booking.duration) {
     const [h, m] = booking.startTime.split(':').map(Number);
     const totalM = h * 60 + m + Math.round(booking.duration * 60);
     const endH = Math.floor(totalM / 60) % 24;
     const endMin = totalM % 60;
-    endStr = `${String(endH).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+    endStr = format12HourTime(`${String(endH).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`);
   } else {
-    endStr = booking.endTime || '';
+    endStr = format12HourTime(booking.endTime || '');
   }
 
   if (booking.startAt && booking.endAt) {

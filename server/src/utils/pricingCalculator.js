@@ -36,10 +36,8 @@ export async function calculateSessionPrice({
     throw new Error('Device not found for price calculation');
   }
 
-  // Validate Select at Venue restrictions
-  if (isVenueSelection && device.deviceType !== 'PS5') {
-    throw new Error('Select at Venue is only available for PlayStation 5 consoles.');
-  }
+  // Venue game selection only applies to PlayStation 5 consoles; ignore for Pool Table
+  const effectiveVenueSelection = device.deviceType === 'PS5' ? Boolean(isVenueSelection) : false;
 
   let game = null;
   if (gameId) {
@@ -62,7 +60,7 @@ export async function calculateSessionPrice({
   let pricingRule = null;
 
   // 1. If not venue selection and game has specific pricing, check it
-  if (!isVenueSelection && game && game.pricing) {
+  if (!effectiveVenueSelection && game && game.pricing) {
     pricingRule = await Pricing.findOne({ _id: game.pricing, status: 'ACTIVE' });
   }
 
@@ -195,7 +193,7 @@ export async function calculateSessionPrice({
       membershipCoverage = await checkMembershipBookingCoverage({
         customerId,
         deviceId: device._id,
-        gameId: isVenueSelection ? null : (game ? game._id : null),
+        gameId: effectiveVenueSelection ? null : (game ? game._id : null),
         bookingDate,
         startTime,
         durationHours: hours,
@@ -274,7 +272,7 @@ export async function calculateSessionPrice({
       ratePerUnitRupees: pricingRule.amount / 100,
     },
     gameClassification,
-    isVenueSelection: Boolean(isVenueSelection),
+    isVenueSelection: effectiveVenueSelection,
     durationMinutes,
     durationHours: hours,
     playersCount: players,

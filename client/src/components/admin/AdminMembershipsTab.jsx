@@ -3,6 +3,7 @@ import { membershipApi } from '../../api/membership.js';
 import { equipmentApi } from '../../api/equipment.js';
 import { userProfileApi } from '../../api/userProfile.js';
 import { reportsApi } from '../../api/reports.js';
+import { format12HourRange } from '../../utils/timeFormat.js';
 import { authApi } from '../../api/auth.js';
 import { receptionistApi } from '../../api/receptionist.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -1336,7 +1337,7 @@ export const AdminMembershipsTab = () => {
                     <td className="px-4 py-3 font-sans text-white">{u.device?.name}</td>
                     <td className="px-4 py-3 font-sans text-slate-300">{u.game?.name || 'Open Play'}</td>
                     <td className="px-4 py-3 text-slate-300">
-                      {u.startTime} - {u.endTime}
+                      {format12HourRange(u.startTime, u.endTime)}
                     </td>
                     <td className="px-4 py-3 text-emerald-400 font-bold">{u.duration} mins</td>
                     <td className="px-4 py-3">

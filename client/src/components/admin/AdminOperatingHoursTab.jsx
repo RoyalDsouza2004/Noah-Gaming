@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { scheduleApi } from '../../api/schedule.js';
 import { showToast } from '../../utils/toast.js';
+import { format12HourRange } from '../../utils/timeFormat.js';
 import {
   Clock,
   Calendar,
@@ -924,7 +925,7 @@ export const AdminOperatingHoursTab = () => {
                     <span className="mx-2 text-[#C7A5A8]">|</span>
                     <span className="text-[#FFF4E8] font-semibold">{b.customer?.name || 'Customer'}</span>
                     <div className="text-[11px] text-[#C7A5A8] mt-0.5">
-                      Station: {b.device?.name || 'Console'} &bull; Slot: {b.bookingDate} ({b.startTime} - {b.endTime})
+                      Station: {b.device?.name || 'Console'} &bull; Slot: {b.bookingDate} ({format12HourRange(b.startTime, b.endTime)})
                     </div>
                   </div>
                   <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { showToast } from '../../utils/toast.js';
+import { format12HourTime, format12HourRange } from '../../utils/timeFormat.js';
 import {
   Gamepad2,
   Tv,
@@ -195,22 +196,21 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     fetchAvailability();
   }, [fetchAvailability]);
 
-  // Robust slot availability checker
+  // Robust slot availability checker (always checks mode & player capacity)
   const isSlotAvailable = (slot) => {
     if (!slot) return false;
     if (slot.isPast) return false;
     if (slot.status === 'MAINTENANCE' || slot.status === 'UNAVAILABLE' || slot.status === 'FULL') {
       return false;
     }
-    // If backend provided explicit boolean available property
-    if (typeof slot.available === 'boolean') {
-      return slot.available;
+    if (typeof slot.available === 'boolean' && !slot.available) {
+      return false;
     }
-    // Fallback based on remaining player capacity & mode
+    const remaining = slot.remainingPlayers || 0;
     if (bookingType === 'PRIVATE') {
-      return Boolean(slot.canBookPrivate && (slot.remainingPlayers || 0) >= numberOfPlayers);
+      return Boolean(slot.canBookPrivate && remaining >= numberOfPlayers);
     }
-    return Boolean(slot.canBookShared && (slot.remainingPlayers || 0) >= numberOfPlayers);
+    return Boolean(slot.canBookShared && remaining >= numberOfPlayers);
   };
 
   // Check if all slots for today have already passed
@@ -225,12 +225,13 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       if (!selectedDevice) return;
       setQuoteLoading(true);
       try {
+        const isPS5 = selectedDevice.deviceType === 'PS5';
         const res = await equipmentApi.calculatePrice({
           deviceId: selectedDevice._id,
           gameId: null,
-          pricingCategory: selectedDevice.deviceType === 'POOL' ? 'NONE' : pricingCategory,
-          gameClassification: selectedDevice.deviceType === 'POOL' ? 'NONE' : pricingCategory,
-          isVenueSelection: true,
+          pricingCategory: isPS5 ? pricingCategory : 'NONE',
+          gameClassification: isPS5 ? pricingCategory : 'NONE',
+          isVenueSelection: isPS5,
           durationMinutes: duration * 60,
           playersCount: numberOfPlayers,
           customerId: user?._id || null,
@@ -258,6 +259,8 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
     if (device.deviceType === 'POOL') {
       setBookingType('SHARED');
+    } else if (category === 'EXCLUSIVE') {
+      setBookingType('PRIVATE');
     }
 
     // 150ms visual ring feedback before immediate progression
@@ -269,9 +272,17 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
   // Handle Live Slot Selection -> AUTOMATIC NAVIGATION TO REVIEW (Step 3)
   const handleSelectSlot = (slot) => {
+    if (slotsLoading) return;
+
     if (!isSlotAvailable(slot)) {
       if (slot.isPast) {
         setError('This time slot is in the past. Please select an upcoming slot or next date.');
+      } else if (slot.reason) {
+        setError(slot.reason);
+      } else if (duration > 1) {
+        setError(
+          `The ${duration}-hour interval starting at ${format12HourTime(slot.startTime)} overlaps an existing reservation. Please choose a shorter duration or another start time.`
+        );
       } else {
         setError('This time slot does not have sufficient open player seats. Please choose an alternate slot.');
       }
@@ -318,13 +329,14 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     setError('');
     setSubmitting(true);
     try {
+      const isPS5 = selectedDevice.deviceType === 'PS5';
       const payload = {
         deviceId: selectedDevice._id,
         gameId: null,
-        pricingCategory: selectedDevice.deviceType === 'POOL' ? 'NONE' : pricingCategory,
-        gameClassification: selectedDevice.deviceType === 'POOL' ? 'NONE' : pricingCategory,
-        isVenueSelection: true,
-        bookingType: selectedDevice.deviceType === 'POOL' ? 'SHARED' : bookingType,
+        pricingCategory: isPS5 ? pricingCategory : 'NONE',
+        gameClassification: isPS5 ? pricingCategory : 'NONE',
+        isVenueSelection: isPS5,
+        bookingType: isPS5 ? bookingType : bookingType,
         bookingDate,
         startTime: selectedSlot.startTime,
         duration,
@@ -768,18 +780,20 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                       <button
                         key={slot.startTime}
                         type="button"
-                        disabled={!available}
+                        disabled={!available || slotsLoading}
                         onClick={() => handleSelectSlot(slot)}
                         className={`p-2.5 rounded-xl border text-center transition-all select-none ${
-                          isNavigating || isSelected
+                          slotsLoading
+                            ? 'opacity-50 cursor-wait bg-slate-100 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/40'
+                            : isNavigating || isSelected
                             ? 'bg-[#851B2B] text-white border-[#851B2B] shadow-lg shadow-[#851B2B]/40 ring-2 ring-[#851B2B]'
                             : available
                             ? 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] hover:shadow-md cursor-pointer text-slate-800 dark:text-slate-200'
                             : 'bg-slate-100 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/40 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-50'
                         }`}
                       >
-                        <span className="block font-bold font-mono text-sm">
-                          {slot.startTime}
+                        <span className="block font-bold font-mono text-xs sm:text-sm">
+                          {format12HourTime(slot.startTime)}
                         </span>
                         <span className="block text-[10px] mt-0.5 opacity-80">
                           {slot.isPast
@@ -841,7 +855,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 <div>
                   <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Date & Slot</span>
                   <span className="font-bold text-slate-900 dark:text-white mt-0.5 block font-mono">
-                    {bookingDate} @ {selectedSlot?.startTime}
+                    {bookingDate} &bull; {selectedSlot?.endTime ? format12HourRange(selectedSlot.startTime, selectedSlot.endTime) : format12HourTime(selectedSlot?.startTime)}
                   </span>
                 </div>
 
@@ -962,14 +976,21 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                 <span className="text-slate-500 dark:text-slate-400">Station & Title:</span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {confirmedBooking.device?.name || selectedDevice?.name} • Select at Venue
+                  {confirmedBooking.device?.name || selectedDevice?.name} •{' '}
+                  {(confirmedBooking.device?.deviceType || selectedDevice?.deviceType) === 'POOL'
+                    ? 'Tournament 8-Ball Pool'
+                    : 'Title Selected at Venue'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                 <span className="text-slate-500 dark:text-slate-400">Scheduled Time:</span>
                 <span className="font-bold font-mono text-slate-900 dark:text-white">
-                  {confirmedBooking.bookingDate} @ {confirmedBooking.startTime} ({confirmedBooking.duration} hr{confirmedBooking.duration > 1 ? 's' : ''})
+                  {confirmedBooking.bookingDate} •{' '}
+                  {confirmedBooking.endTime
+                    ? format12HourRange(confirmedBooking.startTime, confirmedBooking.endTime)
+                    : format12HourTime(confirmedBooking.startTime)}{' '}
+                  ({confirmedBooking.duration} hr{confirmedBooking.duration > 1 ? 's' : ''})
                 </span>
               </div>
 

@@ -86,7 +86,7 @@ export const createCustomerBooking = async (req, res) => {
       gameId: gameId || null,
       pricingCategory,
       gameClassification,
-      isVenueSelection: Boolean(isVenueSelection || !gameId),
+      isVenueSelection: Boolean(isVenueSelection),
       bookingType,
       bookingDate,
       startTime,

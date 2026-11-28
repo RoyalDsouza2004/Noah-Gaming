@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { format12HourTime } from '../../utils/timeFormat.js';
 import { toast } from 'react-hot-toast';
 import { receptionistApi } from '../../api/receptionist.js';
 import { equipmentApi } from '../../api/equipment.js';
@@ -144,7 +145,7 @@ export const CheckInModal = ({ booking, onClose, onSuccess }) => {
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Slot & Duration:</span>
               <span className="font-semibold text-white">
-                {booking.bookingDate} @ {booking.startTime} ({booking.duration} hr{booking.duration > 1 ? 's' : ''})
+                {booking.bookingDate} @ {format12HourTime(booking.startTime)} ({booking.duration} hr{booking.duration > 1 ? 's' : ''})
               </span>
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-800">

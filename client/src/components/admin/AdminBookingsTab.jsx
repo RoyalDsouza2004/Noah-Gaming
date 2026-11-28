@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { bookingApi } from '../../api/booking.js';
 import { reportsApi } from '../../api/reports.js';
+import { format12HourRange } from '../../utils/timeFormat.js';
 import {
   Calendar,
   Clock,
@@ -543,7 +544,7 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
                       </div>
                       <div className="text-[11px] text-slate-600 dark:text-[#FFF4E8] font-mono flex items-center gap-1">
                         <Clock className="w-3 h-3 text-slate-400" />
-                        {b.startTime} - {b.endTime} ({b.duration}h)
+                        {format12HourRange(b.startTime, b.endTime)} ({b.duration}h)
                       </div>
                     </td>
 
@@ -664,7 +665,7 @@ export const AdminBookingsTab = ({ devices, games, onRefreshData }) => {
               <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800">
                 <span className="text-slate-500 dark:text-slate-400 text-[10px] uppercase">Slot</span>
                 <div className="font-bold text-[#851B2B] dark:text-[#D7FF00] font-mono mt-0.5">
-                  {selectedBooking.startTime} - {selectedBooking.endTime}
+                  {format12HourRange(selectedBooking.startTime, selectedBooking.endTime)}
                 </div>
               </div>
               <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800">

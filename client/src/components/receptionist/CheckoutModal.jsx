@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { receptionistApi } from '../../api/receptionist.js';
+import { format12HourRange } from '../../utils/timeFormat.js';
 import { CheckSquare, IndianRupee, AlertCircle, X, Loader2, Clock, Tv, User } from 'lucide-react';
 
 export const CheckoutModal = ({ session, onClose, onSuccess }) => {
@@ -101,7 +102,7 @@ export const CheckoutModal = ({ session, onClose, onSuccess }) => {
             </div>
             <div>
               <span className="text-slate-400">Scheduled Time</span>
-              <p className="font-mono text-slate-300 mt-0.5">{session.startTime} - {session.endTime}</p>
+              <p className="font-mono text-slate-300 mt-0.5">{format12HourRange(session.startTime, session.endTime)}</p>
             </div>
             <div>
               <span className="text-slate-400">Approx. Played Time</span>

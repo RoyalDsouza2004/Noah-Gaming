@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { paymentApi } from '../../api/payment.js';
 import { showToast } from '../../utils/toast.js';
+import { format12HourRange } from '../../utils/timeFormat.js';
 import {
   FileText,
   Printer,
@@ -312,7 +313,7 @@ const generatePrintHtml = (receipt) => {
         <tr>
           <td style="font-weight: 700;">${receipt.session?.deviceName || 'Station'} (${receipt.session?.deviceType || 'PS5'})</td>
           <td style="font-weight: 600;">${receipt.session?.gameTitle || 'Lounge Gaming'}</td>
-          <td class="field-val-mono">${receipt.session?.bookingDate || ''} • ${receipt.session?.startTime || ''} - ${receipt.session?.endTime || ''} (${receipt.session?.durationHours || 1}h)</td>
+          <td class="field-val-mono">${receipt.session?.bookingDate || ''} • ${format12HourRange(receipt.session?.startTime, receipt.session?.endTime)} (${receipt.session?.durationHours || 1}h)</td>
           <td>${receipt.session?.bookingType || 'SHARED'} • ${receipt.session?.numberOfPlayers || 1} Player(s)</td>
         </tr>
       </table>
@@ -804,7 +805,7 @@ export const ReceiptModal = ({ paymentId, bookingId, onClose }) => {
                       <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-[#F5B942]" /> Schedule (IST)
                     </span>
                     <span className="font-mono text-[#414858] dark:text-slate-300 font-medium">
-                      {receipt.session?.bookingDate} • {receipt.session?.startTime} - {receipt.session?.endTime} ({receipt.session?.durationHours}h)
+                      {receipt.session?.bookingDate} • {format12HourRange(receipt.session?.startTime, receipt.session?.endTime)} ({receipt.session?.durationHours}h)
                     </span>
                   </div>
 

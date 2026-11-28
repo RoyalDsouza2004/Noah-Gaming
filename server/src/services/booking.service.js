@@ -153,10 +153,12 @@ export async function checkSlotAvailability(deviceId, startAt, endAt, gameId = n
   }
 
   // 3. Overlapping Bookings check
-  // Any booking where startAt < slotEnd && endAt > slotStart
+  // Any active/blocking booking where startAt < slotEnd && endAt > slotStart
+  // Cancelled, rejected, expired, and completed sessions do not block availability
   const overlappingBookings = await Booking.find({
     device: device._id,
     bookingStatus: { $in: ['CONFIRMED', 'PENDING'] },
+    sessionStatus: { $ne: 'COMPLETED' },
     startAt: { $lt: endAt },
     endAt: { $gt: startAt },
   }).populate('customer', 'name phone').populate('game');
@@ -430,10 +432,6 @@ export async function createBookingAtomic({
   idempotencyKey = null,
   applyMembershipBenefit = true,
 }) {
-  // If no gameId was provided, treat as venue selection (customer selects game upon arrival)
-  const effectiveIsVenueSelection = Boolean(isVenueSelection || !gameId);
-  const effectivePricingCategory = customClassification || pricingCategory || 'NON_EXCLUSIVE';
-
   // 0. Idempotency Check: if identical idempotencyKey was already submitted by this customer, return that booking
   if (idempotencyKey && customerId) {
     const existingBooking = await Booking.findOne({
@@ -470,6 +468,14 @@ export async function createBookingAtomic({
     err.status = 400;
     throw err;
   }
+
+  // Venue game selection only applies to PS5 consoles; never apply to Pool Table
+  const effectiveIsVenueSelection =
+    device.deviceType === 'PS5' ? Boolean(isVenueSelection || !gameId) : false;
+  const effectivePricingCategory =
+    device.deviceType === 'POOL'
+      ? 'NONE'
+      : customClassification || pricingCategory || 'NON_EXCLUSIVE';
 
   // 2. Validate Game if provided (and not venue selection)
   let game = null;
@@ -640,8 +646,9 @@ export async function createBookingAtomic({
     }
   }
 
-  // 5. Concurrency-Safe Immediate Availability Re-check wrapped in lock
-  const lockKey = `${device._id.toString()}_${startAt.getTime()}`;
+  // 5. Concurrency-Safe Immediate Availability Re-check wrapped in per-device lock
+  // Serializes all overlapping time intervals on the same equipment
+  const lockKey = device._id.toString();
   return await withSlotLock(lockKey, async () => {
     const avail = await checkSlotAvailability(device._id, startAt, endAt, game);
 

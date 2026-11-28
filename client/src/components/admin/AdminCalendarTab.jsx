@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../api/booking.js';
+import { format12HourRange } from '../../utils/timeFormat.js';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -405,7 +406,7 @@ export const AdminCalendarTab = ({ devices }) => {
                         {b.customer?.name || 'Walk-in Guest'} ({b.numberOfPlayers} player{b.numberOfPlayers > 1 ? 's' : ''})
                       </div>
                       <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                        ID: {b.bookingId} • {b.bookingType} • {b.startTime} - {b.endTime}
+                        ID: {b.bookingId} • {b.bookingType} • {format12HourRange(b.startTime, b.endTime)}
                       </div>
                     </div>
                     <div className="text-right">

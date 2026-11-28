@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sessionsApi } from '../../api/sessions.js';
+import { format12HourTime, format12HourRange } from '../../utils/timeFormat.js';
 import {
   Gamepad2,
   Clock,
@@ -145,7 +146,7 @@ export const ActiveSessionCountdown = ({
                     <span>&bull;</span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-[#851B2B] dark:text-[#D7FF00]" />
-                      {firstUpcoming.startTime} - {firstUpcoming.endTime} ({firstUpcoming.duration}h)
+                      {format12HourRange(firstUpcoming.startTime, firstUpcoming.endTime)} ({firstUpcoming.duration}h)
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-[#C7A5A8]">
@@ -241,9 +242,9 @@ export const ActiveSessionCountdown = ({
                 {activeSession.booking?.numberOfPlayers || 1} Player(s)
               </span>
               <span>&bull;</span>
-              <span>Started: {new Date(activeSession.startedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST</span>
+              <span>Started: {format12HourTime(activeSession.startedAt)} IST</span>
               <span>&bull;</span>
-              <span>Ends: {new Date(activeSession.scheduledEndAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST</span>
+              <span>Ends: {format12HourTime(activeSession.scheduledEndAt)} IST</span>
             </div>
           </div>
         </div>

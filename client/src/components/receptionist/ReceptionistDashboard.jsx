@@ -8,6 +8,7 @@ import { reportsApi } from '../../api/reports.js';
 import { scheduleApi } from '../../api/schedule.js';
 import { ThemeToggle } from '../common/ThemeToggle.jsx';
 import { navigate } from '../../utils/navigation.js';
+import { format12HourTime, format12HourRange } from '../../utils/timeFormat.js';
 import { ExtendSessionModal } from './ExtendSessionModal.jsx';
 import { CheckInModal } from './CheckInModal.jsx';
 import { CheckoutModal } from './CheckoutModal.jsx';
@@ -1014,7 +1015,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                             <div className="flex items-center justify-between">
                               <span className="text-slate-500 dark:text-slate-400">Slot:</span>
                               <span className="font-mono text-slate-700 dark:text-slate-300">
-                                {currentSession.startTime} - {currentSession.endTime}
+                                {format12HourRange(currentSession.startTime, currentSession.endTime)}
                               </span>
                             </div>
                           </div>
@@ -1157,7 +1158,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                               </span>
                             </td>
                             <td className="p-3.5 font-mono">
-                              {session.startTime} - {session.endTime}
+                              {format12HourRange(session.startTime, session.endTime)}
                             </td>
                             <td className="p-3.5">
                               <span
@@ -1838,7 +1839,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                           <p className="text-slate-500 dark:text-slate-400 text-[11px]">{b.game?.name || 'Open Title'}</p>
                         </td>
                         <td className="p-3.5 font-mono text-slate-700 dark:text-slate-300">
-                          {b.startTime} ({b.duration}h)
+                          {format12HourTime(b.startTime)} ({b.duration}h)
                         </td>
                         <td className="p-3.5">
                           <p className="font-mono text-[#171923] dark:text-slate-200 font-semibold">
@@ -1996,7 +1997,7 @@ export const ReceptionistDashboard = ({ onClose, initialTab = 'live', onTabChang
                           <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{b.game?.name || 'Open Title'}</span>
                         </td>
                         <td className="p-3.5 font-mono text-slate-700 dark:text-slate-300">
-                          {b.bookingDate} @ {b.startTime}
+                          {b.bookingDate} @ {format12HourTime(b.startTime)}
                         </td>
                         <td className="p-3.5 font-mono font-semibold text-[#171923] dark:text-slate-200">
                           ₹{(b.totalAmount || 0) / 100}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { format12HourTime } from '../../utils/timeFormat.js';
 import {
   Users,
   Search,
@@ -1012,7 +1013,7 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                         {(selectedUserDetail.bookings || []).map((b) => (
                           <tr key={b._id} className="hover:bg-[#851B2B]/10">
                             <td className="p-3 font-mono font-bold text-white">{b.bookingId}</td>
-                            <td className="p-3 font-mono">{b.bookingDate} @ {b.startTime}</td>
+                            <td className="p-3 font-mono">{b.bookingDate} @ {format12HourTime(b.startTime)}</td>
                             <td className="p-3">
                               <span className="font-semibold text-white block">{b.device?.name || 'Console'}</span>
                               <span className="text-[#C7A5A8] text-[11px]">{b.game?.name || 'Open Title'}</span>
@@ -1049,8 +1050,8 @@ export const UserManagementTab = ({ isAdmin = false }) => {
                         {(selectedUserDetail.sessions || []).map((s) => (
                           <tr key={s._id} className="hover:bg-[#851B2B]/10">
                             <td className="p-3 font-mono">{new Date(s.startedAt).toLocaleString()}</td>
-                            <td className="p-3 font-mono">{new Date(s.scheduledEndAt).toLocaleTimeString()}</td>
-                            <td className="p-3 font-mono text-[#C7A5A8]">{s.actualEndAt ? new Date(s.actualEndAt).toLocaleTimeString() : 'In Progress'}</td>
+                            <td className="p-3 font-mono">{format12HourTime(s.scheduledEndAt)}</td>
+                            <td className="p-3 font-mono text-[#C7A5A8]">{s.actualEndAt ? format12HourTime(s.actualEndAt) : 'In Progress'}</td>
                             <td className="p-3 font-semibold text-white">{s.device?.name || 'PS5'}</td>
                             <td className="p-3 text-center">
                               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
