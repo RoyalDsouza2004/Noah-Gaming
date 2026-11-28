@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { bookingApi } from '../../api/booking.js';
 import { equipmentApi } from '../../api/equipment.js';
+import { paymentApi } from '../../api/payment.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags.js';
+import { RazorpayModal } from '../payment/RazorpayModal.jsx';
 import { ReceiptModal } from '../payment/ReceiptModal.jsx';
 import { showToast } from '../../utils/toast.js';
 import { format12HourTime, format12HourRange } from '../../utils/timeFormat.js';
@@ -38,6 +41,7 @@ import {
 export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, onClose }) => {
   const { user, isAuthenticated, openLoginModal } = useAuth();
   const { isLight } = useTheme();
+  const { enableOnlinePayments } = useFeatureFlags();
 
   // Wizard Steps:
   // Step 1 = Station & Pricing Category (embedded in each card)
@@ -95,8 +99,11 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   const [pricingQuote, setPricingQuote] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
 
-  // Final Confirmed Booking
+  // Final Confirmed Booking & Online Payment
   const [confirmedBooking, setConfirmedBooking] = useState(null);
+  const [confirmedPayment, setConfirmedPayment] = useState(null);
+  const [razorpayModalOpen, setRazorpayModalOpen] = useState(false);
+  const [razorpayOrder, setRazorpayOrder] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
 
@@ -194,6 +201,22 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
 
   useEffect(() => {
     fetchAvailability();
+  }, [fetchAvailability]);
+
+  useEffect(() => {
+    if (step === 2) {
+      fetchAvailability();
+    }
+  }, [step, fetchAvailability]);
+
+  useEffect(() => {
+    const handleSync = () => fetchAvailability();
+    window.addEventListener('booking_updated', handleSync);
+    window.addEventListener('session_updated', handleSync);
+    return () => {
+      window.removeEventListener('booking_updated', handleSync);
+      window.removeEventListener('session_updated', handleSync);
+    };
   }, [fetchAvailability]);
 
   // Robust slot availability checker (always checks mode & player capacity)
@@ -314,7 +337,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     }, 180);
   };
 
-  // Final Confirmation Submit -> Counter Payment Only
+  // Final Confirmation Submit -> Counter Payment (Pay at Venue)
   const handleConfirmReservation = async () => {
     if (!isAuthenticated) {
       openLoginModal();
@@ -351,12 +374,100 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       const newBooking = res.data.booking;
       setConfirmedBooking(newBooking);
       setStep(4);
+      fetchAvailability();
+      window.dispatchEvent(new Event('booking_updated'));
       showToast.success('Reservation confirmed! See you at the counter 🎮');
       if (onBookingComplete) onBookingComplete(newBooking);
     } catch (err) {
       setError(err.message || 'Booking submission failed. Please try again.');
+      fetchAvailability();
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Online Payment Submit (Razorpay) -> Guarded by Admin-controlled enableOnlinePayments flag
+  const handlePayOnline = async () => {
+    if (!enableOnlinePayments) {
+      showToast.error('Online payments are currently unavailable. Please pay at the venue.');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      openLoginModal();
+      return;
+    }
+
+    if (!selectedDevice || !bookingDate || !selectedSlot) {
+      setError('Missing booking details or time slot selection. Please go back and verify.');
+      return;
+    }
+
+    setError('');
+    setSubmitting(true);
+    try {
+      let targetBooking = confirmedBooking;
+      if (!targetBooking) {
+        const isPS5 = selectedDevice.deviceType === 'PS5';
+        const payload = {
+          deviceId: selectedDevice._id,
+          gameId: null,
+          pricingCategory: isPS5 ? pricingCategory : 'NONE',
+          gameClassification: isPS5 ? pricingCategory : 'NONE',
+          isVenueSelection: isPS5,
+          bookingType: isPS5 ? bookingType : bookingType,
+          bookingDate,
+          startTime: selectedSlot.startTime,
+          duration,
+          numberOfPlayers,
+        };
+        const res = await bookingApi.createBooking(payload);
+        if (!res.success || !res.data?.booking) {
+          throw new Error(res.message || 'Failed to create reservation.');
+        }
+        targetBooking = res.data.booking;
+        setConfirmedBooking(targetBooking);
+        fetchAvailability();
+        window.dispatchEvent(new Event('booking_updated'));
+      }
+
+      const orderRes = await paymentApi.createOrder({
+        bookingId: targetBooking._id,
+        paymentPurpose: 'BOOKING_FULL',
+      });
+      if (!orderRes.success || !orderRes.data) {
+        throw new Error(orderRes.message || 'Unable to initiate online payment order.');
+      }
+
+      setRazorpayOrder(orderRes.data);
+      setRazorpayModalOpen(true);
+    } catch (err) {
+      setError(err.message || 'Could not initiate online payment.');
+      fetchAvailability();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePaymentSuccess = (paymentData) => {
+    setRazorpayModalOpen(false);
+    setConfirmedPayment(paymentData);
+    setConfirmedBooking((prev) =>
+      prev
+        ? {
+            ...prev,
+            paymentStatus: 'PAID',
+            amountPaid: prev.totalAmount,
+            balanceRemaining: 0,
+          }
+        : prev
+    );
+    setStep(4);
+    fetchAvailability();
+    window.dispatchEvent(new Event('booking_updated'));
+    showToast.success('Online payment successful! Reservation confirmed.');
+    if (onBookingComplete && confirmedBooking) {
+      onBookingComplete(confirmedBooking);
     }
   };
 
@@ -918,34 +1029,76 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               </div>
             </div>
 
-            {/* Actions: Back & Confirm Action */}
-            <div className="flex items-center justify-between pt-2">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold font-heading text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back to Timing
-              </button>
+            {/* Actions: Back, Pay at Venue & Pay Online (visible, disabled by default) */}
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold font-heading text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Timing
+                </button>
 
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={handleConfirmReservation}
-                className="px-6 py-3 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-black font-heading text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#851B2B]/30 disabled:opacity-50 flex items-center gap-2 hover:scale-[1.01]"
-              >
-                {submitting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span>Confirming...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>CONFIRM RESERVATION (PAY AT VENUE)</span>
-                  </>
-                )}
-              </button>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                  {/* Pay Online Button - Always Visible, Disabled by Default unless Admin Enables */}
+                  <button
+                    type="button"
+                    disabled={!enableOnlinePayments || submitting}
+                    onClick={handlePayOnline}
+                    aria-disabled={!enableOnlinePayments}
+                    title={
+                      enableOnlinePayments
+                        ? 'Pay online securely via Razorpay UPI / Cards'
+                        : 'Online payments are currently unavailable'
+                    }
+                    className={`px-5 py-3 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 border ${
+                      enableOnlinePayments
+                        ? 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-indigo-500 shadow-lg shadow-indigo-500/25 cursor-pointer'
+                        : 'bg-slate-100 dark:bg-slate-800/70 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-65'
+                    }`}
+                  >
+                    {enableOnlinePayments ? (
+                      <>
+                        <CreditCard className="w-4 h-4" />
+                        <span>PAY ONLINE</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>PAY ONLINE</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Pay at Venue Button - Always Available */}
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={handleConfirmReservation}
+                    className="px-6 py-3 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] active:bg-[#5e121e] text-white font-black font-heading text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#851B2B]/30 disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-[1.01]"
+                  >
+                    {submitting ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        <span>Confirming...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <span>PAY AT VENUE / CONFIRM</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {!enableOnlinePayments && (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 text-right flex items-center justify-end gap-1">
+                  <Lock className="w-3 h-3 text-amber-500 shrink-0" />
+                  <span>Online payments are currently unavailable.</span>
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -1002,7 +1155,9 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                <span className="font-semibold text-slate-700 dark:text-slate-300">Payable at Counter:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {confirmedBooking.paymentStatus === 'PAID' ? 'Paid Online:' : 'Payable at Counter:'}
+                </span>
                 <span className="text-lg font-black font-heading text-[#851B2B] dark:text-[#D7FF00]">
                   ₹{Math.round(confirmedBooking.totalAmount / 100)}
                 </span>
@@ -1032,9 +1187,21 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
         )}
       </div>
 
+      {/* Razorpay Checkout Modal (Only opened when Admin enables Online Payments) */}
+      {razorpayModalOpen && razorpayOrder && confirmedBooking && (
+        <RazorpayModal
+          order={razorpayOrder}
+          bookingDetails={confirmedBooking}
+          onSuccess={handlePaymentSuccess}
+          onClose={() => setRazorpayModalOpen(false)}
+        />
+      )}
+
       {/* Embedded Receipt Modal */}
       {receiptModalOpen && confirmedBooking && (
         <ReceiptModal
+          paymentId={confirmedPayment?.paymentId}
+          bookingId={confirmedBooking?._id}
           booking={confirmedBooking}
           onClose={() => setReceiptModalOpen(false)}
         />

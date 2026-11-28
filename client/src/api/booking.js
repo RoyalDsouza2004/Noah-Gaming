@@ -1,12 +1,12 @@
 import { apiRequest } from './client.js';
 
 export const bookingApi = {
-  // Live Availability
+  // Live Availability (cache-busted to always reflect latest reservations)
   getAvailability: (deviceId, date, duration = 1, gameId = null) =>
     apiRequest(
       `/bookings/availability?deviceId=${deviceId}&date=${date}&duration=${duration}${
         gameId ? `&gameId=${gameId}` : ''
-      }`
+      }&_t=${Date.now()}`
     ),
 
   // Customer Booking Operations

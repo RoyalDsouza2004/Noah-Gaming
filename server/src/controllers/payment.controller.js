@@ -58,7 +58,8 @@ export const getPublicConfig = async (req, res) => {
  */
 export const createOrder = async (req, res) => {
   try {
-    if (!FEATURES.ENABLE_ONLINE_PAYMENTS) {
+    const features = await getSystemFeatures();
+    if (!features.enableOnlinePayments) {
       return res.status(403).json({
         success: false,
         message: PAYMENT_MESSAGES.ONLINE_UNAVAILABLE,

@@ -41,6 +41,7 @@ export const getAvailability = async (req, res) => {
       gameId || null
     );
 
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.status(200).json({
       success: true,
       data: availabilityData,

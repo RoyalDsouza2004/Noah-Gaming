@@ -130,6 +130,7 @@ export const MyBookings = ({ onNewBooking, onClose }) => {
         setBookingToCancel(null);
         setSelectedBooking(null);
         fetchBookings();
+        window.dispatchEvent(new Event('booking_updated'));
       }
     } catch (err) {
       showToast.error(err.message || 'Failed to cancel booking');
