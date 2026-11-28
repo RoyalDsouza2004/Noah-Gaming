@@ -23,6 +23,8 @@ import {
   parseISTDateTime,
   formatISTDate,
   formatISTTime,
+  format12HourTimeStr,
+  getCanonicalEquipmentName,
   generateDailySlots,
   generateBookingId,
   getOperatingHours,
@@ -854,23 +856,38 @@ export async function createBookingAtomic({
       });
     }
 
-    // If session covered under membership, record usage tracking
+    // If session covered under membership, record usage tracking (with rollback on validation failure)
     if (membershipApplied && membershipSubscriptionId) {
-      await recordMembershipUsage({
-        booking,
-        customerId,
-        subscriptionId: membershipSubscriptionId,
-      });
+      try {
+        await recordMembershipUsage({
+          booking,
+          customerId,
+          subscriptionId: membershipSubscriptionId,
+        });
+      } catch (usageErr) {
+        if (reservedEntitlement) {
+          await releaseDailyFreeHour({
+            entitlementId: reservedEntitlement._id,
+            bookingId: booking._id,
+            reason: `Membership usage recording failed: ${usageErr.message}`,
+          }).catch(() => {});
+        }
+        await Booking.deleteOne({ _id: booking._id }).catch(() => {});
+        throw usageErr;
+      }
     }
 
     // Send Booking Confirmation Notification and Email
     if (customerId) {
       try {
+        const equipName = getCanonicalEquipmentName(device);
+        const start12 = format12HourTimeStr(startTime);
+        const end12 = format12HourTimeStr(endTime);
         await createNotification({
           recipient: customerId,
           recipientRole: 'customer',
           title: 'Booking Confirmed! 🎮',
-          message: `Your reservation for ${device.name}${game ? ` (${game.name})` : ''} on ${bookingDate} from ${startTime} to ${endTime} IST has been confirmed (Ref: ${booking.bookingId}).`,
+          message: `Your reservation for ${equipName}${game ? ` (${game.name})` : ''} on ${bookingDate} from ${start12} to ${end12} IST has been confirmed (Ref: ${booking.bookingId || 'Confirmed'}).`,
           category: 'BOOKING_CONFIRMED',
           relatedBooking: booking._id,
           idempotencyKey: `BOOKING_CONFIRMED_${booking._id}`,
@@ -970,11 +987,14 @@ export async function cancelBookingService(bookingId, userId, userRole, reason =
   if (customerUser) {
     const custId = customerUser._id || customerUser;
     try {
+      const equipName = getCanonicalEquipmentName(booking.device);
+      const start12 = format12HourTimeStr(booking.startTime);
+      const end12 = format12HourTimeStr(booking.endTime);
       await createNotification({
         recipient: custId,
         recipientRole: 'customer',
         title: 'Booking Cancelled 🚫',
-        message: `Your reservation for ${booking.device?.name || 'Device'} on ${booking.bookingDate} (${booking.startTime}-${booking.endTime} IST) has been cancelled.`,
+        message: `Your reservation for ${equipName} on ${booking.bookingDate} (${start12} - ${end12} IST) has been cancelled.`,
         category: 'BOOKING_CANCELLED',
         relatedBooking: booking._id,
         idempotencyKey: `BOOKING_CANCELLED_${booking._id}`,

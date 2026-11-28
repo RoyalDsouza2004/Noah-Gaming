@@ -43,7 +43,46 @@ export function formatISTDisplayTime(date) {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-  }).format(date);
+  })
+    .format(date)
+    .toUpperCase();
+}
+
+/**
+ * Converts a 24-hour string ("14:00", "00:00") into 12-hour AM/PM ("2:00 PM", "12:00 AM")
+ */
+export function format12HourTimeStr(timeStr) {
+  if (!timeStr) return '';
+  const match = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return String(timeStr);
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  if (h === 24) h = 0;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${m} ${period}`;
+}
+
+/**
+ * Returns consistent, user-friendly canonical equipment names for notifications:
+ * - PlayStation 5 Station 1
+ * - PlayStation 5 Station 2
+ * - Pool Table
+ */
+export function getCanonicalEquipmentName(device) {
+  if (!device) return 'Gaming Station';
+  const code = String(device.deviceCode || '').toUpperCase();
+  const name = String(device.name || '').trim();
+  if (device.deviceType === 'POOL' || code.includes('POOL') || /pool/i.test(name)) {
+    return 'Pool Table';
+  }
+  if (code === 'PS5-01' || /station\s*1/i.test(name) || /ps5\s*1/i.test(name)) {
+    return 'PlayStation 5 Station 1';
+  }
+  if (code === 'PS5-02' || /station\s*2/i.test(name) || /ps5\s*2/i.test(name)) {
+    return 'PlayStation 5 Station 2';
+  }
+  return name || 'Gaming Station';
 }
 
 /**

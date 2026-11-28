@@ -5,6 +5,11 @@ import Booking from '../models/Booking.js';
 import MembershipSubscription from '../models/MembershipSubscription.js';
 import User from '../models/User.js';
 import { createNotification, cleanupExpiredReadNotifications } from './notification.service.js';
+import {
+  format12HourTimeStr,
+  formatISTDisplayTime,
+  getCanonicalEquipmentName,
+} from '../utils/timeSlots.js';
 
 /**
  * Retrieves the global singleton automation configuration from MongoDB
@@ -79,6 +84,22 @@ export async function runSessionTimerChecks(settings) {
   let expiredSessionsCount = 0;
 
   for (const session of activeSessions) {
+    // Guard against orphaned sessions without a valid customer or booking
+    if (
+      !session.customer ||
+      !session.booking ||
+      ['CANCELLED', 'COMPLETED', 'EXPIRED', 'REJECTED'].includes(session.booking.bookingStatus) ||
+      session.booking.sessionStatus === 'COMPLETED'
+    ) {
+      session.status = session.booking?.bookingStatus === 'CANCELLED' ? 'CANCELLED' : 'COMPLETED';
+      session.actualEndAt = session.actualEndAt || now;
+      await session.save().catch(() => null);
+      continue;
+    }
+
+    const equipName = getCanonicalEquipmentName(session.device);
+    const bookingRef = session.booking.bookingId || 'Active Session';
+
     const endMs = new Date(session.scheduledEndAt).getTime();
     const remainingMs = endMs - now.getTime();
     const remainingMinutes = Math.floor(remainingMs / 60000);
@@ -96,8 +117,8 @@ export async function runSessionTimerChecks(settings) {
           // Send notification to customer
           const customerMsg =
             threshold === 1
-              ? `Your gaming session on ${session.device?.name || 'Console'} has 1 minute remaining. Please wrap up your game.`
-              : `Your gaming session on ${session.device?.name || 'Console'} will end in ${threshold} minutes. Contact front desk if you wish to extend!`;
+              ? `Your gaming session on ${equipName} has 1 minute remaining. Please wrap up your game.`
+              : `Your gaming session on ${equipName} will end in ${threshold} minutes. Contact front desk if you wish to extend!`;
 
           await createNotification({
             recipient: session.customer._id,
@@ -105,7 +126,7 @@ export async function runSessionTimerChecks(settings) {
             title: `Session Ending Soon (${threshold} min remaining) ⏱️`,
             message: customerMsg,
             category: 'SESSION_WARNING',
-            relatedBooking: session.booking?._id,
+            relatedBooking: session.booking._id,
             relatedSession: session._id,
             deliveryChannels: channels,
             idempotencyKey: `SESSION_REMIND_${session._id}_${threshold}`,
@@ -115,10 +136,10 @@ export async function runSessionTimerChecks(settings) {
           await createNotification({
             recipientRole: 'receptionist',
             recipient: session.customer._id, // placeholder recipient for role-wide broadcast
-            title: `Station Ending Soon: ${session.device?.name}`,
-            message: `Booking ${session.booking?.bookingId} on ${session.device?.name} has ${threshold} min remaining.`,
+            title: `Station Ending Soon: ${equipName}`,
+            message: `Booking ${bookingRef} on ${equipName} has ${threshold} min remaining.`,
             category: 'SESSION_WARNING',
-            relatedBooking: session.booking?._id,
+            relatedBooking: session.booking._id,
             relatedSession: session._id,
             deliveryChannels: ['IN_APP'],
             idempotencyKey: `STAFF_SESSION_REMIND_${session._id}_${threshold}`,
@@ -157,9 +178,9 @@ export async function runSessionTimerChecks(settings) {
         recipient: session.customer._id,
         recipientRole: 'customer',
         title: 'Gaming Session Ended 🛑',
-        message: `Your scheduled gaming time on ${session.device?.name || 'Console'} has expired. Please visit the reception desk for checkout.`,
+        message: `Your scheduled gaming time on ${equipName} has expired. Please visit the reception desk for checkout.`,
         category: 'SESSION_EXPIRED',
-        relatedBooking: session.booking?._id,
+        relatedBooking: session.booking._id,
         relatedSession: session._id,
         deliveryChannels: channels,
         idempotencyKey: `SESSION_EXPIRED_${session._id}`,
@@ -169,10 +190,10 @@ export async function runSessionTimerChecks(settings) {
       await createNotification({
         recipientRole: 'receptionist',
         recipient: session.customer._id,
-        title: `Session Overdue: ${session.device?.name}`,
-        message: `Booking ${session.booking?.bookingId} on ${session.device?.name} has reached scheduled end and is AWAITING RECEPTIONIST confirmation.`,
+        title: `Session Overdue: ${equipName}`,
+        message: `Booking ${bookingRef} on ${equipName} has reached scheduled end and is AWAITING RECEPTIONIST confirmation.`,
         category: 'SESSION_EXPIRED',
-        relatedBooking: session.booking?._id,
+        relatedBooking: session.booking._id,
         relatedSession: session._id,
         deliveryChannels: ['IN_APP'],
         idempotencyKey: `STAFF_SESSION_EXPIRED_${session._id}`,
@@ -206,26 +227,43 @@ export async function runBookingReminderChecks(settings) {
   let remindersSent = 0;
 
   for (const booking of upcomingBookings) {
+    if (!booking.customer || !booking.startAt) continue;
+
     const startMs = new Date(booking.startAt).getTime();
     const diffMinutes = Math.floor((startMs - now.getTime()) / 60000);
+    const createdLeadMinutes = (startMs - new Date(booking.createdAt).getTime()) / 60000;
+
+    const equipName = getCanonicalEquipmentName(booking.device);
+    const displayStartTime = booking.startTime
+      ? format12HourTimeStr(booking.startTime)
+      : formatISTDisplayTime(booking.startAt);
 
     for (const threshold of intervals) {
       if (diffMinutes <= threshold && diffMinutes > threshold - 15) {
-        const idempotencyKey = `BOOKING_REMIND_${booking._id}_${threshold}`;
+        // If booking was created <15 mins before start, avoid sending an immediate redundant 15-min reminder
+        if (threshold === 15 && createdLeadMinutes <= 15) {
+          continue;
+        }
+
+        // Include startMs in idempotencyKey so rescheduling to a new startAt generates a clean new reminder
+        const idempotencyKey = `BOOKING_REMIND_${booking._id}_${threshold}_${startMs}`;
 
         let reminderText = '';
         if (threshold >= 1440) {
-          reminderText = `Reminder: Your upcoming gaming session on ${booking.device?.name} is scheduled for tomorrow at ${booking.startTime} IST.`;
+          reminderText = `Reminder: Your upcoming booking for ${equipName} is scheduled for tomorrow at ${displayStartTime} IST.`;
         } else if (threshold >= 60) {
-          reminderText = `Your gaming session on ${booking.device?.name} starts in 1 hour (${booking.startTime} IST). Please arrive on time!`;
+          reminderText = `Your booking for ${equipName} starts in 1 hour (${displayStartTime} IST). Please arrive on time!`;
         } else {
-          reminderText = `Your gaming session on ${booking.device?.name} starts in 15 minutes! Your console is being readied.`;
+          reminderText =
+            equipName === 'Pool Table'
+              ? `Your Pool Table booking will start in 15 minutes. Get ready for your session!`
+              : `Your booking for ${equipName} will start in 15 minutes. Get ready for your gaming session!`;
         }
 
         const result = await createNotification({
           recipient: booking.customer._id,
           recipientRole: 'customer',
-          title: `Upcoming Booking Reminder (${threshold >= 60 ? threshold / 60 + 'h' : threshold + 'm'}) 📅`,
+          title: `Upcoming Booking Reminder (${threshold >= 60 ? `${threshold / 60}h` : `${threshold}m`}) 📅`,
           message: reminderText,
           category: 'UPCOMING_BOOKING',
           relatedBooking: booking._id,

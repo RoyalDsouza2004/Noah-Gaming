@@ -28,6 +28,8 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: [
         'BOOKING_CONFIRMED',
+        'BOOKING_CANCELLED',
+        'BOOKING_RESCHEDULED',
         'UPCOMING_BOOKING',
         'SESSION_STARTED',
         'SESSION_WARNING',

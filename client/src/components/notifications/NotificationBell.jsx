@@ -248,7 +248,7 @@ export const NotificationBell = ({ user }) => {
                       {n.message}
                     </p>
                     <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 font-mono">
-                      <span>{new Date(n.createdAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST</span>
+                      <span>{new Date(n.createdAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()} IST</span>
                     </div>
                   </div>
                 </div>

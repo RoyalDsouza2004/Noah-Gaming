@@ -1067,37 +1067,69 @@ export async function getCustomerMembershipQuota({ customerId, dateIST = null })
 }
 
 /**
- * Records membership usage for a confirmed booking
+ * Records membership usage for a confirmed booking.
+ * Validates and resolves the active MembershipSubscription belonging to the customer,
+ * prevents duplicate MembershipUsage records per booking, and preserves strict schema validation.
  */
-export async function recordMembershipUsage({ booking, customerId, subscriptionId }) {
-  try {
-    const durationMinutes = Math.round((booking.duration || 1) * 60);
+export async function recordMembershipUsage({ booking, customerId, subscriptionId = null }) {
+  const durationMinutes = Math.round((booking.duration || 1) * 60);
+  const targetCustomerId = customerId?._id || customerId || booking.customer?._id || booking.customer;
 
-    const usage = await MembershipUsage.create({
-      customer: customerId,
-      subscription: subscriptionId,
-      booking: booking._id,
-      device: booking.device,
-      game: booking.game || null,
-      usageDate: booking.bookingDate,
-      startTime: booking.startTime,
-      endTime: booking.endTime,
-      duration: durationMinutes,
-      status: 'ACTIVE',
-      notes: `Session covered under membership subscription`,
-    });
-
-    // Update booking reference
-    booking.membershipApplied = true;
-    booking.membershipSubscription = subscriptionId;
-    booking.membershipUsage = usage._id;
-    await booking.save();
-
-    return usage;
-  } catch (err) {
-    console.error('[Record Membership Usage Error]:', err.message);
-    return null;
+  // Prevent duplicate active usage records for the same booking
+  const existingUsage = await MembershipUsage.findOne({
+    booking: booking._id,
+    status: { $ne: 'CANCELLED' },
+  });
+  if (existingUsage) {
+    return existingUsage;
   }
+
+  // Resolve and validate subscription ownership & eligibility
+  let resolvedSub = null;
+  const candidateSubId = subscriptionId || booking.membershipSubscription || null;
+
+  if (candidateSubId) {
+    resolvedSub = await MembershipSubscription.findOne({
+      _id: candidateSubId,
+      customer: targetCustomerId,
+    });
+  }
+
+  if (!resolvedSub) {
+    resolvedSub = await MembershipSubscription.findOne({
+      customer: targetCustomerId,
+      status: 'ACTIVE',
+      expirationDate: { $gt: new Date() },
+    }).sort({ expirationDate: -1 });
+  }
+
+  if (!resolvedSub) {
+    const err = new Error('Cannot record membership usage: no valid active subscription found for this customer.');
+    err.status = 400;
+    throw err;
+  }
+
+  const usage = await MembershipUsage.create({
+    customer: targetCustomerId,
+    subscription: resolvedSub._id,
+    booking: booking._id,
+    device: booking.device?._id || booking.device,
+    game: booking.game?._id || booking.game || null,
+    usageDate: booking.bookingDate,
+    startTime: booking.startTime,
+    endTime: booking.endTime,
+    duration: durationMinutes,
+    status: 'ACTIVE',
+    notes: 'Session covered under membership subscription',
+  });
+
+  // Update booking reference
+  booking.membershipApplied = true;
+  booking.membershipSubscription = resolvedSub._id;
+  booking.membershipUsage = usage._id;
+  await booking.save();
+
+  return usage;
 }
 
 /**

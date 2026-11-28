@@ -1327,19 +1327,31 @@ export async function extendSession({
 
     // Record MembershipUsage for the free hours consumed
     if (freeHoursApplied > 0) {
-      await MembershipUsage.create({
-        customer: booking.customer._id,
-        subscription: quota.subscriptionId,
-        booking: booking._id,
-        device: booking.device._id,
-        game: booking.game?._id || null,
-        usageDate: booking.bookingDate,
-        startTime: previousEndTime,
-        endTime: newEndTime,
-        duration: Math.round(freeHoursApplied * 60),
-        status: 'COMPLETED',
-        notes: `Session extended +${parsedDuration}h using ${freeHoursApplied}h membership free allowance`,
-      });
+      let resolvedSubId = quota.subscriptionId || booking.membershipSubscription || null;
+      if (!resolvedSubId) {
+        const activeSub = await MembershipSubscription.findOne({
+          customer: booking.customer._id,
+          status: 'ACTIVE',
+          expirationDate: { $gt: new Date() },
+        }).sort({ expirationDate: -1 });
+        resolvedSubId = activeSub?._id || null;
+      }
+
+      if (resolvedSubId) {
+        await MembershipUsage.create({
+          customer: booking.customer._id,
+          subscription: resolvedSubId,
+          booking: booking._id,
+          device: booking.device._id,
+          game: booking.game?._id || null,
+          usageDate: booking.bookingDate,
+          startTime: previousEndTime,
+          endTime: newEndTime,
+          duration: Math.round(freeHoursApplied * 60),
+          status: 'COMPLETED',
+          notes: `Session extended +${parsedDuration}h using ${freeHoursApplied}h membership free allowance`,
+        });
+      }
     }
   }
 
@@ -1460,7 +1472,12 @@ export async function completeSession({
   paymentCollection,
   notes = '',
 }) {
-  const booking = await Booking.findById(bookingId).populate('customer device game payments');
+  const isOid = mongoose.Types.ObjectId.isValid(bookingId);
+  const booking = await Booking.findOne(
+    isOid
+      ? { $or: [{ bookingId: String(bookingId).toUpperCase() }, { _id: bookingId }] }
+      : { bookingId: String(bookingId).toUpperCase() }
+  ).populate('customer device game payments');
   if (!booking) {
     const err = new Error('Booking not found');
     err.status = 404;
@@ -1514,21 +1531,51 @@ export async function completeSession({
 
   await booking.save();
 
-  // Update membership usage if membership applied
+  // Update or record membership usage if membership applied (always ensuring valid subscription ref)
   if (booking.membershipApplied && booking.customer) {
     const todayIST = formatISTDate(now);
-    await MembershipUsage.create({
-      customer: booking.customer._id,
+    const existingUsage = await MembershipUsage.findOne({
       booking: booking._id,
-      device: booking.device._id,
-      game: booking.game?._id || null,
-      usageDate: todayIST,
-      startTime: booking.startTime,
-      endTime: formatISTTime(now),
-      duration: actualDurationMinutes,
-      status: 'COMPLETED',
-      notes: `Completed gaming session on ${booking.device.name}`,
+      status: { $ne: 'CANCELLED' },
     });
+
+    if (existingUsage) {
+      existingUsage.status = 'COMPLETED';
+      existingUsage.endTime = formatISTTime(now);
+      existingUsage.duration = actualDurationMinutes;
+      existingUsage.notes = `Completed gaming session on ${booking.device.name}`;
+      await existingUsage.save();
+    } else {
+      let resolvedSubId =
+        booking.membershipSubscription ||
+        booking.customer?.membership?.subscriptionId ||
+        null;
+
+      if (!resolvedSubId) {
+        const activeSub = await MembershipSubscription.findOne({
+          customer: booking.customer._id,
+          status: 'ACTIVE',
+          expirationDate: { $gt: now },
+        }).sort({ expirationDate: -1 });
+        resolvedSubId = activeSub?._id || null;
+      }
+
+      if (resolvedSubId) {
+        await MembershipUsage.create({
+          customer: booking.customer._id,
+          subscription: resolvedSubId,
+          booking: booking._id,
+          device: booking.device._id,
+          game: booking.game?._id || null,
+          usageDate: todayIST,
+          startTime: booking.startTime,
+          endTime: formatISTTime(now),
+          duration: actualDurationMinutes,
+          status: 'COMPLETED',
+          notes: `Completed gaming session on ${booking.device.name}`,
+        });
+      }
+    }
   }
 
   // Complete GamingSession(s) comprehensively to prevent ghost/zombie active timers
@@ -1585,7 +1632,12 @@ export async function collectReceptionistOfflinePayment({
   staffUser,
   notes = '',
 }) {
-  const booking = await Booking.findById(bookingId).populate('customer device game payments');
+  const isOid = mongoose.Types.ObjectId.isValid(bookingId);
+  const booking = await Booking.findOne(
+    isOid
+      ? { $or: [{ bookingId: String(bookingId).toUpperCase() }, { _id: bookingId }] }
+      : { bookingId: String(bookingId).toUpperCase() }
+  ).populate('customer device game payments');
   if (!booking) {
     const err = new Error('Booking not found');
     err.status = 404;
