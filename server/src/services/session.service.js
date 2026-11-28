@@ -13,6 +13,12 @@ import { logReceptionistActivity } from './receptionist.service.js';
 /**
  * Returns all active, extended, and awaiting receptionist sessions
  * Computes authoritative server-side remaining time.
+ * Enforces strict session eligibility:
+ * 1. An associated booking must exist.
+ * 2. The booking must belong to the requested customer.
+ * 3. The booking must be explicitly checked in or marked ACTIVE by staff.
+ * 4. The booking must not be cancelled, rejected, expired, or completed.
+ * 5. Current time must not be past the session scheduled end time for active status.
  */
 export async function getActiveSessions({ customerId = null } = {}) {
   const query = {
@@ -29,7 +35,7 @@ export async function getActiveSessions({ customerId = null } = {}) {
     .populate('game', 'name thumbnail isExclusive')
     .populate({
       path: 'booking',
-      select: 'bookingId bookingDate startTime endTime duration numberOfPlayers bookingType totalAmount amountPaid balanceRemaining paymentStatus isWalkIn sessionStatus bookingStatus endAt startAt sessionStartedAt',
+      select: 'bookingId bookingDate startTime endTime duration numberOfPlayers bookingType totalAmount amountPaid balanceRemaining paymentStatus isWalkIn sessionStatus bookingStatus endAt startAt sessionStartedAt checkInStatus isCheckedIn customer',
     })
     .sort({ scheduledEndAt: 1 });
 
@@ -37,24 +43,70 @@ export async function getActiveSessions({ customerId = null } = {}) {
   const validSessions = [];
 
   for (const sess of sessions) {
-    // If the associated booking is completed or cancelled, synchronize and mark the session completed
-    if (
-      sess.booking &&
-      (sess.booking.sessionStatus === 'COMPLETED' ||
-        sess.booking.bookingStatus === 'COMPLETED' ||
-        sess.booking.bookingStatus === 'CANCELLED')
-    ) {
-      sess.status = sess.booking.bookingStatus === 'CANCELLED' ? 'CANCELLED' : 'COMPLETED';
-      sess.actualEndAt = sess.actualEndAt || new Date();
-      await sess.save();
+    // 1. If associated booking record is missing, mark session completed and skip
+    if (!sess.booking) {
+      if (sess.status !== 'COMPLETED') {
+        sess.status = 'COMPLETED';
+        sess.actualEndAt = sess.actualEndAt || new Date();
+        await sess.save().catch(() => null);
+      }
       continue;
     }
 
-    // Authoritative end timestamp from booking.endAt or scheduledEndAt
+    // 2. Customer isolation check: booking customer must match session customer
+    if (customerId) {
+      const sessCustId = String(sess.customer?._id || sess.customer || '');
+      const bookCustId = String(sess.booking.customer?._id || sess.booking.customer || '');
+      const targetId = String(customerId);
+      if (sessCustId !== targetId && bookCustId !== targetId) {
+        continue;
+      }
+    }
+
+    // 3. If booking is cancelled, rejected, expired, or completed, synchronize session and skip
+    const terminalStatuses = ['CANCELLED', 'REJECTED', 'EXPIRED', 'COMPLETED'];
+    if (
+      terminalStatuses.includes(sess.booking.bookingStatus) ||
+      sess.booking.sessionStatus === 'COMPLETED'
+    ) {
+      sess.status = sess.booking.bookingStatus === 'CANCELLED' ? 'CANCELLED' : 'COMPLETED';
+      sess.actualEndAt = sess.actualEndAt || new Date();
+      await sess.save().catch(() => null);
+      continue;
+    }
+
+    // 4. Booking MUST be checked in and session genuinely started by staff
+    const isGenuinelyStarted =
+      sess.booking.checkInStatus === 'CHECKED_IN' ||
+      sess.booking.isCheckedIn === true ||
+      sess.booking.sessionStatus === 'ACTIVE';
+
+    if (!isGenuinelyStarted) {
+      // Booking is merely upcoming, pending payment, or waiting for check-in -> NOT an active session
+      continue;
+    }
+
+    // 5. Authoritative end timestamp from booking.endAt or scheduledEndAt
     const effectiveEndAt = sess.booking?.endAt || sess.scheduledEndAt;
     const endMs = new Date(effectiveEndAt).getTime();
+
+    if (!endMs || isNaN(endMs)) {
+      continue;
+    }
+
     const remainingSeconds = Math.max(0, Math.floor((endMs - now) / 1000));
     const isOverdue = now >= endMs;
+
+    // 6. When customer checks their active session:
+    // If the session has run out of time (isOverdue / remainingSeconds === 0), it is no longer an active session
+    if (isOverdue && customerId) {
+      if (sess.status === 'ACTIVE') {
+        sess.status = 'COMPLETED';
+        sess.actualEndAt = sess.actualEndAt || new Date();
+        await sess.save().catch(() => null);
+      }
+      continue;
+    }
 
     validSessions.push({
       id: sess._id,

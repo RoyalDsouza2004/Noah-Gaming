@@ -118,12 +118,12 @@ export const CustomerMembershipSection = ({
       <article
         className={`membership-plan-card relative flex flex-col justify-between p-6 rounded-3xl transition-all duration-300 ${
           isMiddleElevated
-            ? 'bg-[#2E0E1B] dark:bg-[#2E0E1B] border-2 border-[#851B2B] dark:border-[#F5B942]/60 shadow-2xl shadow-[#851B2B]/25 md:-translate-y-3'
+            ? 'bg-gradient-to-b from-rose-50/70 to-white dark:from-[#2E0E1B] dark:to-[#260D17] border-2 border-[#851B2B] dark:border-[#F5B942]/60 shadow-xl shadow-[#851B2B]/15 md:-translate-y-3'
             : isMobile && isMobileActive
-            ? 'bg-[#2E0E1B] dark:bg-[#2E0E1B] border-2 border-[#851B2B] dark:border-[#F5B942]/60 shadow-2xl shadow-[#851B2B]/25 -translate-y-2 scale-100 opacity-100'
+            ? 'bg-gradient-to-b from-rose-50/70 to-white dark:from-[#2E0E1B] dark:to-[#260D17] border-2 border-[#851B2B] dark:border-[#F5B942]/60 shadow-xl shadow-[#851B2B]/15 -translate-y-2 scale-100 opacity-100'
             : isMobile && !isMobileActive
-            ? 'bg-[#260D17] dark:bg-[#260D17] border border-[#49202C] shadow-lg translate-y-4 scale-[0.93] opacity-75'
-            : 'bg-[#260D17] dark:bg-[#260D17] border border-[#49202C] hover:border-[#851B2B]/60 shadow-lg'
+            ? 'bg-white dark:bg-[#260D17] border border-slate-200 dark:border-[#49202C] shadow-md translate-y-4 scale-[0.93] opacity-75'
+            : 'bg-white dark:bg-[#260D17] border border-slate-200 dark:border-[#49202C] hover:border-[#851B2B]/60 shadow-md'
         }`}
       >
         {/* Most Popular Badge on Middle Card */}
@@ -137,76 +137,76 @@ export const CustomerMembershipSection = ({
         {/* Card Header & Badges */}
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-[#171014] text-[#C7A5A8] border border-[#49202C]">
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-slate-100 dark:bg-[#171014] text-slate-700 dark:text-[#C7A5A8] border border-slate-200 dark:border-[#49202C]">
               {plan.validityDuration} {plan.validityUnit}
             </span>
 
             {isVip ? (
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-[#F5B942]/20 text-[#F5B942] border border-[#F5B942]/40 flex items-center gap-1">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-amber-100 dark:bg-[#F5B942]/20 text-amber-800 dark:text-[#F5B942] border border-amber-300 dark:border-[#F5B942]/40 flex items-center gap-1">
                 <Flame className="w-3 h-3" /> VIP GTA 6
               </span>
             ) : isUnlimited ? (
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-[#851B2B]/20 text-[#FFF4E8] border border-[#851B2B]/40 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-[#D7FF00]" /> UNLIMITED
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-rose-50 dark:bg-[#851B2B]/20 text-[#851B2B] dark:text-[#FFF4E8] border border-rose-200 dark:border-[#851B2B]/40 flex items-center gap-1">
+                <Zap className="w-3 h-3 text-[#851B2B] dark:text-[#D7FF00]" /> UNLIMITED
               </span>
             ) : null}
           </div>
 
           <div>
-            <h4 className="text-xl font-bold text-[#FFF4E8] font-heading tracking-tight">
+            <h4 className="text-xl font-bold text-slate-900 dark:text-[#FFF4E8] font-heading tracking-tight">
               {plan.name}
             </h4>
-            <p className="text-xs text-[#C7A5A8] mt-1.5 line-clamp-2 min-h-[32px]">
+            <p className="text-xs text-slate-600 dark:text-[#C7A5A8] mt-1.5 line-clamp-2 min-h-[32px]">
               {plan.description || 'Exclusive daily gaming access and priority booking perks.'}
             </p>
           </div>
 
           {/* Pricing Display */}
-          <div className="pt-3 pb-1 border-t border-[#49202C]">
+          <div className="pt-3 pb-1 border-t border-slate-200 dark:border-[#49202C]">
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black font-heading text-[#FFF4E8]">
+              <span className="text-3xl font-black font-heading text-slate-900 dark:text-[#FFF4E8]">
                 ₹{plan.price / 100}
               </span>
-              <span className="text-xs font-medium text-[#C7A5A8] font-sans">
+              <span className="text-xs font-medium text-slate-500 dark:text-[#C7A5A8] font-sans">
                 {billingPeriod === 'yearly' || isYearlyPlan(plan) ? ' / year' : ' / month'}
               </span>
             </div>
             {isYearlyPlan(plan) && (
-              <p className="text-[10px] text-[#45C987] font-mono mt-0.5">
+              <p className="text-[10px] text-emerald-600 dark:text-[#45C987] font-mono mt-0.5">
                 Effective ₹{Math.round(plan.price / 1200)} / month
               </p>
             )}
           </div>
 
           {/* Feature List */}
-          <div className="space-y-2.5 text-xs text-[#C7A5A8] pt-2">
+          <div className="space-y-2.5 text-xs text-slate-600 dark:text-[#C7A5A8] pt-2">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[#45C987]/15 flex items-center justify-center shrink-0">
-                <Check className="w-3 h-3 text-[#45C987]" />
+              <div className="w-4 h-4 rounded-full bg-emerald-50 dark:bg-[#45C987]/15 flex items-center justify-center shrink-0">
+                <Check className="w-3 h-3 text-emerald-600 dark:text-[#45C987]" />
               </div>
               <span>
                 Daily Quota:{' '}
-                <strong className="text-[#FFF4E8]">
+                <strong className="text-slate-900 dark:text-[#FFF4E8]">
                   {plan.dailyUsageLimit ? `${plan.dailyUsageLimit / 60}h / day` : 'Unlimited Hours'}
                 </strong>
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[#45C987]/15 flex items-center justify-center shrink-0">
-                <Check className="w-3 h-3 text-[#45C987]" />
+              <div className="w-4 h-4 rounded-full bg-emerald-50 dark:bg-[#45C987]/15 flex items-center justify-center shrink-0">
+                <Check className="w-3 h-3 text-emerald-600 dark:text-[#45C987]" />
               </div>
               <span>
                 Max Session:{' '}
-                <strong className="text-[#FFF4E8]">
+                <strong className="text-slate-900 dark:text-[#FFF4E8]">
                   {plan.maximumSessionDuration / 60}h continuous
                 </strong>
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[#45C987]/15 flex items-center justify-center shrink-0">
-                <Check className="w-3 h-3 text-[#45C987]" />
+              <div className="w-4 h-4 rounded-full bg-emerald-50 dark:bg-[#45C987]/15 flex items-center justify-center shrink-0">
+                <Check className="w-3 h-3 text-emerald-600 dark:text-[#45C987]" />
               </div>
               <span>
                 {isVip
@@ -216,12 +216,12 @@ export const CustomerMembershipSection = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[#45C987]/15 flex items-center justify-center shrink-0">
-                <Check className="w-3 h-3 text-[#45C987]" />
+              <div className="w-4 h-4 rounded-full bg-emerald-50 dark:bg-[#45C987]/15 flex items-center justify-center shrink-0">
+                <Check className="w-3 h-3 text-emerald-600 dark:text-[#45C987]" />
               </div>
               <span>
                 Advance Booking:{' '}
-                <strong className="text-[#FFF4E8]">
+                <strong className="text-slate-900 dark:text-[#FFF4E8]">
                   {plan.advanceBookingLimit || 7} days prior
                 </strong>
               </span>
@@ -241,7 +241,7 @@ export const CustomerMembershipSection = ({
           aria-disabled={!enableMembershipPurchases}
           className={`mt-6 w-full py-3 px-4 rounded-xl font-bold font-heading text-xs uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 ${
             !enableMembershipPurchases
-              ? 'bg-[#1D0C13] text-[#A68F94] border border-[#3E1A25] cursor-not-allowed opacity-80 shadow-none'
+              ? 'bg-slate-100 text-slate-400 border border-slate-200 dark:bg-[#1D0C13] dark:text-[#A68F94] dark:border-[#3E1A25] cursor-not-allowed opacity-80 shadow-none'
               : isPopular
               ? 'bg-gradient-to-r from-[#851B2B] to-[#A51F35] hover:from-[#6E1623] hover:to-[#851B2B] text-white shadow-lg shadow-[#851B2B]/30 border border-[#A51F35]'
               : 'bg-[#851B2B] hover:bg-[#6E1623] text-white border border-[#851B2B] shadow-md shadow-[#851B2B]/20'
@@ -273,15 +273,15 @@ export const CustomerMembershipSection = ({
       {/* ========================================================= */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#F5B942] uppercase tracking-wider mb-1">
-            <Crown className="w-4 h-4 text-[#F5B942]" /> NOAH Club Passes
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#851B2B] dark:text-[#F5B942] uppercase tracking-wider mb-1">
+            <Crown className="w-4 h-4 text-[#851B2B] dark:text-[#F5B942]" /> NOAH Club Passes
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold font-heading text-[#FFF4E8]">
+          <h2 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 dark:text-[#FFF4E8]">
             {billingPeriod === 'yearly'
               ? 'Annual Memberships & Priority Gaming Quotas'
               : 'Monthly Memberships & Daily Fair-Use Quotas'}
           </h2>
-          <p className="text-xs sm:text-sm text-[#C7A5A8] mt-1 max-w-2xl">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-[#C7A5A8] mt-1 max-w-2xl">
             Frequent gamers save big with our membership plans. Enjoy daily included gaming quotas, 100%
             covered sessions, and priority booking slots.
           </p>
@@ -291,24 +291,24 @@ export const CustomerMembershipSection = ({
         <button
           type="button"
           onClick={() => setShowAllTiers(!showAllTiers)}
-          className="self-start sm:self-center px-4 py-2.5 rounded-xl bg-[#F5B942] hover:bg-[#e5aa35] text-[#171014] font-black text-xs uppercase tracking-wider font-heading flex items-center gap-2 shadow-md shadow-[#F5B942]/20 transition-transform active:scale-95"
+          className="self-start sm:self-center px-4 py-2.5 rounded-xl bg-[#851B2B] hover:bg-[#6e1623] text-white dark:bg-[#F5B942] dark:hover:bg-[#e5aa35] dark:text-[#171014] font-black text-xs uppercase tracking-wider font-heading flex items-center gap-2 shadow-md shadow-[#851B2B]/20 dark:shadow-[#F5B942]/20 transition-transform active:scale-95"
         >
-          <Crown className="w-4 h-4 text-[#171014]" />
+          <Crown className="w-4 h-4 text-white dark:text-[#171014]" />
           <span>{showAllTiers ? 'Show 3 Popular Plans' : 'View All Membership Tiers'}</span>
         </button>
       </div>
 
       {/* Temporarily Disabled Notice Banner */}
       {!enableMembershipPurchases && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#851B2B]/20 border border-[#851B2B]/40 text-[#FFF4E8]">
-          <div className="w-9 h-9 rounded-xl bg-[#851B2B]/40 flex items-center justify-center shrink-0 text-[#F5B942]">
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-rose-50 dark:bg-[#851B2B]/20 border border-rose-200 dark:border-[#851B2B]/40 text-slate-800 dark:text-[#FFF4E8]">
+          <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-[#851B2B]/40 flex items-center justify-center shrink-0 text-[#851B2B] dark:text-[#F5B942]">
             <AlertCircle className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm font-bold font-heading text-[#F5B942] uppercase tracking-wider">
+            <p className="text-xs sm:text-sm font-bold font-heading text-[#851B2B] dark:text-[#F5B942] uppercase tracking-wider">
               Memberships Temporarily Unavailable
             </p>
-            <p className="text-xs text-[#C7A5A8] mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-[#C7A5A8] mt-0.5">
               Online membership purchases are temporarily paused. Existing active memberships and daily quotas remain fully active and valid. For enquiries or assistance, please speak with our front desk.
             </p>
           </div>
@@ -323,7 +323,7 @@ export const CustomerMembershipSection = ({
           <div
             role="tablist"
             aria-label="Billing period"
-            className="inline-flex items-center gap-1 p-1 rounded-full bg-[#171014] border border-[#49202C] shadow-inner"
+            className="inline-flex items-center gap-1 p-1 rounded-full bg-slate-100 dark:bg-[#171014] border border-slate-200 dark:border-[#49202C] shadow-inner"
           >
             <button
               type="button"
@@ -333,7 +333,7 @@ export const CustomerMembershipSection = ({
               className={`px-5 py-2 rounded-full text-xs font-bold font-heading uppercase tracking-wider transition-all duration-200 ${
                 billingPeriod === 'monthly'
                   ? 'bg-[#851B2B] text-white shadow-md shadow-[#851B2B]/40'
-                  : 'text-[#C7A5A8] hover:text-[#FFF4E8] bg-transparent'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-[#C7A5A8] dark:hover:text-[#FFF4E8] bg-transparent'
               }`}
             >
               Monthly
@@ -347,7 +347,7 @@ export const CustomerMembershipSection = ({
               className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-bold font-heading uppercase tracking-wider transition-all duration-200 ${
                 billingPeriod === 'yearly'
                   ? 'bg-[#851B2B] text-white shadow-md shadow-[#851B2B]/40'
-                  : 'text-[#C7A5A8] hover:text-[#FFF4E8] bg-transparent'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-[#C7A5A8] dark:hover:text-[#FFF4E8] bg-transparent'
               }`}
             >
               <span>Yearly</span>

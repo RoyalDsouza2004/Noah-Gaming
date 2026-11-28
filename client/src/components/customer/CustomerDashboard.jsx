@@ -547,54 +547,58 @@ export const CustomerDashboard = ({ onOpenBooking, onOpenMyBookings, onClose, in
       )}
 
       {/* ---------------- LIVE ACTIVE GAMING SESSION COUNTDOWN WIDGET (Phase 8) ---------------- */}
-      <ActiveSessionCountdown customerUser={user} />
+      <ActiveSessionCountdown
+        customerUser={user}
+        upcomingBookings={dashboardData?.upcomingBookings}
+        onOpenBooking={onOpenBooking}
+      />
 
       {/* ---------------- METRICS OVERVIEW CARDS ---------------- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="profile-metric-card p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <div className="flex justify-between items-center text-slate-400">
+        <div className="profile-metric-card p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+          <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
             <span className="text-[11px] uppercase font-mono tracking-wider">Total Gaming Sessions</span>
-            <Gamepad2 className="w-4 h-4 text-[#D7FF00]" />
+            <Gamepad2 className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00]" />
           </div>
-          <div className="text-2xl font-black font-heading text-white">
+          <div className="text-2xl font-black font-heading text-slate-900 dark:text-white">
             {metrics?.totalGamingSessions || 0}
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">Completed & upcoming</div>
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">Completed & upcoming</div>
         </div>
 
-        <div className="profile-metric-card p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <div className="flex justify-between items-center text-slate-400">
+        <div className="profile-metric-card p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+          <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
             <span className="text-[11px] uppercase font-mono tracking-wider">Upcoming Bookings</span>
-            <Calendar className="w-4 h-4 text-purple-400" />
+            <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           </div>
-          <div className="text-2xl font-black font-heading text-white">
+          <div className="text-2xl font-black font-heading text-slate-900 dark:text-white">
             {metrics?.upcomingBookingsCount || 0}
           </div>
-          <div className="text-[10px] text-[#D7FF00] font-mono">Ready to play</div>
+          <div className="text-[10px] text-emerald-600 dark:text-[#D7FF00] font-mono">Ready to play</div>
         </div>
 
-        <div className="profile-metric-card p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <div className="flex justify-between items-center text-slate-400">
+        <div className="profile-metric-card p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+          <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
             <span className="text-[11px] uppercase font-mono tracking-wider">Daily Gaming Allowance</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </div>
-          <div className="text-2xl font-black font-heading text-amber-400">
+          <div className="text-2xl font-black font-heading text-amber-600 dark:text-amber-400">
             {isMember ? `${customer.membership.dailyRemainingHours}h` : 'N/A'}
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
             {isMember ? `${customer.membership.dailyRemainingMinutes} mins left today` : 'Standard rates apply'}
           </div>
         </div>
 
-        <div className="profile-metric-card p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <div className="flex justify-between items-center text-slate-400">
+        <div className="profile-metric-card p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+          <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
             <span className="text-[11px] uppercase font-mono tracking-wider">Total Spent</span>
-            <Coins className="w-4 h-4 text-emerald-400" />
+            <Coins className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-black font-heading text-emerald-400">
+          <div className="text-2xl font-black font-heading text-emerald-600 dark:text-emerald-400">
             ₹{metrics?.totalSpentRupees || 0}
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">Verified lifetime transactions</div>
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">Verified lifetime transactions</div>
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import ActivityLog from '../models/ActivityLog.js';
 import bcrypt from 'bcryptjs';
 import { formatISTDate } from '../utils/timeSlots.js';
 import * as notificationService from '../services/notification.service.js';
+import * as sessionService from '../services/session.service.js';
 import { deleteCloudinaryAsset } from '../services/cloudinary.service.js';
 import { sendPasswordResetConfirmationEmail } from '../services/email.service.js';
 
@@ -290,13 +291,20 @@ export const getGamingHistory = async (req, res) => {
     if (status) {
       if (status === 'UPCOMING') {
         query.bookingStatus = 'CONFIRMED';
+        query.checkInStatus = { $ne: 'CHECKED_IN' };
+        query.sessionStatus = { $ne: 'ACTIVE' };
         query.startAt = { $gt: now };
       } else if (status === 'ACTIVE') {
-        query.bookingStatus = 'CONFIRMED';
-        query.startAt = { $lte: now };
-        query.endAt = { $gte: now };
+        query.bookingStatus = { $ne: 'CANCELLED' };
+        query.checkInStatus = 'CHECKED_IN';
+        query.sessionStatus = 'ACTIVE';
+        query.endAt = { $gt: now };
       } else if (status === 'COMPLETED') {
-        query.$or = [{ bookingStatus: 'COMPLETED' }, { bookingStatus: 'CONFIRMED', endAt: { $lt: now } }];
+        query.$or = [
+          { bookingStatus: 'COMPLETED' },
+          { sessionStatus: 'COMPLETED' },
+          { bookingStatus: 'CONFIRMED', endAt: { $lte: now } },
+        ];
       } else if (status === 'CANCELLED') {
         query.bookingStatus = 'CANCELLED';
       }
@@ -316,16 +324,27 @@ export const getGamingHistory = async (req, res) => {
 
     // Categorized Summary Counts
     const [upcomingCount, activeCount, completedCount, cancelledCount] = await Promise.all([
-      Booking.countDocuments({ customer: req.user._id, bookingStatus: 'CONFIRMED', startAt: { $gt: now } }),
       Booking.countDocuments({
         customer: req.user._id,
         bookingStatus: 'CONFIRMED',
-        startAt: { $lte: now },
-        endAt: { $gte: now },
+        checkInStatus: { $ne: 'CHECKED_IN' },
+        sessionStatus: { $ne: 'ACTIVE' },
+        startAt: { $gt: now },
       }),
       Booking.countDocuments({
         customer: req.user._id,
-        $or: [{ bookingStatus: 'COMPLETED' }, { bookingStatus: 'CONFIRMED', endAt: { $lt: now } }],
+        bookingStatus: { $ne: 'CANCELLED' },
+        checkInStatus: 'CHECKED_IN',
+        sessionStatus: 'ACTIVE',
+        endAt: { $gt: now },
+      }),
+      Booking.countDocuments({
+        customer: req.user._id,
+        $or: [
+          { bookingStatus: 'COMPLETED' },
+          { sessionStatus: 'COMPLETED' },
+          { bookingStatus: 'CONFIRMED', endAt: { $lte: now } },
+        ],
       }),
       Booking.countDocuments({ customer: req.user._id, bookingStatus: 'CANCELLED' }),
     ]);
@@ -407,13 +426,19 @@ export const getCustomerDashboard = async (req, res) => {
     const now = new Date();
     const todayIST = formatISTDate(now);
 
-    const [user, totalSessions, upcomingBookings, recentBookings, payments, todayUsages] =
+    const [user, totalSessions, upcomingBookings, recentBookings, payments, todayUsages, activeGamingSessions] =
       await Promise.all([
         User.findById(userId)
           .populate('membership.planId')
           .populate('membership.subscriptionId'),
         Booking.countDocuments({ customer: userId }),
-        Booking.find({ customer: userId, bookingStatus: 'CONFIRMED', startAt: { $gte: now } })
+        Booking.find({
+          customer: userId,
+          bookingStatus: 'CONFIRMED',
+          checkInStatus: { $ne: 'CHECKED_IN' },
+          sessionStatus: { $ne: 'ACTIVE' },
+          startAt: { $gte: now },
+        })
           .populate('device', 'name deviceCode')
           .populate('game', 'name thumbnail')
           .sort({ startAt: 1 })
@@ -431,7 +456,10 @@ export const getCustomerDashboard = async (req, res) => {
           usageDate: todayIST,
           status: { $ne: 'CANCELLED' },
         }),
+        sessionService.getActiveSessions({ customerId: userId }).catch(() => []),
       ]);
+
+    const activeSession = activeGamingSessions.length > 0 ? activeGamingSessions[0] : null;
 
     // Calculate daily allowance remaining
     let dailyAllowanceMinutes = 0;
@@ -492,6 +520,7 @@ export const getCustomerDashboard = async (req, res) => {
           outstandingBalanceRupees:
             outstandingBookings.reduce((sum, b) => sum + (b.balanceRemaining || 0), 0) / 100,
         },
+        activeSession,
         upcomingBookings,
         recentBookings,
         recentPayments: payments,

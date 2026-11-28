@@ -2,7 +2,16 @@ import * as sessionService from '../services/session.service.js';
 
 export const getActiveSessions = async (req, res, next) => {
   try {
-    const customerId = req.user.role === 'customer' ? req.user._id : req.query.customerId || null;
+    // If staff requests all lounge active sessions (e.g., reception live view with ?all=true)
+    let customerId = req.user._id;
+    if (req.user.role === 'admin' || req.user.role === 'receptionist') {
+      if (req.query.all === 'true') {
+        customerId = null;
+      } else if (req.query.customerId) {
+        customerId = req.query.customerId;
+      }
+    }
+
     const sessions = await sessionService.getActiveSessions({ customerId });
     res.json({
       success: true,

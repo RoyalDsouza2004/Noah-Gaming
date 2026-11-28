@@ -91,33 +91,37 @@ export const HomePage = ({
   return (
     <div className="space-y-16 sm:space-y-24">
       {/* ========================================================================= */}
-      {/* 1. HERO SECTION WITH GAMING POSTER & TRANSPARENT DARK OVERLAY            */}
+      {/* 1. HERO SECTION WITH GAMING POSTER & THEME-AWARE OVERLAY                  */}
       {/* ========================================================================= */}
-      <section className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-[#851B2B]/40 shadow-2xl">
-        {/* Background Gaming Poster Imagery with 75% Dark Overlay */}
+      <section className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-slate-200 dark:border-[#851B2B]/40 shadow-xl dark:shadow-2xl">
+        {/* Background Gaming Poster Imagery with Smooth Scale Effect */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
           style={{
             backgroundImage: `url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop')`,
           }}
         />
-        {/* Dark Burgundy + Charcoal 75% Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#171014]/95 via-[#260D17]/85 to-[#171014]/95 backdrop-blur-[2px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(133,27,43,0.35),transparent_70%)] pointer-events-none" />
+
+        {/* Theme-Adaptive Gradient Overlay: Bright frosted glass in Light Mode, Rich Burgundy in Dark Mode */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-rose-50/90 to-white/95 dark:from-[#171014]/95 dark:via-[#260D17]/85 dark:to-[#171014]/95 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 dark:bg-[radial-gradient(circle_at_50%_30%,rgba(133,27,43,0.35),transparent_70%)] pointer-events-none" />
 
         <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-28 text-center space-y-6">
           {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-[#851B2B]/40 border border-[#851B2B] text-[#FFF4E8] shadow-lg shadow-[#851B2B]/20">
-            <span className="w-2 h-2 rounded-full bg-[#D7FF00] animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-rose-50 border border-rose-200 text-[#851B2B] dark:bg-[#851B2B]/40 dark:border-[#851B2B] dark:text-[#FFF4E8] shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-[#851B2B] dark:bg-[#D7FF00] animate-pulse" />
             NOAH GAMING • BAJAGOLI ESPORTS LOUNGE
           </div>
 
           {/* Valorant-Inspired Geometric Headline */}
-          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black font-heading uppercase tracking-wider text-white leading-tight">
-            PLAY • CHILL <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D7FF00] via-[#FFF4E8] to-[#F5B942]">• CONNECT</span>
+          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black font-heading uppercase tracking-wider text-slate-900 dark:text-white leading-tight">
+            PLAY • CHILL{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#851B2B] via-[#A51F35] to-[#851B2B] dark:from-[#D7FF00] dark:via-[#FFF4E8] dark:to-[#F5B942]">
+              • CONNECT
+            </span>
           </h1>
 
-          <p className="text-sm sm:text-lg text-[#C7A5A8] max-w-2xl mx-auto leading-relaxed font-sans">
+          <p className="text-sm sm:text-lg text-slate-600 dark:text-[#C7A5A8] max-w-2xl mx-auto leading-relaxed font-sans font-medium">
             Experience next-generation 4K 120Hz PlayStation 5 console arenas, competitive 8-ball billiards, and seamless venue bookings in Bajagoli.
           </p>
 
@@ -125,9 +129,9 @@ export const HomePage = ({
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-4">
             <button
               onClick={() => onOpenBooking && onOpenBooking(null)}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#851B2B] to-[#A51F35] hover:from-[#A51F35] hover:to-[#851B2B] text-white font-black font-heading text-sm uppercase tracking-widest transition-all shadow-xl shadow-[#851B2B]/40 hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2.5 border border-[#851B2B]/50"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#851B2B] to-[#A51F35] hover:from-[#A51F35] hover:to-[#851B2B] text-white font-black font-heading text-sm uppercase tracking-widest transition-all shadow-xl shadow-[#851B2B]/25 hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2.5 border border-[#851B2B]/50"
             >
-              <Gamepad2 className="w-5 h-5 text-[#D7FF00]" />
+              <Gamepad2 className="w-5 h-5 text-[#FFF4E8] dark:text-[#D7FF00]" />
               <span>BOOK YOUR SESSION</span>
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -138,46 +142,49 @@ export const HomePage = ({
                 const el = document.getElementById('pricing');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="w-full sm:w-auto px-6 py-4 rounded-xl bg-[#260D17]/80 hover:bg-[#381322] text-[#FFF4E8] font-bold font-heading text-sm uppercase tracking-wider border border-[#49202C] transition-all hover:scale-[1.02]"
+              className="w-full sm:w-auto px-6 py-4 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 shadow-sm dark:bg-[#260D17]/80 dark:hover:bg-[#381322] dark:text-[#FFF4E8] dark:border-[#49202C] font-bold font-heading text-sm uppercase tracking-wider transition-all hover:scale-[1.02]"
             >
               View Rates & Pricing
             </button>
           </div>
 
           {/* Key Amenities Banner */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-8 max-w-3xl mx-auto text-xs text-[#C7A5A8]">
-            <div className="p-3 rounded-xl bg-[#171014]/80 border border-[#49202C] flex items-center justify-center gap-2">
-              <Zap className="w-4 h-4 text-[#D7FF00]" />
-              <span className="font-semibold text-[#FFF4E8]">4K 120Hz HDR</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-8 max-w-3xl mx-auto text-xs">
+            <div className="p-3 rounded-xl bg-white/90 dark:bg-[#171014]/80 border border-slate-200 dark:border-[#49202C] flex items-center justify-center gap-2 shadow-sm">
+              <Zap className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00]" />
+              <span className="font-semibold text-slate-800 dark:text-[#FFF4E8]">4K 120Hz HDR</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#171014]/80 border border-[#49202C] flex items-center justify-center gap-2">
-              <Users className="w-4 h-4 text-[#F5B942]" />
-              <span className="font-semibold text-[#FFF4E8]">Up to 4-P Co-op</span>
+            <div className="p-3 rounded-xl bg-white/90 dark:bg-[#171014]/80 border border-slate-200 dark:border-[#49202C] flex items-center justify-center gap-2 shadow-sm">
+              <Users className="w-4 h-4 text-[#851B2B] dark:text-[#F5B942]" />
+              <span className="font-semibold text-slate-800 dark:text-[#FFF4E8]">Up to 4-P Co-op</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#171014]/80 border border-[#49202C] flex items-center justify-center gap-2">
-              <Headphones className="w-4 h-4 text-[#45C987]" />
-              <span className="font-semibold text-[#FFF4E8]">3D Spatial Audio</span>
+            <div className="p-3 rounded-xl bg-white/90 dark:bg-[#171014]/80 border border-slate-200 dark:border-[#49202C] flex items-center justify-center gap-2 shadow-sm">
+              <Headphones className="w-4 h-4 text-emerald-600 dark:text-[#45C987]" />
+              <span className="font-semibold text-slate-800 dark:text-[#FFF4E8]">3D Spatial Audio</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#171014]/80 border border-[#49202C] flex items-center justify-center gap-2">
-              <CircleDot className="w-4 h-4 text-[#D7FF00]" />
-              <span className="font-semibold text-[#FFF4E8]">Pro 8-Ball Billiards</span>
+            <div className="p-3 rounded-xl bg-white/90 dark:bg-[#171014]/80 border border-slate-200 dark:border-[#49202C] flex items-center justify-center gap-2 shadow-sm">
+              <CircleDot className="w-4 h-4 text-purple-600 dark:text-[#D7FF00]" />
+              <span className="font-semibold text-slate-800 dark:text-[#FFF4E8]">Pro 8-Ball Billiards</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* 2. PRICING SECTION (SINGLE CONSOLIDATED PRICING SECTION)                  */}
+      {/* 2. PRICING SECTION (CONSOLIDATED PRICING CARDS - THEME ADAPTIVE)          */}
       {/* ========================================================================= */}
       <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold font-heading text-[#D7FF00] uppercase tracking-widest">
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold font-heading text-[#851B2B] dark:text-[#D7FF00] uppercase tracking-widest">
             <Coins className="w-4 h-4" /> Transparent Lounge Rates
           </div>
-          <h2 className="text-2xl sm:text-4xl font-black font-heading uppercase text-white tracking-wider">
-            CONSOLE & TABLE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D7FF00] to-[#F5B942]">PRICING</span>
+          <h2 className="text-2xl sm:text-4xl font-black font-heading uppercase text-slate-900 dark:text-white tracking-wider">
+            CONSOLE & TABLE{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#851B2B] to-[#F5B942] dark:from-[#D7FF00] dark:to-[#F5B942]">
+              PRICING
+            </span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#C7A5A8]">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-[#C7A5A8]">
             Direct pricing configured from central lounge management. Pay at the counter upon arrival.
           </p>
         </div>
@@ -185,49 +192,49 @@ export const HomePage = ({
         {/* 3 Authoritative Pricing Cards: PS5 Non-Exclusive, PS5 Exclusive, Pool Table */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1: PS5 NON-EXCLUSIVE */}
-          <div className="relative p-6 sm:p-7 rounded-3xl bg-[#260D17] border border-[#49202C] hover:border-[#851B2B] shadow-xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
+          <div className="relative p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#260D17] border border-slate-200 dark:border-[#49202C] hover:border-[#851B2B] shadow-lg dark:shadow-xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
                   NON-EXCLUSIVE
                 </span>
-                <Gamepad2 className="w-6 h-6 text-[#851B2B] group-hover:text-[#D7FF00] transition-colors" />
+                <Gamepad2 className="w-6 h-6 text-[#851B2B] dark:text-[#851B2B] group-hover:text-[#851B2B] dark:group-hover:text-[#D7FF00] transition-colors" />
               </div>
 
               <div>
-                <h3 className="text-xl font-black font-heading text-white uppercase tracking-wider">
+                <h3 className="text-xl font-black font-heading text-slate-900 dark:text-white uppercase tracking-wider">
                   PS5 Standard Gaming
                 </h3>
-                <p className="text-xs text-[#C7A5A8] mt-1 leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-[#C7A5A8] mt-1 leading-relaxed">
                   Ideal for casual sessions, tournament rivalries, and co-op matches. Title selected upon arrival.
                 </p>
               </div>
 
-              <div className="py-3 border-y border-[#49202C]">
+              <div className="py-3 border-y border-slate-200 dark:border-[#49202C]">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl sm:text-4xl font-black font-heading text-[#FFF4E8]">
+                  <span className="text-3xl sm:text-4xl font-black font-heading text-slate-900 dark:text-[#FFF4E8]">
                     ₹{ps5RateRupees}
                   </span>
-                  <span className="text-xs text-[#C7A5A8] font-mono">/ player / hour</span>
+                  <span className="text-xs text-slate-500 dark:text-[#C7A5A8] font-mono">/ player / hour</span>
                 </div>
-                <span className="text-[11px] text-[#8F7275] block mt-1">Configured Central PS5 Rate</span>
+                <span className="text-[11px] text-slate-400 dark:text-[#8F7275] block mt-1">Configured Central PS5 Rate</span>
               </div>
 
-              <ul className="space-y-2.5 text-xs text-[#C7A5A8]">
+              <ul className="space-y-2.5 text-xs text-slate-600 dark:text-[#C7A5A8]">
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-[#45C987] shrink-0" />
                   <span>Sony PS5 Console with DualSense Wireless</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-[#45C987] shrink-0" />
                   <span>Full Standard Library (FC 25, Tekken 8, GT7)</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-[#45C987] shrink-0" />
                   <span>1 to 4 Players Couch Multiplayer Support</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-[#45C987] shrink-0" />
                   <span>Shared or Private Seat Reservations</span>
                 </li>
               </ul>
@@ -235,61 +242,61 @@ export const HomePage = ({
 
             <button
               onClick={() => onOpenBooking && onOpenBooking(ps5Station1)}
-              className="mt-6 w-full py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#A51F35] text-white font-black font-heading text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#851B2B]/20 flex items-center justify-center gap-2"
+              className="mt-6 w-full py-3.5 rounded-xl bg-[#851B2B] hover:bg-[#A51F35] text-white font-black font-heading text-xs uppercase tracking-wider transition-all shadow-md shadow-[#851B2B]/20 flex items-center justify-center gap-2"
             >
               <span>BOOK NON-EXCLUSIVE</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Card 2: PS5 EXCLUSIVE */}
-          <div className="relative p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-[#30121E] to-[#260D17] border-2 border-[#851B2B] shadow-2xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#D7FF00] text-[#171014] text-[10px] font-black font-heading tracking-widest uppercase shadow-md">
+          {/* Card 2: PS5 EXCLUSIVE (Properly Styled in Both Light and Dark Themes) */}
+          <div className="relative p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-amber-50/70 via-white to-rose-50/30 dark:from-[#30121E] dark:to-[#260D17] border-2 border-[#851B2B] shadow-xl shadow-[#851B2B]/10 dark:shadow-2xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#851B2B] text-white dark:bg-[#D7FF00] dark:text-[#171014] text-[10px] font-black font-heading tracking-widest uppercase shadow-md">
               PREMIUM EXPERIENCE
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-amber-500/20 text-[#F5B942] border border-amber-500/40">
+                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-[#F5B942] dark:border-amber-500/40">
                   EXCLUSIVE
                 </span>
-                <Flame className="w-6 h-6 text-[#F5B942]" />
+                <Flame className="w-6 h-6 text-[#851B2B] dark:text-[#F5B942]" />
               </div>
 
               <div>
-                <h3 className="text-xl font-black font-heading text-white uppercase tracking-wider">
+                <h3 className="text-xl font-black font-heading text-slate-900 dark:text-white uppercase tracking-wider">
                   PS5 Exclusive Titles
                 </h3>
-                <p className="text-xs text-[#C7A5A8] mt-1 leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-[#C7A5A8] mt-1 leading-relaxed">
                   Dedicated console allocation and high-performance calibration for flagship releases (such as GTA 6).
                 </p>
               </div>
 
-              <div className="py-3 border-y border-[#49202C]">
+              <div className="py-3 border-y border-slate-200 dark:border-[#49202C]">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl sm:text-4xl font-black font-heading text-[#FFF4E8]">
+                  <span className="text-3xl sm:text-4xl font-black font-heading text-slate-900 dark:text-[#FFF4E8]">
                     ₹{exclusiveRateRupees}
                   </span>
-                  <span className="text-xs text-[#C7A5A8] font-mono">/ player / hour</span>
+                  <span className="text-xs text-slate-500 dark:text-[#C7A5A8] font-mono">/ player / hour</span>
                 </div>
-                <span className="text-[11px] text-[#8F7275] block mt-1">Dedicated Station Reservation</span>
+                <span className="text-[11px] text-[#851B2B] dark:text-[#8F7275] font-semibold block mt-1">Dedicated Station Reservation</span>
               </div>
 
-              <ul className="space-y-2.5 text-xs text-[#C7A5A8]">
+              <ul className="space-y-2.5 text-xs text-slate-600 dark:text-[#C7A5A8]">
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#D7FF00] shrink-0" />
+                  <Check className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00] shrink-0" />
                   <span>Dedicated Physical PS5 Console Hardware Lock</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#D7FF00] shrink-0" />
+                  <Check className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00] shrink-0" />
                   <span>Optimized for Day-One & Exclusive Titles</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#D7FF00] shrink-0" />
+                  <Check className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00] shrink-0" />
                   <span>Priority Station Allocation & Low-Latency Displays</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#D7FF00] shrink-0" />
+                  <Check className="w-4 h-4 text-[#851B2B] dark:text-[#D7FF00] shrink-0" />
                   <span>Counter Payment Upon Lounge Arrival</span>
                 </li>
               </ul>
@@ -297,57 +304,57 @@ export const HomePage = ({
 
             <button
               onClick={() => onOpenBooking && onOpenBooking(ps5Station1)}
-              className="mt-6 w-full py-3.5 rounded-xl bg-gradient-to-r from-[#D7FF00] to-[#F5B942] hover:brightness-110 text-[#171014] font-black font-heading text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#D7FF00]/20 flex items-center justify-center gap-2"
+              className="mt-6 w-full py-3.5 rounded-xl bg-gradient-to-r from-[#851B2B] to-[#A51F35] text-white hover:from-[#6E1623] hover:to-[#851B2B] dark:from-[#D7FF00] dark:to-[#F5B942] dark:text-[#171014] font-black font-heading text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#851B2B]/20 dark:shadow-[#D7FF00]/20 flex items-center justify-center gap-2"
             >
               <span>BOOK EXCLUSIVE</span>
-              <ArrowRight className="w-4 h-4 text-[#171014]" />
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
           {/* Card 3: 8-BALL POOL TABLE */}
-          <div className="relative p-6 sm:p-7 rounded-3xl bg-[#260D17] border border-[#49202C] hover:border-[#851B2B] shadow-xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
+          <div className="relative p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#260D17] border border-slate-200 dark:border-[#49202C] hover:border-[#851B2B] shadow-lg dark:shadow-xl flex flex-col justify-between transition-all hover:scale-[1.02] group">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                <span className="px-3 py-1 rounded-lg text-xs font-black font-heading uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/30">
                   BILLIARDS ARENA
                 </span>
-                <CircleDot className="w-6 h-6 text-purple-400" />
+                <CircleDot className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
 
               <div>
-                <h3 className="text-xl font-black font-heading text-white uppercase tracking-wider">
+                <h3 className="text-xl font-black font-heading text-slate-900 dark:text-white uppercase tracking-wider">
                   8-Ball Pool Table
                 </h3>
-                <p className="text-xs text-[#C7A5A8] mt-1 leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-[#C7A5A8] mt-1 leading-relaxed">
                   Championship grade slate table, precision cue sticks, and dedicated lounge seating for friend matches.
                 </p>
               </div>
 
-              <div className="py-3 border-y border-[#49202C]">
+              <div className="py-3 border-y border-slate-200 dark:border-[#49202C]">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl sm:text-4xl font-black font-heading text-[#FFF4E8]">
+                  <span className="text-3xl sm:text-4xl font-black font-heading text-slate-900 dark:text-[#FFF4E8]">
                     ₹{poolRateRupees}
                   </span>
-                  <span className="text-xs text-[#C7A5A8] font-mono">/ hour</span>
+                  <span className="text-xs text-slate-500 dark:text-[#C7A5A8] font-mono">/ hour</span>
                 </div>
-                <span className="text-[11px] text-[#8F7275] block mt-1">Configured Table Rate</span>
+                <span className="text-[11px] text-slate-400 dark:text-[#8F7275] block mt-1">Configured Table Rate</span>
               </div>
 
-              <ul className="space-y-2.5 text-xs text-[#C7A5A8]">
+              <ul className="space-y-2.5 text-xs text-slate-600 dark:text-[#C7A5A8]">
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-[#45C987] shrink-0" />
                   <span>Regulation 8-Ball Slate Tournament Table</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-[#45C987] shrink-0" />
                   <span>Standard Cue Sticks & Triangle Chalk Included</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-[#45C987] shrink-0" />
                   <span>Up to 4 Players Match Gameplay</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#45C987] shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-[#45C987] shrink-0" />
                   <span>Instant Booking & Walk-in Slot Confirmation</span>
                 </li>
               </ul>
@@ -355,7 +362,7 @@ export const HomePage = ({
 
             <button
               onClick={() => onOpenBooking && onOpenBooking(poolDevice)}
-              className="mt-6 w-full py-3.5 rounded-xl bg-[#260D17] hover:bg-[#381322] border border-[#851B2B] text-white font-black font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+              className="mt-6 w-full py-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 shadow-sm dark:bg-[#260D17] dark:hover:bg-[#381322] dark:border-[#851B2B] dark:text-white font-black font-heading text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
             >
               <span>BOOK POOL TABLE</span>
               <ArrowRight className="w-4 h-4" />
@@ -379,13 +386,13 @@ export const HomePage = ({
       </section>
 
       {/* ========================================================================= */}
-      {/* 4. LOCATION & VENUE DETAILS (CONFIGURED BAJAGOLI VENUE)                  */}
+      {/* 4. LOCATION & VENUE DETAILS (CONFIGURED BAJAGOLI VENUE)                   */}
       {/* ========================================================================= */}
       <section id="location" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-[#260D17] border border-[#49202C] shadow-2xl">
+        <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-[#260D17] border border-slate-200 dark:border-[#49202C] shadow-xl dark:shadow-2xl">
           {/* Subtle lounge backdrop overlay */}
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none"
+            className="absolute inset-0 bg-cover bg-center opacity-5 dark:opacity-15 pointer-events-none"
             style={{
               backgroundImage: `url('https://images.unsplash.com/photo-1511882150382-421056c89033?q=80&w=2070&auto=format&fit=crop')`,
             }}
@@ -394,13 +401,13 @@ export const HomePage = ({
           <div className="relative z-10 p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Address */}
             <div className="space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 border border-[#851B2B]/40 flex items-center justify-center text-[#D7FF00]">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-[#851B2B] dark:bg-[#851B2B]/20 dark:border-[#851B2B]/40 dark:text-[#D7FF00] flex items-center justify-center">
                 <MapPin className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold font-heading text-white uppercase tracking-wider">
+              <h3 className="text-base font-bold font-heading text-slate-900 dark:text-white uppercase tracking-wider">
                 Lounge Location
               </h3>
-              <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-[#C7A5A8] leading-relaxed">
                 NOAH GAMING & Esports Lounge<br />
                 Bajagoli, Karkala Taluk<br />
                 Udupi District, Karnataka – 574122
@@ -409,7 +416,7 @@ export const HomePage = ({
                 href="https://maps.google.com/?q=Bajagoli+Karkala"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D7FF00] hover:underline pt-1"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#851B2B] dark:text-[#D7FF00] hover:underline pt-1"
               >
                 <span>Get Directions on Google Maps</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -418,33 +425,33 @@ export const HomePage = ({
 
             {/* Operating Timings */}
             <div className="space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 border border-[#851B2B]/40 flex items-center justify-center text-[#F5B942]">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 dark:bg-[#851B2B]/20 dark:border-[#851B2B]/40 dark:text-[#F5B942] flex items-center justify-center">
                 <Clock className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold font-heading text-white uppercase tracking-wider">
+              <h3 className="text-base font-bold font-heading text-slate-900 dark:text-white uppercase tracking-wider">
                 Operating Timings
               </h3>
-              <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-[#C7A5A8] leading-relaxed">
                 Open Daily: 10:00 AM – 11:00 PM IST<br />
                 Monday through Sunday<br />
-                <span className="text-[#45C987] font-semibold">Live Stations & Walk-in Ready</span>
+                <span className="text-emerald-600 dark:text-[#45C987] font-semibold">Live Stations & Walk-in Ready</span>
               </p>
             </div>
 
             {/* Front Desk & Contact */}
             <div className="space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-[#851B2B]/20 border border-[#851B2B]/40 flex items-center justify-center text-[#45C987]">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 dark:bg-[#851B2B]/20 dark:border-[#851B2B]/40 dark:text-[#45C987] flex items-center justify-center">
                 <Phone className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold font-heading text-white uppercase tracking-wider">
+              <h3 className="text-base font-bold font-heading text-slate-900 dark:text-white uppercase tracking-wider">
                 Front Desk Inquiries
               </h3>
-              <p className="text-xs sm:text-sm text-[#C7A5A8] leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-[#C7A5A8] leading-relaxed">
                 Counter Phone & WhatsApp Support<br />
                 Tournament & Group Bookings<br />
-                <span className="font-mono text-white">+91 94819 74347</span>
+                <span className="font-mono text-slate-900 dark:text-white font-bold">+91 94819 74347</span>
               </p>
-              <span className="text-xs text-[#8F7275] block">support@noahclubs.in</span>
+              <span className="text-xs text-slate-400 dark:text-[#8F7275] block">support@noahclubs.in</span>
             </div>
           </div>
         </div>

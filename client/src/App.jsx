@@ -475,7 +475,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full flex bg-[#171014] text-[#FFF4E8] selection:bg-[#851B2B] selection:text-[#FFF4E8] overflow-x-hidden">
+    <div className="min-h-screen w-full max-w-full flex bg-slate-50 dark:bg-[#171014] text-slate-900 dark:text-[#FFF4E8] selection:bg-[#851B2B] selection:text-[#FFF4E8] overflow-x-hidden">
       {/* Global Toast Notification Engine */}
       <Toaster
         position="top-right"
