@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { bookingApi } from '../../api/booking.js';
 import { equipmentApi } from '../../api/equipment.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -31,13 +31,15 @@ import {
   Crown,
   ChevronRight,
   MapPin,
+  RotateCcw,
 } from 'lucide-react';
 
 export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, onClose }) => {
   const { user, isAuthenticated, openLoginModal } = useAuth();
   const { isLight } = useTheme();
 
-  // Step 1 = Station & Pricing Category
+  // Wizard Steps:
+  // Step 1 = Station & Pricing Category (embedded in each card)
   // Step 2 = Timing, Duration, Players & Live Slots
   // Step 3 = Review & Payment at Venue
   // Step 4 = Confirmed Reservation Receipt
@@ -52,11 +54,28 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   // Station and Pricing selections
   const [selectedDevice, setSelectedDevice] = useState(initialDevice || null);
   const [pricingCategory, setPricingCategory] = useState('NON_EXCLUSIVE'); // 'NON_EXCLUSIVE' | 'EXCLUSIVE' | 'NONE'
-  const [navigatingCategory, setNavigatingCategory] = useState(null); // visual confirmation before auto-nav
+  const [navigatingKey, setNavigatingKey] = useState(null); // visual highlight before auto-nav
 
-  // Date & Duration selection
-  const todayStr = new Date().toISOString().split('T')[0];
-  const tomorrowStr = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // IST Date handling
+  const getTodayIST = () => {
+    try {
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    } catch {
+      return new Date().toISOString().split('T')[0];
+    }
+  };
+
+  const getTomorrowIST = () => {
+    try {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(tomorrow);
+    } catch {
+      return new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    }
+  };
+
+  const todayStr = getTodayIST();
+  const tomorrowStr = getTomorrowIST();
 
   const [bookingDate, setBookingDate] = useState(todayStr);
   const [duration, setDuration] = useState(1); // in hours
@@ -67,8 +86,9 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [dateClosureReason, setDateClosureReason] = useState(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [navigatingSlot, setNavigatingSlot] = useState(null); // visual confirmation before auto-nav
+  const [navigatingSlot, setNavigatingSlot] = useState(null);
 
   // Server-side Pricing Quote
   const [pricingQuote, setPricingQuote] = useState(null);
@@ -89,7 +109,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
           equipmentApi.getPricing('status=ACTIVE').catch(() => null),
         ]);
 
-        if (devRes.success) {
+        if (devRes?.success) {
           setDevices(devRes.data.devices);
           if (initialDevice) {
             const found = devRes.data.devices.find(
@@ -115,7 +135,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     initData();
   }, []);
 
-  // Derive dynamic pricing from backend configuration with safe fallbacks
+  // Authoritative prices configured in backend
   const ps5NonExclusivePlan = pricingPlans.find(
     (p) => p.deviceType === 'PS5' && !p.game && p.status === 'ACTIVE'
   );
@@ -142,30 +162,62 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
   const maxStationPlayers = selectedDevice?.capacity || 4;
 
   // Fetch real-time availability slots
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      if (!selectedDevice || !bookingDate) return;
-      setSlotsLoading(true);
-      setSelectedSlot(null);
-      try {
-        const res = await bookingApi.getAvailability(
-          selectedDevice._id,
-          bookingDate,
-          duration,
-          null
+  const fetchAvailability = useCallback(async () => {
+    if (!selectedDevice || !bookingDate) return;
+    setSlotsLoading(true);
+    setSlotsError('');
+    setSelectedSlot(null);
+    try {
+      const res = await bookingApi.getAvailability(
+        selectedDevice._id,
+        bookingDate,
+        duration,
+        null
+      );
+      if (res?.success && res.data) {
+        setAvailabilitySlots(res.data.slots || []);
+        setDateClosureReason(
+          res.data.isClosed ? res.data.closureReason || 'Gaming lounge is closed on this date.' : null
         );
-        if (res.success && res.data) {
-          setAvailabilitySlots(res.data.slots || []);
-          setDateClosureReason(res.data.isClosed ? res.data.closureReason || 'Gaming lounge is closed on this date.' : null);
-        }
-      } catch (err) {
-        console.warn('Availability check failed:', err.message);
-      } finally {
-        setSlotsLoading(false);
+      } else {
+        throw new Error(res?.message || 'Failed to check availability.');
       }
-    };
-    fetchAvailability();
+    } catch (err) {
+      console.error('[Availability API Error]:', err);
+      setSlotsError(err.message || 'Could not verify slot availability. Please retry.');
+      setAvailabilitySlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
   }, [selectedDevice, bookingDate, duration]);
+
+  useEffect(() => {
+    fetchAvailability();
+  }, [fetchAvailability]);
+
+  // Robust slot availability checker
+  const isSlotAvailable = (slot) => {
+    if (!slot) return false;
+    if (slot.isPast) return false;
+    if (slot.status === 'MAINTENANCE' || slot.status === 'UNAVAILABLE' || slot.status === 'FULL') {
+      return false;
+    }
+    // If backend provided explicit boolean available property
+    if (typeof slot.available === 'boolean') {
+      return slot.available;
+    }
+    // Fallback based on remaining player capacity & mode
+    if (bookingType === 'PRIVATE') {
+      return Boolean(slot.canBookPrivate && (slot.remainingPlayers || 0) >= numberOfPlayers);
+    }
+    return Boolean(slot.canBookShared && (slot.remainingPlayers || 0) >= numberOfPlayers);
+  };
+
+  // Check if all slots for today have already passed
+  const allTodaySlotsPassed =
+    bookingDate === todayStr &&
+    availabilitySlots.length > 0 &&
+    availabilitySlots.every((s) => s.isPast);
 
   // Fetch precision pricing quote from backend
   useEffect(() => {
@@ -197,41 +249,36 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     fetchQuote();
   }, [selectedDevice, pricingCategory, duration, numberOfPlayers, bookingType, bookingDate, user?._id]);
 
-  // Handle PS5 Pricing Category selection -> AUTOMATIC NAVIGATION TO TIMING (Step 2)
-  const handleSelectPricingCategory = (category) => {
-    setPricingCategory(category);
-    setNavigatingCategory(category);
-    setError('');
-
-    // Brief 150ms visual confirmation of selection before automatic navigation
-    setTimeout(() => {
-      setNavigatingCategory(null);
-      setStep(2);
-    }, 150);
-  };
-
-  // Handle Pool Table selection -> AUTOMATIC NAVIGATION TO TIMING (Step 2)
-  const handleSelectPoolStation = (device) => {
+  // Handle Station + Pricing selection inside card -> AUTOMATIC NAVIGATION TO STEP 2
+  const handleSelectStationPricing = (device, category) => {
     setSelectedDevice(device);
-    setPricingCategory('NONE');
-    setBookingType('SHARED');
-    setNavigatingCategory('POOL');
+    setPricingCategory(category);
+    setNavigatingKey(`${device._id}_${category}`);
     setError('');
 
+    if (device.deviceType === 'POOL') {
+      setBookingType('SHARED');
+    }
+
+    // 150ms visual ring feedback before immediate progression
     setTimeout(() => {
-      setNavigatingCategory(null);
+      setNavigatingKey(null);
       setStep(2);
     }, 150);
   };
 
   // Handle Live Slot Selection -> AUTOMATIC NAVIGATION TO REVIEW (Step 3)
   const handleSelectSlot = (slot) => {
-    if (!slot.available) {
-      setError('This time slot is fully booked. Please choose an alternate slot.');
+    if (!isSlotAvailable(slot)) {
+      if (slot.isPast) {
+        setError('This time slot is in the past. Please select an upcoming slot or next date.');
+      } else {
+        setError('This time slot does not have sufficient open player seats. Please choose an alternate slot.');
+      }
       return;
     }
 
-    // Verify all required booking details are present before automatic progression
+    // Verify all required booking details are present before progression
     if (!bookingDate) {
       setError('Please select a valid booking date.');
       return;
@@ -244,10 +291,6 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       setError('Please select the number of players.');
       return;
     }
-    if (selectedDevice?.deviceType !== 'POOL' && !bookingType) {
-      setError('Please select booking mode (Shared or Private).');
-      return;
-    }
 
     setError('');
     setSelectedSlot(slot);
@@ -257,7 +300,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
     setTimeout(() => {
       setNavigatingSlot(null);
       setStep(3);
-    }, 200);
+    }, 180);
   };
 
   // Final Confirmation Submit -> Counter Payment Only
@@ -316,7 +359,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
             </span>
           </div>
           <h2 className="text-lg sm:text-2xl font-black font-heading text-slate-900 dark:text-white uppercase tracking-wider mt-0.5">
-            {step === 1 && 'CHOOSE GAMING STATION'}
+            {step === 1 && 'CHOOSE STATION & PRICING'}
             {step === 2 && 'TIMING & BOOKING DETAILS'}
             {step === 3 && 'REVIEW & VENUE PAYMENT'}
             {step === 4 && 'RESERVATION CONFIRMED'}
@@ -376,41 +419,41 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
       {/* Scrollable Wizard Body */}
       <div className="overflow-y-auto flex-1 space-y-4 sm:space-y-6 pt-3 pr-1">
         {/* ========================================================================= */}
-        {/* STEP 1: SELECT GAMING STATION & PRICING CATEGORY (AUTOMATIC NAVIGATION) */}
+        {/* STEP 1: SELECT GAMING STATION & EMBEDDED PRICING (AUTO ADVANCES ON CLICK) */}
         {/* ========================================================================= */}
         {step === 1 && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                Select your station. Clicking your preferred pricing option will <span className="font-semibold text-[#851B2B] dark:text-[#D7FF00]">automatically advance</span> to Timing & Details.
+                Choose your station and pricing category. Clicking any option will{' '}
+                <span className="font-semibold text-[#851B2B] dark:text-[#D7FF00]">
+                  automatically advance
+                </span>{' '}
+                to Timing Selection.
               </p>
             </div>
 
-            {/* Station Options Cards */}
+            {/* Station Options Cards: Pricing options embedded directly inside each card */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {devices.map((device) => {
-                const isSelected = selectedDevice?._id === device._id;
                 const isPS5 = device.deviceType === 'PS5';
+                const isPool = device.deviceType === 'POOL';
 
                 return (
                   <div
                     key={device._id}
-                    onClick={() => {
-                      if (!isPS5) {
-                        handleSelectPoolStation(device);
-                      } else {
-                        setSelectedDevice(device);
-                      }
-                    }}
-                    className={`p-5 rounded-2xl transition-all border flex flex-col justify-between cursor-pointer select-none ${
-                      isSelected
-                        ? 'bg-amber-50/80 dark:bg-[#171014] border-[#851B2B] shadow-xl shadow-[#851B2B]/20 ring-2 ring-[#851B2B]'
-                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B]/50 hover:shadow-md'
-                    }`}
+                    className="p-5 rounded-2xl border bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 shadow-md flex flex-col justify-between transition-all"
                   >
+                    {/* Card Top: Station Header & Info */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className={`p-2.5 rounded-xl ${isPS5 ? 'bg-[#851B2B]/10 text-[#851B2B] dark:text-[#D7FF00]' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'}`}>
+                        <div
+                          className={`p-2.5 rounded-xl ${
+                            isPS5
+                              ? 'bg-[#851B2B]/10 text-[#851B2B] dark:text-[#D7FF00]'
+                              : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                          }`}
+                        >
                           {isPS5 ? <Gamepad2 className="w-5 h-5" /> : <CircleDot className="w-5 h-5" />}
                         </div>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700">
@@ -423,118 +466,116 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           {device.name}
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                          {device.description || (isPS5 ? '4K 120Hz Sony PlayStation 5 lounge console' : 'Championship grade 8-ball billiards pool table')}
+                          {device.description ||
+                            (isPS5
+                              ? '4K 120Hz Sony PlayStation 5 lounge console'
+                              : 'Championship grade 8-ball billiards pool table')}
                         </p>
+                      </div>
+
+                      <div className="pt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                        <span className="flex items-center gap-1 font-medium">
+                          <Users className="w-3.5 h-3.5 text-[#851B2B] dark:text-[#D7FF00]" /> Max{' '}
+                          {device.capacity} Players
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          ● Station Ready
+                        </span>
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1 font-medium">
-                        <Users className="w-3.5 h-3.5 text-[#851B2B] dark:text-[#D7FF00]" /> Up to {device.capacity} Players
-                      </span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {isPS5 ? (isSelected ? 'Selected Console' : 'Select Station') : `₹${poolRate}/hr • Tap to Book`}
-                      </span>
+                    {/* Card Bottom: Embedded Pricing Options Directly Inside The Card */}
+                    <div className="mt-5 pt-3.5 border-t border-slate-200 dark:border-slate-800/80">
+                      {isPS5 ? (
+                        <div className="space-y-2">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                            Select Category to Continue:
+                          </span>
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Non-Exclusive Button Inside Station Card */}
+                            <button
+                              type="button"
+                              onClick={() => handleSelectStationPricing(device, 'NON_EXCLUSIVE')}
+                              className={`p-2.5 rounded-xl border text-left transition-all group flex flex-col justify-between ${
+                                navigatingKey === `${device._id}_NON_EXCLUSIVE`
+                                  ? 'bg-[#851B2B] text-white border-[#851B2B] ring-2 ring-[#851B2B]'
+                                  : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-[#851B2B] hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95'
+                              }`}
+                            >
+                              <span className="text-[10px] font-black font-heading tracking-wider text-emerald-600 dark:text-emerald-400 uppercase">
+                                NON-EXCLUSIVE
+                              </span>
+                              <div className="mt-1">
+                                <span className="text-base font-black font-heading text-slate-900 dark:text-white block">
+                                  ₹{ps5NonExclusiveRate}
+                                </span>
+                                <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-mono">
+                                  / hr / player
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold text-[#851B2B] dark:text-[#D7FF00] mt-1.5 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                                Book &rarr;
+                              </span>
+                            </button>
+
+                            {/* Exclusive Button Inside Station Card */}
+                            <button
+                              type="button"
+                              onClick={() => handleSelectStationPricing(device, 'EXCLUSIVE')}
+                              className={`p-2.5 rounded-xl border text-left transition-all group flex flex-col justify-between ${
+                                navigatingKey === `${device._id}_EXCLUSIVE`
+                                  ? 'bg-[#851B2B] text-white border-[#851B2B] ring-2 ring-[#851B2B]'
+                                  : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-[#851B2B] hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95'
+                              }`}
+                            >
+                              <span className="text-[10px] font-black font-heading tracking-wider text-amber-600 dark:text-[#F5B942] uppercase">
+                                EXCLUSIVE
+                              </span>
+                              <div className="mt-1">
+                                <span className="text-base font-black font-heading text-slate-900 dark:text-white block">
+                                  ₹{ps5ExclusiveRate}
+                                </span>
+                                <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-mono">
+                                  / hr / player
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold text-[#851B2B] dark:text-[#D7FF00] mt-1.5 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                                Book &rarr;
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          {/* Pool Table Direct Button Inside Card */}
+                          <button
+                            type="button"
+                            onClick={() => handleSelectStationPricing(device, 'NONE')}
+                            className={`w-full p-3 rounded-xl border text-center transition-all group flex items-center justify-between ${
+                              navigatingKey === `${device._id}_NONE`
+                                ? 'bg-[#851B2B] text-white border-[#851B2B] ring-2 ring-[#851B2B]'
+                                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-[#851B2B] hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95'
+                            }`}
+                          >
+                            <div className="text-left">
+                              <span className="text-[10px] font-black font-heading tracking-wider text-purple-600 dark:text-purple-400 uppercase block">
+                                TOURNAMENT POOL
+                              </span>
+                              <span className="text-base font-black font-heading text-slate-900 dark:text-white block">
+                                ₹{poolRate} <span className="text-[10px] font-normal text-slate-500 font-mono">/ hour</span>
+                              </span>
+                            </div>
+                            <span className="text-xs font-bold text-[#851B2B] dark:text-[#D7FF00] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                              Reserve &rarr;
+                            </span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
-
-            {/* When a PS5 station is active: Show the two distinct pricing categories */}
-            {selectedDevice && selectedDevice.deviceType === 'PS5' && (
-              <div className="pt-2 animate-fadeIn space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs sm:text-sm font-bold font-heading text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#F5B942]" />
-                    Choose Pricing Category for {selectedDevice.name}:
-                  </h3>
-                  <span className="text-[11px] text-slate-500 font-mono">Tap any option to advance</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Option 1: NON-EXCLUSIVE */}
-                  <div
-                    onClick={() => handleSelectPricingCategory('NON_EXCLUSIVE')}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between group ${
-                      navigatingCategory === 'NON_EXCLUSIVE'
-                        ? 'bg-[#851B2B]/20 border-[#851B2B] ring-2 ring-[#851B2B] scale-[0.99]'
-                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] hover:shadow-xl hover:shadow-[#851B2B]/10 hover:bg-slate-50 dark:hover:bg-[#171014]'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-1 rounded-lg text-xs font-black font-heading tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                          NON-EXCLUSIVE
-                        </span>
-                        <div className="text-right">
-                          <span className="text-xl sm:text-2xl font-black font-heading text-slate-900 dark:text-white">
-                            ₹{ps5NonExclusiveRate}
-                          </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-mono">
-                            per player / hour
-                          </span>
-                        </div>
-                      </div>
-
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-white mt-3 group-hover:text-[#851B2B] dark:group-hover:text-[#D7FF00] transition-colors">
-                        Standard Lounge Titles
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                        Access NOAH GAMING’s wide library of multiplayer, sports, racing, and fighting titles (EA FC 25, Tekken 8, GT7, Spider-Man 2 & more).
-                      </p>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-[#851B2B] dark:text-[#D7FF00] font-bold">
-                      <span>Shared or Private Station</span>
-                      <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                        Select Non-Exclusive <ArrowRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Option 2: EXCLUSIVE */}
-                  <div
-                    onClick={() => handleSelectPricingCategory('EXCLUSIVE')}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between group ${
-                      navigatingCategory === 'EXCLUSIVE'
-                        ? 'bg-[#851B2B]/20 border-[#851B2B] ring-2 ring-[#851B2B] scale-[0.99]'
-                        : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] hover:shadow-xl hover:shadow-[#851B2B]/10 hover:bg-slate-50 dark:hover:bg-[#171014]'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-1 rounded-lg text-xs font-black font-heading tracking-wider bg-amber-500/15 text-amber-600 dark:text-[#F5B942] border border-amber-500/30">
-                          EXCLUSIVE
-                        </span>
-                        <div className="text-right">
-                          <span className="text-xl sm:text-2xl font-black font-heading text-slate-900 dark:text-white">
-                            ₹{ps5ExclusiveRate}
-                          </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-mono">
-                            per player / hour
-                          </span>
-                        </div>
-                      </div>
-
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-white mt-3 group-hover:text-[#851B2B] dark:group-hover:text-[#D7FF00] transition-colors">
-                        Exclusive Premium Experience
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                        Dedicated high-performance console allocation for flagship exclusive releases (such as GTA 6 & VIP console privileges).
-                      </p>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-[#851B2B] dark:text-[#D7FF00] font-bold">
-                      <span>Priority Hardware Lock</span>
-                      <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                        Select Exclusive <ArrowRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -552,7 +593,7 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                 <span className="text-slate-400">•</span>
                 <span className="font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-bold text-[#851B2B] dark:text-[#D7FF00]">
                   {selectedDevice?.deviceType === 'POOL'
-                    ? '8-Ball Pool Table'
+                    ? `Tournament Table (₹${poolRate}/hr)`
                     : pricingCategory === 'EXCLUSIVE'
                     ? `EXCLUSIVE (₹${ps5ExclusiveRate}/player/hr)`
                     : `NON-EXCLUSIVE (₹${ps5NonExclusiveRate}/player/hr)`}
@@ -661,6 +702,23 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
               </div>
             </div>
 
+            {/* Late Night Banner if today's slots ended */}
+            {allTodaySlotsPassed && (
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between flex-wrap gap-3 text-xs">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                  <Clock className="w-4 h-4 shrink-0" />
+                  <span>All session slots for today have ended. Switch to tomorrow to view available slots.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBookingDate(tomorrowStr)}
+                  className="px-3 py-1.5 rounded-lg bg-[#851B2B] hover:bg-[#6e1623] text-white font-bold font-heading text-[11px] uppercase tracking-wider transition-colors"
+                >
+                  Switch to Tomorrow ({tomorrowStr})
+                </button>
+              </div>
+            )}
+
             {/* Available Time Slots Section */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
@@ -669,17 +727,29 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                     Select Available Time Slot:
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Click any available slot to <span className="font-semibold text-[#851B2B] dark:text-[#D7FF00]">automatically proceed</span> to final review.
+                    Click any open slot to <span className="font-semibold text-[#851B2B] dark:text-[#D7FF00]">automatically proceed</span> to final review.
                   </p>
                 </div>
                 {slotsLoading && (
                   <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Checking slots...
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying live slots...
                   </span>
                 )}
               </div>
 
-              {dateClosureReason ? (
+              {/* Slot Error Banner with Retry */}
+              {slotsError ? (
+                <div className="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center space-y-2 text-xs">
+                  <p className="text-rose-600 dark:text-rose-300 font-semibold">{slotsError}</p>
+                  <button
+                    type="button"
+                    onClick={fetchAvailability}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#851B2B] text-white font-bold font-heading text-xs uppercase tracking-wider hover:bg-[#6e1623] transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Retry Availability Check
+                  </button>
+                </div>
+              ) : dateClosureReason ? (
                 <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs sm:text-sm text-center">
                   {dateClosureReason}
                 </div>
@@ -692,18 +762,18 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                   {availabilitySlots.map((slot) => {
                     const isSelected = selectedSlot?.startTime === slot.startTime;
                     const isNavigating = navigatingSlot === slot.startTime;
-                    const isAvailable = slot.available;
+                    const available = isSlotAvailable(slot);
 
                     return (
                       <button
                         key={slot.startTime}
                         type="button"
-                        disabled={!isAvailable}
+                        disabled={!available}
                         onClick={() => handleSelectSlot(slot)}
                         className={`p-2.5 rounded-xl border text-center transition-all select-none ${
                           isNavigating || isSelected
                             ? 'bg-[#851B2B] text-white border-[#851B2B] shadow-lg shadow-[#851B2B]/40 ring-2 ring-[#851B2B]'
-                            : isAvailable
+                            : available
                             ? 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-[#851B2B] hover:shadow-md cursor-pointer text-slate-800 dark:text-slate-200'
                             : 'bg-slate-100 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/40 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-50'
                         }`}
@@ -712,7 +782,13 @@ export const BookingWizard = ({ initialDevice, initialGame, onBookingComplete, o
                           {slot.startTime}
                         </span>
                         <span className="block text-[10px] mt-0.5 opacity-80">
-                          {isAvailable ? `${slot.remainingPlayers || 1} seat${(slot.remainingPlayers || 1) > 1 ? 's' : ''}` : 'Booked'}
+                          {slot.isPast
+                            ? 'Past'
+                            : slot.status === 'MAINTENANCE'
+                            ? 'Maintenance'
+                            : available
+                            ? `${slot.remainingPlayers || 1} seat${(slot.remainingPlayers || 1) > 1 ? 's' : ''}`
+                            : 'Booked'}
                         </span>
                       </button>
                     );

@@ -344,6 +344,7 @@ export async function getDeviceDailyAvailability(deviceId, dateStr, durationHour
       slotsWithAvailability.push({
         ...slot,
         status: 'UNAVAILABLE',
+        available: false,
         capacity: device.capacity,
         occupiedPlayers: device.capacity,
         remainingPlayers: 0,
@@ -359,9 +360,16 @@ export async function getDeviceDailyAvailability(deviceId, dateStr, durationHour
     }
 
     const avail = await checkSlotAvailability(device._id, slot.startAt, slot.endAt, gameId);
+    const isSlotAvailable = Boolean(
+      (avail.status === 'AVAILABLE' || avail.status === 'PARTIALLY_BOOKED') &&
+      avail.remainingPlayers > 0 &&
+      (avail.canBookShared || avail.canBookPrivate)
+    );
+
     slotsWithAvailability.push({
       ...slot,
       ...avail,
+      available: isSlotAvailable,
     });
   }
 
